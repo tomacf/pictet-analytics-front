@@ -6,6 +6,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import Modal from '../../components/shared/Modal';
 import { toast } from 'react-toastify';
+import { toISOString, fromISOString } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 
 const Sessions = () => {
@@ -207,8 +208,8 @@ const Sessions = () => {
             <input
               type="datetime-local"
               id="start_time"
-              value={formData.start_time ? formData.start_time.slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, start_time: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+              value={fromISOString(formData.start_time)}
+              onChange={(e) => setFormData({ ...formData, start_time: toISOString(e.target.value) })}
               required
             />
           </div>
@@ -217,8 +218,8 @@ const Sessions = () => {
             <input
               type="datetime-local"
               id="end_time"
-              value={formData.end_time ? formData.end_time.slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, end_time: e.target.value ? new Date(e.target.value).toISOString() : '' })}
+              value={fromISOString(formData.end_time)}
+              onChange={(e) => setFormData({ ...formData, end_time: toISOString(e.target.value) })}
               required
             />
           </div>
