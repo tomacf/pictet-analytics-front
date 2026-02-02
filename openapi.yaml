@@ -262,7 +262,7 @@ paths:
       tags:
         - Rooms
       summary: Create a new room
-      description: Creates a new room with the provided name and capacity
+      description: Creates a new room with the provided label and max_size
       operationId: createRoom
       requestBody:
         required: true
@@ -274,8 +274,8 @@ paths:
               room:
                 summary: Example room
                 value:
-                  name: Room 101
-                  capacity: 30
+                  label: Room 101
+                  max_size: 30
       responses:
         '201':
           description: Room created successfully
@@ -288,8 +288,8 @@ paths:
                   summary: Created room
                   value:
                     id: 1
-                    name: Room 101
-                    capacity: 30
+                    label: Room 101
+                    max_size: 30
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -325,13 +325,13 @@ paths:
                   summary: List of rooms
                   value:
                     - id: 1
-                      name: Room 101
-                      capacity: 30
+                      label: Room 101
+                      max_size: 30
                       created_at: "2024-03-01T10:00:00Z"
                       updated_at: "2024-03-01T10:00:00Z"
                     - id: 2
-                      name: Room 102
-                      capacity: 25
+                      label: Room 102
+                      max_size: 25
                       created_at: "2024-03-01T11:00:00Z"
                       updated_at: "2024-03-01T11:00:00Z"
         '500':
@@ -358,8 +358,8 @@ paths:
                 summary: Updated room
                 value:
                   id: 1
-                  name: Room 101 Updated
-                  capacity: 35
+                  label: Room 101 Updated
+                  max_size: 35
       responses:
         '200':
           description: Room updated successfully
@@ -372,8 +372,8 @@ paths:
                   summary: Updated room
                   value:
                     id: 1
-                    name: Room 101 Updated
-                    capacity: 35
+                    label: Room 101 Updated
+                    max_size: 35
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T12:00:00Z"
         '400':
@@ -416,8 +416,8 @@ paths:
                   summary: Room details
                   value:
                     id: 1
-                    name: Room 101
-                    capacity: 30
+                    label: Room 101
+                    max_size: 30
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -668,7 +668,7 @@ paths:
       tags:
         - Sessions
       summary: Create a new session
-      description: Creates a new session between a team and jury with start and end times
+      description: Creates a new session with label and scheduling parameters
       operationId: createSession
       requestBody:
         required: true
@@ -680,6 +680,7 @@ paths:
               session:
                 summary: Example session
                 value:
+                  label: Morning Session
                   start_time: "2024-03-01T09:00:00Z"
                   slot_duration: 60
                   time_between_slots: 15
@@ -695,6 +696,7 @@ paths:
                   summary: Created session
                   value:
                     id: 1
+                    label: Morning Session
                     start_time: "2024-03-01T09:00:00Z"
                     slot_duration: 60
                     time_between_slots: 15
@@ -733,12 +735,14 @@ paths:
                   summary: List of sessions
                   value:
                     - id: 1
+                      label: Morning Session
                       start_time: "2024-03-01T09:00:00Z"
                       slot_duration: 60
                       time_between_slots: 15
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
                     - id: 2
+                      label: Afternoon Session
                       start_time: "2024-03-01T10:00:00Z"
                       slot_duration: 90
                       time_between_slots: 10
@@ -768,6 +772,7 @@ paths:
                 summary: Updated session
                 value:
                   id: 1
+                  label: Morning Session Updated
                   start_time: "2024-03-01T09:30:00Z"
                   slot_duration: 90
                   time_between_slots: 20
@@ -783,6 +788,7 @@ paths:
                   summary: Updated session
                   value:
                     id: 1
+                    label: Morning Session Updated
                     start_time: "2024-03-01T09:30:00Z"
                     slot_duration: 90
                     time_between_slots: 20
@@ -828,10 +834,10 @@ paths:
                   summary: Session details
                   value:
                     id: 1
-                    team_id: 1
-                    jury_id: 1
+                    label: Morning Session
                     start_time: "2024-03-01T09:00:00Z"
-                    end_time: "2024-03-01T10:00:00Z"
+                    slot_duration: 60
+                    time_between_slots: 15
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
         '400':
@@ -1188,8 +1194,8 @@ components:
       type: object
       required:
         - id
-        - name
-        - capacity
+        - label
+        - max_size
         - created_at
         - updated_at
       properties:
@@ -1197,13 +1203,13 @@ components:
           type: integer
           description: Room ID
           example: 1
-        name:
+        label:
           type: string
-          description: Room name
+          description: Room label
           example: Room 101
-        capacity:
+        max_size:
           type: integer
-          description: Room capacity (number of people)
+          description: Room maximum capacity (number of people)
           example: 30
         created_at:
           type: string
@@ -1219,16 +1225,16 @@ components:
     RoomInput:
       type: object
       required:
-        - name
-        - capacity
+        - label
+        - max_size
       properties:
-        name:
+        label:
           type: string
-          description: Room name
+          description: Room label
           example: Room 101
-        capacity:
+        max_size:
           type: integer
-          description: Room capacity (number of people)
+          description: Room maximum capacity (number of people)
           example: 30
 
     Jury:
@@ -1272,6 +1278,7 @@ components:
       type: object
       required:
         - id
+        - label
         - start_time
         - slot_duration
         - time_between_slots
@@ -1282,6 +1289,10 @@ components:
           type: integer
           description: Session ID
           example: 1
+        label:
+          type: string
+          description: Session label
+          example: Morning Session
         start_time:
           type: string
           format: date-time
@@ -1309,10 +1320,15 @@ components:
     SessionInput:
       type: object
       required:
+        - label
         - start_time
         - slot_duration
         - time_between_slots
       properties:
+        label:
+          type: string
+          description: Session label
+          example: Morning Session
         start_time:
           type: string
           format: date-time
