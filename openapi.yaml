@@ -3,13 +3,13 @@ info:
   title: Pictet Analytics API
   description: |
     A Go REST API backend with PostgreSQL for managing teams, rooms, juries, sessions, and room sessions.
-    
+
     The application follows a clean architecture pattern with clear separation of concerns:
     - **Domain Layer**: Entity definitions (Team, Room, Jury, Session, RoomSession)
     - **Repository Layer**: Data access interfaces and PostgreSQL implementations
     - **Service Layer**: Business logic (with placeholder scheduling and analytics services)
     - **HTTP Layer**: REST API handlers and routing
-    
+
     **Note**: No authentication/authorization is implemented. Scheduling and analytics are placeholder services.
   version: 1.0.0
   contact:
@@ -75,7 +75,7 @@ paths:
               team:
                 summary: Example team
                 value:
-                  name: Team Alpha
+                  label: Team Alpha
       responses:
         '201':
           description: Team created successfully
@@ -88,7 +88,7 @@ paths:
                   summary: Created team
                   value:
                     id: 1
-                    name: Team Alpha
+                    label: Team Alpha
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -124,11 +124,11 @@ paths:
                   summary: List of teams
                   value:
                     - id: 1
-                      name: Team Alpha
+                      label: Team Alpha
                       created_at: "2024-03-01T10:00:00Z"
                       updated_at: "2024-03-01T10:00:00Z"
                     - id: 2
-                      name: Team Beta
+                      label: Team Beta
                       created_at: "2024-03-01T11:00:00Z"
                       updated_at: "2024-03-01T11:00:00Z"
         '500':
@@ -155,7 +155,7 @@ paths:
                 summary: Updated team
                 value:
                   id: 1
-                  name: Team Alpha Updated
+                  label: Team Alpha Updated
       responses:
         '200':
           description: Team updated successfully
@@ -168,7 +168,7 @@ paths:
                   summary: Updated team
                   value:
                     id: 1
-                    name: Team Alpha Updated
+                    label: Team Alpha Updated
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T12:00:00Z"
         '400':
@@ -480,8 +480,7 @@ paths:
               jury:
                 summary: Example jury
                 value:
-                  name: Dr. John Smith
-                  email: john.smith@example.com
+                  label: Dr. John Smith
       responses:
         '201':
           description: Jury created successfully
@@ -494,8 +493,7 @@ paths:
                   summary: Created jury
                   value:
                     id: 1
-                    name: Dr. John Smith
-                    email: john.smith@example.com
+                    label: Dr. John Smith
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -531,13 +529,11 @@ paths:
                   summary: List of juries
                   value:
                     - id: 1
-                      name: Dr. John Smith
-                      email: john.smith@example.com
+                      label: Dr. John Smith
                       created_at: "2024-03-01T10:00:00Z"
                       updated_at: "2024-03-01T10:00:00Z"
                     - id: 2
-                      name: Prof. Jane Doe
-                      email: jane.doe@example.com
+                      label: Prof. Jane Doe
                       created_at: "2024-03-01T11:00:00Z"
                       updated_at: "2024-03-01T11:00:00Z"
         '500':
@@ -564,8 +560,7 @@ paths:
                 summary: Updated jury
                 value:
                   id: 1
-                  name: Dr. John Smith Updated
-                  email: john.smith.updated@example.com
+                  label: Dr. John Smith Updated
       responses:
         '200':
           description: Jury updated successfully
@@ -578,8 +573,7 @@ paths:
                   summary: Updated jury
                   value:
                     id: 1
-                    name: Dr. John Smith Updated
-                    email: john.smith.updated@example.com
+                    label: Dr. John Smith Updated
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T12:00:00Z"
         '400':
@@ -686,10 +680,9 @@ paths:
               session:
                 summary: Example session
                 value:
-                  team_id: 1
-                  jury_id: 1
                   start_time: "2024-03-01T09:00:00Z"
-                  end_time: "2024-03-01T10:00:00Z"
+                  slot_duration: 60
+                  time_between_slots: 15
       responses:
         '201':
           description: Session created successfully
@@ -702,10 +695,9 @@ paths:
                   summary: Created session
                   value:
                     id: 1
-                    team_id: 1
-                    jury_id: 1
                     start_time: "2024-03-01T09:00:00Z"
-                    end_time: "2024-03-01T10:00:00Z"
+                    slot_duration: 60
+                    time_between_slots: 15
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
         '400':
@@ -741,17 +733,15 @@ paths:
                   summary: List of sessions
                   value:
                     - id: 1
-                      team_id: 1
-                      jury_id: 1
                       start_time: "2024-03-01T09:00:00Z"
-                      end_time: "2024-03-01T10:00:00Z"
+                      slot_duration: 60
+                      time_between_slots: 15
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
                     - id: 2
-                      team_id: 2
-                      jury_id: 2
                       start_time: "2024-03-01T10:00:00Z"
-                      end_time: "2024-03-01T11:00:00Z"
+                      slot_duration: 90
+                      time_between_slots: 10
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
         '500':
@@ -778,10 +768,9 @@ paths:
                 summary: Updated session
                 value:
                   id: 1
-                  team_id: 1
-                  jury_id: 1
                   start_time: "2024-03-01T09:30:00Z"
-                  end_time: "2024-03-01T10:30:00Z"
+                  slot_duration: 90
+                  time_between_slots: 20
       responses:
         '200':
           description: Session updated successfully
@@ -794,10 +783,9 @@ paths:
                   summary: Updated session
                   value:
                     id: 1
-                    team_id: 1
-                    jury_id: 1
                     start_time: "2024-03-01T09:30:00Z"
-                    end_time: "2024-03-01T10:30:00Z"
+                    slot_duration: 90
+                    time_between_slots: 20
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T12:00:00Z"
         '400':
@@ -908,6 +896,8 @@ paths:
                 value:
                   room_id: 1
                   session_id: 1
+                  start_time: "2024-03-01T09:00:00Z"
+                  end_time: "2024-03-01T10:00:00Z"
       responses:
         '201':
           description: Room session created successfully
@@ -922,6 +912,8 @@ paths:
                     id: 1
                     room_id: 1
                     session_id: 1
+                    start_time: "2024-03-01T09:00:00Z"
+                    end_time: "2024-03-01T10:00:00Z"
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
         '400':
@@ -959,11 +951,15 @@ paths:
                     - id: 1
                       room_id: 1
                       session_id: 1
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
                     - id: 2
                       room_id: 2
                       session_id: 2
+                      start_time: "2024-03-01T10:00:00Z"
+                      end_time: "2024-03-01T11:00:00Z"
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
         '500':
@@ -1002,6 +998,8 @@ paths:
                     id: 1
                     room_id: 1
                     session_id: 1
+                    start_time: "2024-03-01T09:00:00Z"
+                    end_time: "2024-03-01T10:00:00Z"
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
         '400':
@@ -1153,7 +1151,7 @@ components:
       type: object
       required:
         - id
-        - name
+        - label
         - created_at
         - updated_at
       properties:
@@ -1161,9 +1159,9 @@ components:
           type: integer
           description: Team ID
           example: 1
-        name:
+        label:
           type: string
-          description: Team name
+          description: Team label
           example: Team Alpha
         created_at:
           type: string
@@ -1179,11 +1177,11 @@ components:
     TeamInput:
       type: object
       required:
-        - name
+        - label
       properties:
-        name:
+        label:
           type: string
-          description: Team name
+          description: Team label
           example: Team Alpha
 
     Room:
@@ -1237,8 +1235,7 @@ components:
       type: object
       required:
         - id
-        - name
-        - email
+        - label
         - created_at
         - updated_at
       properties:
@@ -1246,15 +1243,10 @@ components:
           type: integer
           description: Jury ID
           example: 1
-        name:
+        label:
           type: string
-          description: Jury member name
+          description: Jury member label
           example: Dr. John Smith
-        email:
-          type: string
-          format: email
-          description: Jury member email
-          example: john.smith@example.com
         created_at:
           type: string
           format: date-time
@@ -1269,27 +1261,20 @@ components:
     JuryInput:
       type: object
       required:
-        - name
-        - email
+        - label
       properties:
-        name:
+        label:
           type: string
-          description: Jury member name
+          description: Jury member label
           example: Dr. John Smith
-        email:
-          type: string
-          format: email
-          description: Jury member email
-          example: john.smith@example.com
 
     Session:
       type: object
       required:
         - id
-        - team_id
-        - jury_id
         - start_time
-        - end_time
+        - slot_duration
+        - time_between_slots
         - created_at
         - updated_at
       properties:
@@ -1297,24 +1282,19 @@ components:
           type: integer
           description: Session ID
           example: 1
-        team_id:
-          type: integer
-          description: ID of the team in the session
-          example: 1
-        jury_id:
-          type: integer
-          description: ID of the jury in the session
-          example: 1
         start_time:
           type: string
           format: date-time
           description: Session start time
           example: "2024-03-01T09:00:00Z"
-        end_time:
-          type: string
-          format: date-time
-          description: Session end time
-          example: "2024-03-01T10:00:00Z"
+        slot_duration:
+          type: integer
+          description: Duration of each slot in minutes
+          example: 60
+        time_between_slots:
+          type: integer
+          description: Gap between slots in minutes
+          example: 15
         created_at:
           type: string
           format: date-time
@@ -1329,29 +1309,23 @@ components:
     SessionInput:
       type: object
       required:
-        - team_id
-        - jury_id
         - start_time
-        - end_time
+        - slot_duration
+        - time_between_slots
       properties:
-        team_id:
-          type: integer
-          description: ID of the team in the session
-          example: 1
-        jury_id:
-          type: integer
-          description: ID of the jury in the session
-          example: 1
         start_time:
           type: string
           format: date-time
           description: Session start time
           example: "2024-03-01T09:00:00Z"
-        end_time:
-          type: string
-          format: date-time
-          description: Session end time
-          example: "2024-03-01T10:00:00Z"
+        slot_duration:
+          type: integer
+          description: Duration of each slot in minutes
+          example: 60
+        time_between_slots:
+          type: integer
+          description: Gap between slots in minutes
+          example: 15
 
     RoomSession:
       type: object
@@ -1359,6 +1333,8 @@ components:
         - id
         - room_id
         - session_id
+        - start_time
+        - end_time
         - created_at
         - updated_at
       properties:
@@ -1374,6 +1350,16 @@ components:
           type: integer
           description: ID of the session
           example: 1
+        start_time:
+          type: string
+          format: date-time
+          description: Room session start time
+          example: "2024-03-01T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Room session end time
+          example: "2024-03-01T10:00:00Z"
         created_at:
           type: string
           format: date-time
@@ -1390,6 +1376,8 @@ components:
       required:
         - room_id
         - session_id
+        - start_time
+        - end_time
       properties:
         room_id:
           type: integer
@@ -1399,3 +1387,13 @@ components:
           type: integer
           description: ID of the session
           example: 1
+        start_time:
+          type: string
+          format: date-time
+          description: Room session start time
+          example: "2024-03-01T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Room session end time
+          example: "2024-03-01T10:00:00Z"
