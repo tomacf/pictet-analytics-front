@@ -833,9 +833,10 @@ paths:
         - `teams` - Include associated teams (id, label)
         - `juries` - Include associated juries (id, label)
         - `rooms` - Include associated rooms (id, label)
+        - `room_sessions` - Include all room sessions for this session with expanded room, teams, and juries
         - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
 
-        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
+        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
       operationId: getSessionById
       parameters:
         - name: id
@@ -848,10 +849,10 @@ paths:
         - name: expand
           in: query
           required: false
-          description: Comma-separated list of fields to expand (teams, juries, rooms, summary)
+          description: Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
           schema:
             type: string
-            example: "teams,juries,rooms,summary"
+            example: "teams,juries,rooms,room_sessions"
       responses:
         '200':
           description: Session found
@@ -1066,12 +1067,314 @@ paths:
               schema:
                 type: string
 
+  /api/sessions/{id}/room-sessions:
+    post:
+      tags:
+        - Sessions
+      summary: Create a room session for a session (Preferred)
+      description: |
+        **This is the preferred endpoint for creating room sessions scoped to a session.**
+
+        Creates a new room session for a specific session, associating teams and juries.
+        - Validates that the room exists
+        - Validates that team_ids and jury_ids belong to the parent session
+        - Creates the room session with the specified parameters
+        - Associates teams and juries with the room session
+        - Returns the expanded room session (with room, session, teams, juries)
+
+        **Note:** For backward compatibility, the legacy /api/room-sessions endpoint is still available.
+      operationId: createRoomSessionForSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - room_id
+                - start_time
+                - end_time
+              properties:
+                room_id:
+                  type: integer
+                  description: ID of the room
+                  example: 1
+                start_time:
+                  type: string
+                  format: date-time
+                  description: Start time of the room session
+                  example: "2024-03-01T09:00:00Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  description: End time of the room session
+                  example: "2024-03-01T10:00:00Z"
+                team_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of teams to associate with the room session (must be associated with the parent session)
+                  example: [1, 2]
+                jury_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of juries to associate with the room session (must be associated with the parent session)
+                  example: [1]
+            examples:
+              roomSessionWithRelations:
+                summary: Room session with teams and juries
+                value:
+                  room_id: 1
+                  start_time: "2024-03-01T09:00:00Z"
+                  end_time: "2024-03-01T10:00:00Z"
+                  team_ids: [1, 2]
+                  jury_ids: [1]
+      responses:
+        '201':
+          description: Room session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomSessionExpanded'
+              examples:
+                roomSessionCreated:
+                  summary: Room session created
+                  value:
+                    id: 1
+                    room_id: 1
+                    session_id: 1
+                    start_time: "2024-03-01T09:00:00Z"
+                    end_time: "2024-03-01T10:00:00Z"
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T08:00:00Z"
+                    room:
+                      id: 1
+                      label: "Room 101"
+                    session:
+                      id: 1
+                      label: "Morning Session"
+                    teams:
+                      - id: 1
+                        label: "Team Alpha"
+                      - id: 2
+                        label: "Team Beta"
+                    juries:
+                      - id: 1
+                        label: "Jury Smith"
+        '400':
+          description: Invalid request body or validation failure
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/sessions/{id}/room-sessions/{roomSessionId}:
+    put:
+      tags:
+        - Sessions
+      summary: Update a room session for a session (Preferred)
+      description: |
+        **This is the preferred endpoint for updating room sessions scoped to a session.**
+
+        Updates an existing room session that belongs to a specific session.
+        - Verifies that the room session belongs to the specified session
+        - Validates that the room exists
+        - Validates that team_ids and jury_ids belong to the parent session
+        - Updates the room session with the specified parameters
+        - Performs a transactional replace of teams and juries associations
+        - Returns the expanded room session (with room, session, teams, juries)
+
+        **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
+      operationId: updateRoomSessionForSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+        - name: roomSessionId
+          in: path
+          required: true
+          description: Room session ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - room_id
+                - start_time
+                - end_time
+              properties:
+                room_id:
+                  type: integer
+                  description: ID of the room
+                  example: 1
+                start_time:
+                  type: string
+                  format: date-time
+                  description: Start time of the room session
+                  example: "2024-03-01T09:00:00Z"
+                end_time:
+                  type: string
+                  format: date-time
+                  description: End time of the room session
+                  example: "2024-03-01T10:00:00Z"
+                team_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of teams to associate with the room session (must be associated with the parent session)
+                  example: [1, 2, 3]
+                jury_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: IDs of juries to associate with the room session (must be associated with the parent session)
+                  example: [1, 2]
+            examples:
+              roomSessionUpdate:
+                summary: Updated room session
+                value:
+                  room_id: 1
+                  start_time: "2024-03-01T09:30:00Z"
+                  end_time: "2024-03-01T10:30:00Z"
+                  team_ids: [1, 2, 3]
+                  jury_ids: [1, 2]
+      responses:
+        '200':
+          description: Room session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomSessionExpanded'
+              examples:
+                roomSessionUpdated:
+                  summary: Room session updated
+                  value:
+                    id: 1
+                    room_id: 1
+                    session_id: 1
+                    start_time: "2024-03-01T09:30:00Z"
+                    end_time: "2024-03-01T10:30:00Z"
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+                    room:
+                      id: 1
+                      label: "Room 101"
+                    session:
+                      id: 1
+                      label: "Morning Session"
+                    teams:
+                      - id: 1
+                        label: "Team Alpha"
+                      - id: 2
+                        label: "Team Beta"
+                      - id: 3
+                        label: "Team Gamma"
+                    juries:
+                      - id: 1
+                        label: "Jury Smith"
+                      - id: 2
+                        label: "Jury Jones"
+        '400':
+          description: Invalid request body, validation failure, or room session doesn't belong to session
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Room session not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    delete:
+      tags:
+        - Sessions
+      summary: Delete a room session for a session (Preferred)
+      description: |
+        **This is the preferred endpoint for deleting room sessions scoped to a session.**
+
+        Deletes a room session that belongs to a specific session.
+        - Verifies that the room session belongs to the specified session
+        - Deletes the room session and all associated relationships (teams, juries)
+
+        **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
+      operationId: deleteRoomSessionForSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+        - name: roomSessionId
+          in: path
+          required: true
+          description: Room session ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '204':
+          description: Room session deleted successfully
+        '400':
+          description: Invalid ID parameter or room session doesn't belong to session
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Room session not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /api/room-sessions:
     post:
       tags:
         - Room Sessions
-      summary: Create a new room session
+      summary: Create a new room session (Legacy - use /api/sessions/{id}/room-sessions instead)
       description: |
+        **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions**
+
         Creates a new room session linking a room to a session with optional teams and juries.
 
         When team_ids or jury_ids are provided:
@@ -1334,8 +1637,11 @@ paths:
     delete:
       tags:
         - Room Sessions
-      summary: Delete a room session
-      description: Deletes a specific room session by its ID
+      summary: Delete a room session (Legacy - use /api/sessions/{id}/room-sessions/{roomSessionId} instead)
+      description: |
+        **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions/{roomSessionId}**
+
+        Deletes a specific room session by its ID
       operationId: deleteRoomSession
       parameters:
         - name: id
@@ -1364,8 +1670,10 @@ paths:
     put:
       tags:
         - Room Sessions
-      summary: Update a room session
+      summary: Update a room session (Legacy - use /api/sessions/{id}/room-sessions/{roomSessionId} instead)
       description: |
+        **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions/{roomSessionId}**
+
         Updates a room session with new room/time and replaces team/jury assignments in a transaction.
 
         This endpoint:
@@ -2020,6 +2328,21 @@ components:
             type: integer
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
+
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: "Team Alpha"
 
     SessionPlan:
       type: object
