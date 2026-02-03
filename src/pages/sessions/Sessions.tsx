@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { SessionsService, type Session, type SessionInput } from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
@@ -8,6 +9,7 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import '../teams/Teams.css';
 
 const Sessions = () => {
+  const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -119,9 +121,14 @@ const Sessions = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Sessions</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          Create Session
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={() => navigate('/sessions/wizard')} className="btn btn-primary">
+            Scheduling Wizard
+          </button>
+          <button onClick={handleCreate} className="btn btn-primary">
+            Create Session
+          </button>
+        </div>
       </div>
 
       <DataTable
