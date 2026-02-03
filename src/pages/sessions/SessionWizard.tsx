@@ -9,7 +9,6 @@ import {
   type Room,
   type Team,
   type Jury,
-  type RoomSessionInput,
 } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
@@ -229,14 +228,32 @@ const SessionWizard = () => {
 
   // Export JSON
   const handleExportJSON = () => {
-    const roomSessions: RoomSessionInput[] = wizardState.scheduleSlots.map(slot => ({
-      room_id: slot.roomId,
-      session_id: wizardState.sessionId!,
-      start_time: slot.startTime,
-      end_time: slot.endTime,
-    }));
+    // Get unassigned teams and juries
+    const unassignedTeamIds = getUnassignedTeamIds();
+    const unassignedJuryIds = getUnassignedJuryIds();
 
-    const json = JSON.stringify(roomSessions, null, 2);
+    // Build the full session plan object
+    const sessionPlan = {
+      session_id: wizardState.sessionId!,
+      selected_room_ids: wizardState.selectedRoomIds,
+      selected_team_ids: wizardState.selectedTeamIds,
+      selected_jury_ids: wizardState.selectedJuryIds,
+      teams_per_room: wizardState.teamsPerRoom,
+      juries_per_room: wizardState.juriesPerRoom,
+      slots: wizardState.scheduleSlots.map(slot => ({
+        room_id: slot.roomId,
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+        team_ids: slot.teamIds,
+        jury_ids: slot.juryIds,
+      })),
+      unassigned_warnings: {
+        unassigned_team_ids: unassignedTeamIds,
+        unassigned_jury_ids: unassignedJuryIds,
+      },
+    };
+
+    const json = JSON.stringify(sessionPlan, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
