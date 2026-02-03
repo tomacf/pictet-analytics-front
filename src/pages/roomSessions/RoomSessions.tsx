@@ -18,7 +18,7 @@ const RoomSessions = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState<RoomSessionInput & { team_ids?: number[], jury_ids?: number[] }>({
+  const [formData, setFormData] = useState<RoomSessionInput>({
     room_id: 0,
     session_id: 0,
     start_time: '',
@@ -403,9 +403,9 @@ const RoomSessions = () => {
                   <label key={team.id} className="checkbox-label">
                     <input
                       type="checkbox"
-                      checked={formData.team_ids?.includes(team.id) || false}
+                      checked={formData.team_ids?.includes(team.id) ?? false}
                       onChange={(e) => {
-                        const currentTeamIds = formData.team_ids || [];
+                        const currentTeamIds = formData.team_ids ?? [];
                         const newIds = e.target.checked
                           ? [...currentTeamIds, team.id]
                           : currentTeamIds.filter((id) => id !== team.id);
@@ -453,9 +453,9 @@ const RoomSessions = () => {
                   <label key={jury.id} className="checkbox-label">
                     <input
                       type="checkbox"
-                      checked={formData.jury_ids?.includes(jury.id) || false}
+                      checked={formData.jury_ids?.includes(jury.id) ?? false}
                       onChange={(e) => {
-                        const currentJuryIds = formData.jury_ids || [];
+                        const currentJuryIds = formData.jury_ids ?? [];
                         const newIds = e.target.checked
                           ? [...currentJuryIds, jury.id]
                           : currentJuryIds.filter((id) => id !== jury.id);
