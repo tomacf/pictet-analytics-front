@@ -5,20 +5,32 @@
 import type { RoomSession } from '../models/RoomSession';
 import type { RoomSessionExpanded } from '../models/RoomSessionExpanded';
 import type { RoomSessionInput } from '../models/RoomSessionInput';
+import type { RoomSessionUpdateInput } from '../models/RoomSessionUpdateInput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class RoomSessionsService {
     /**
      * Create a new room session
-     * Creates a new room session linking a room to a session
+     * Creates a new room session linking a room to a session with optional teams and juries.
+     *
+     * When team_ids or jury_ids are provided:
+     * - Creates the room session
+     * - Associates teams and juries with the room session
+     * - Automatically upserts into session_teams, session_juries, and session_rooms if the entities are not already linked to the parent session
+     * - Returns the room session with expanded data (room, session, teams, juries)
+     *
+     * When team_ids and jury_ids are not provided:
+     * - Creates a basic room session (backward compatible)
+     * - Returns the room session without expanded data
+     *
      * @param requestBody
-     * @returns RoomSession Room session created successfully
+     * @returns any Room session created successfully
      * @throws ApiError
      */
     public static createRoomSession(
         requestBody: RoomSessionInput,
-    ): CancelablePromise<RoomSession> {
+    ): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/room-sessions',
@@ -110,6 +122,40 @@ export class RoomSessionsService {
             },
             errors: {
                 400: `Invalid ID parameter`,
+                500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Update a room session
+     * Updates a room session with new room/time and replaces team/jury assignments in a transaction.
+     *
+     * This endpoint:
+     * - Updates the room session with new room_id, session_id, start_time, and end_time
+     * - Replaces all team and jury associations (removes old ones, adds new ones)
+     * - Automatically upserts into session_teams, session_juries, and session_rooms if the entities are not already linked to the parent session
+     * - Returns the updated room session with expanded data (room, session, teams, juries)
+     *
+     * @param id Room session ID
+     * @param requestBody
+     * @returns RoomSessionExpanded Room session updated successfully
+     * @throws ApiError
+     */
+    public static updateRoomSession(
+        id: number,
+        requestBody: RoomSessionUpdateInput,
+    ): CancelablePromise<RoomSessionExpanded> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/room-sessions/{id}',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid request body or ID parameter`,
+                404: `Room session not found`,
                 500: `Internal server error`,
             },
         });

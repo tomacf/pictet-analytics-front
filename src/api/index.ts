@@ -15,6 +15,7 @@ export type { RoomInput } from './models/RoomInput';
 export type { RoomSession } from './models/RoomSession';
 export type { RoomSessionExpanded } from './models/RoomSessionExpanded';
 export type { RoomSessionInput } from './models/RoomSessionInput';
+export type { RoomSessionUpdateInput } from './models/RoomSessionUpdateInput';
 export type { Session } from './models/Session';
 export type { SessionInput } from './models/SessionInput';
 export type { SessionPlan } from './models/SessionPlan';

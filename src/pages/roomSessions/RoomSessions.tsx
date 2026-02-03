@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { RoomSessionsService, type RoomSessionExpanded, type RoomSessionInput, RoomsService, SessionsService, type Room, type Session } from '../../apiConfig';
+import { RoomSessionsService, type RoomSessionExpanded, type RoomSessionInput, type RoomSessionUpdateInput, RoomsService, SessionsService, TeamsService, JuriesService, type Room, type Session, type Team, type Jury } from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
@@ -12,14 +12,19 @@ const RoomSessions = () => {
   const [roomSessions, setRoomSessions] = useState<RoomSessionExpanded[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [juries, setJuries] = useState<Jury[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [formData, setFormData] = useState<RoomSessionInput>({
     room_id: 0,
     session_id: 0,
     start_time: '',
     end_time: '',
+    team_ids: [],
+    jury_ids: [],
   });
 
   // Filter states
@@ -32,14 +37,18 @@ const RoomSessions = () => {
     try {
       setLoading(true);
       setError(null);
-      const [roomSessionsData, roomsData, sessionsData] = await Promise.all([
+      const [roomSessionsData, roomsData, sessionsData, teamsData, juriesData] = await Promise.all([
         RoomSessionsService.getAllRoomSessions('session,room,teams,juries'),
         RoomsService.getAllRooms(),
         SessionsService.getAllSessions(),
+        TeamsService.getAllTeams(),
+        JuriesService.getAllJuries(),
       ]);
       setRoomSessions(roomSessionsData as RoomSessionExpanded[]);
       setRooms(roomsData);
       setSessions(sessionsData);
+      setTeams(teamsData);
+      setJuries(juriesData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch room sessions';
       setError(message);
@@ -54,11 +63,27 @@ const RoomSessions = () => {
   }, []);
 
   const handleCreate = () => {
+    setEditingId(null);
     setFormData({
       room_id: 0,
       session_id: 0,
       start_time: '',
       end_time: '',
+      team_ids: [],
+      jury_ids: [],
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (roomSession: RoomSessionExpanded) => {
+    setEditingId(roomSession.id);
+    setFormData({
+      room_id: roomSession.room_id,
+      session_id: roomSession.session_id,
+      start_time: roomSession.start_time,
+      end_time: roomSession.end_time,
+      team_ids: roomSession.teams?.map(t => t.id) || [],
+      jury_ids: roomSession.juries?.map(j => j.id) || [],
     });
     setIsModalOpen(true);
   };
@@ -85,8 +110,23 @@ const RoomSessions = () => {
     e.preventDefault();
 
     try {
-      await RoomSessionsService.createRoomSession(formData);
-      toast.success('Room session created successfully');
+      if (editingId) {
+        // Update existing room session
+        const updateData: RoomSessionUpdateInput = {
+          room_id: formData.room_id,
+          session_id: formData.session_id,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
+          team_ids: formData.team_ids,
+          jury_ids: formData.jury_ids,
+        };
+        await RoomSessionsService.updateRoomSession(editingId, updateData);
+        toast.success('Room session updated successfully');
+      } else {
+        // Create new room session
+        await RoomSessionsService.createRoomSession(formData);
+        toast.success('Room session created successfully');
+      }
       setIsModalOpen(false);
       fetchRoomSessions();
     } catch (err) {
@@ -257,15 +297,20 @@ const RoomSessions = () => {
       <DataTable
         columns={columns}
         data={filteredAndSortedRoomSessions}
+        onEdit={handleEdit}
         onDelete={handleDelete}
       />
 
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Create Room Session"
+        title={editingId ? "Edit Room Session" : "Create Room Session"}
       >
         <form onSubmit={handleSubmit} className="form">
+          <div className="warning-message">
+            <strong>⚠️ Note:</strong> Adding teams/juries/room here will also update the parent Session's selected teams/juries/rooms for consistency.
+          </div>
+
           <div className="form-group">
             <label htmlFor="room_id">Room</label>
             <select
@@ -326,12 +371,112 @@ const RoomSessions = () => {
             />
           </div>
 
+          <div className="form-group">
+            <div className="form-group-header">
+              <label>Select Teams</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allTeamIds = teams.map((team) => team.id);
+                    setFormData({ ...formData, team_ids: allTeamIds });
+                  }}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setFormData({ ...formData, team_ids: [] });
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="checkbox-group">
+              {teams.length > 0 ? (
+                teams.map((team) => (
+                  <label key={team.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.team_ids?.includes(team.id) ?? false}
+                      onChange={(e) => {
+                        const currentTeamIds = formData.team_ids ?? [];
+                        const newIds = e.target.checked
+                          ? [...currentTeamIds, team.id]
+                          : currentTeamIds.filter((id) => id !== team.id);
+                        setFormData({ ...formData, team_ids: newIds });
+                      }}
+                    />
+                    {team.label}
+                  </label>
+                ))
+              ) : (
+                <p className="no-data-text">No teams available</p>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <div className="form-group-header">
+              <label>Select Juries</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allJuryIds = juries.map((jury) => jury.id);
+                    setFormData({ ...formData, jury_ids: allJuryIds });
+                  }}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setFormData({ ...formData, jury_ids: [] });
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="checkbox-group">
+              {juries.length > 0 ? (
+                juries.map((jury) => (
+                  <label key={jury.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.jury_ids?.includes(jury.id) ?? false}
+                      onChange={(e) => {
+                        const currentJuryIds = formData.jury_ids ?? [];
+                        const newIds = e.target.checked
+                          ? [...currentJuryIds, jury.id]
+                          : currentJuryIds.filter((id) => id !== jury.id);
+                        setFormData({ ...formData, jury_ids: newIds });
+                      }}
+                    />
+                    {jury.label}
+                  </label>
+                ))
+              ) : (
+                <p className="no-data-text">No juries available</p>
+              )}
+            </div>
+          </div>
+
           <div className="form-actions">
             <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              Create
+              {editingId ? 'Update' : 'Create'}
             </button>
           </div>
         </form>

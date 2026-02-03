@@ -2,7 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type RoomSessionInput = {
+export type RoomSessionUpdateInput = {
     /**
      * ID of the room
      */
@@ -20,11 +20,11 @@ export type RoomSessionInput = {
      */
     end_time: string;
     /**
-     * Optional array of team IDs to associate with this room session
+     * Array of team IDs to associate with this room session (replaces existing)
      */
     team_ids?: Array<number>;
     /**
-     * Optional array of jury IDs to associate with this room session
+     * Array of jury IDs to associate with this room session (replaces existing)
      */
     jury_ids?: Array<number>;
 };
