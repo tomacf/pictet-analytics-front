@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { SessionsService, type SessionExpanded, type RoomSessionExpanded } from '../../apiConfig';
@@ -18,6 +18,23 @@ interface RoomSessionFormData {
   jury_ids: number[];
 }
 
+// Helper function to convert ISO string to local datetime-local format
+const isoToLocalDatetimeInput = (isoString: string): string => {
+  if (!isoString) return '';
+  // Create date from ISO string and format for datetime-local input
+  const date = new Date(isoString);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60 * 1000);
+  return localDate.toISOString().slice(0, 16);
+};
+
+// Helper function to convert datetime-local input to ISO string
+const localDatetimeInputToISO = (localDatetime: string): string => {
+  if (!localDatetime) return '';
+  // The datetime-local input value is in local time, so we need to convert to UTC
+  return new Date(localDatetime).toISOString();
+};
+
 const SessionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -35,7 +52,7 @@ const SessionDetail = () => {
     jury_ids: [],
   });
 
-  const fetchSessionDetails = async () => {
+  const fetchSessionDetails = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -53,12 +70,11 @@ const SessionDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchSessionDetails();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [fetchSessionDetails]);
 
   const handleCreateRoomSession = () => {
     setEditingRoomSession(null);
@@ -335,8 +351,8 @@ const SessionDetail = () => {
             <input
               type="datetime-local"
               id="start_time"
-              value={formData.start_time ? new Date(formData.start_time).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, start_time: new Date(e.target.value).toISOString() })}
+              value={isoToLocalDatetimeInput(formData.start_time)}
+              onChange={(e) => setFormData({ ...formData, start_time: localDatetimeInputToISO(e.target.value) })}
               required
               className="form-input"
               disabled={saving}
@@ -348,8 +364,8 @@ const SessionDetail = () => {
             <input
               type="datetime-local"
               id="end_time"
-              value={formData.end_time ? new Date(formData.end_time).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, end_time: new Date(e.target.value).toISOString() })}
+              value={isoToLocalDatetimeInput(formData.end_time)}
+              onChange={(e) => setFormData({ ...formData, end_time: localDatetimeInputToISO(e.target.value) })}
               required
               className="form-input"
               disabled={saving}
