@@ -73,6 +73,9 @@ const SessionWizard = () => {
     scheduleSlots: [],
   });
 
+  // State for adding new slots
+  const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
+
   // Fetch resources on mount
   useEffect(() => {
     const fetchResources = async () => {
@@ -255,6 +258,32 @@ const SessionWizard = () => {
     const updatedSlots = [...wizardState.scheduleSlots];
     updatedSlots[slotIdx].juryIds = juryIds;
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+  };
+
+  // Remove a slot
+  const removeSlot = (slotIdx: number) => {
+    const updatedSlots = wizardState.scheduleSlots.filter((_, idx) => idx !== slotIdx);
+    setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+  };
+
+  // Add a new slot to a room
+  const addSlot = (roomId: number, startTime: string, endTime: string) => {
+    // Find the highest slot index for this room
+    const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
+    const maxSlotIndex = roomSlots.length > 0 
+      ? Math.max(...roomSlots.map((s) => s.slotIndex)) 
+      : -1;
+    
+    const newSlot: ScheduleSlot = {
+      roomId,
+      slotIndex: maxSlotIndex + 1,
+      startTime,
+      endTime,
+      teamIds: [],
+      juryIds: [],
+    };
+
+    setWizardState({ ...wizardState, scheduleSlots: [...wizardState.scheduleSlots, newSlot] });
   };
 
   // Helper function to get all unique team IDs assigned to a room's slots
@@ -664,11 +693,21 @@ const SessionWizard = () => {
                       return (
                         <div key={idx} className="schedule-slot">
                           <div className="slot-header">
-                            <strong>Slot {slot.slotIndex + 1}</strong>
-                            <span className="slot-time">
-                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
-                              {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </span>
+                            <div className="slot-header-left">
+                              <strong>Slot {slot.slotIndex + 1}</strong>
+                              <span className="slot-time">
+                                {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                                {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeSlot(slotGlobalIdx)}
+                              className="btn btn-danger-small"
+                              title="Remove this slot"
+                            >
+                              Remove
+                            </button>
                           </div>
                           <div className="slot-content">
                             <div className="form-group">
@@ -685,11 +724,13 @@ const SessionWizard = () => {
                                 }}
                                 className="form-input multi-select"
                               >
-                                {teams.map((team) => (
-                                  <option key={team.id} value={team.id}>
-                                    {team.label}
-                                  </option>
-                                ))}
+                                {teams
+                                  .filter((team) => wizardState.selectedTeamIds.includes(team.id))
+                                  .map((team) => (
+                                    <option key={team.id} value={team.id}>
+                                      {team.label}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
                             <div className="form-group">
@@ -706,17 +747,89 @@ const SessionWizard = () => {
                                 }}
                                 className="form-input multi-select"
                               >
-                                {juries.map((jury) => (
-                                  <option key={jury.id} value={jury.id}>
-                                    {jury.label}
-                                  </option>
-                                ))}
+                                {juries
+                                  .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
+                                  .map((jury) => (
+                                    <option key={jury.id} value={jury.id}>
+                                      {jury.label}
+                                    </option>
+                                  ))}
                               </select>
                             </div>
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Add Slot Form */}
+                  <div className="add-slot-form">
+                    <h4>Add New Slot</h4>
+                    <div className="add-slot-inputs">
+                      <div className="form-group">
+                        <label htmlFor={`start-time-${roomId}`}>Start Time</label>
+                        <input
+                          type="datetime-local"
+                          id={`start-time-${roomId}`}
+                          value={
+                            newSlotForms[roomId]?.startTime
+                              ? new Date(newSlotForms[roomId].startTime).toISOString().slice(0, 16)
+                              : ''
+                          }
+                          onChange={(e) => {
+                            setNewSlotForms({
+                              ...newSlotForms,
+                              [roomId]: {
+                                ...newSlotForms[roomId],
+                                startTime: new Date(e.target.value).toISOString(),
+                              },
+                            });
+                          }}
+                          className="form-input"
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor={`end-time-${roomId}`}>End Time</label>
+                        <input
+                          type="datetime-local"
+                          id={`end-time-${roomId}`}
+                          value={
+                            newSlotForms[roomId]?.endTime
+                              ? new Date(newSlotForms[roomId].endTime).toISOString().slice(0, 16)
+                              : ''
+                          }
+                          onChange={(e) => {
+                            setNewSlotForms({
+                              ...newSlotForms,
+                              [roomId]: {
+                                ...newSlotForms[roomId],
+                                endTime: new Date(e.target.value).toISOString(),
+                              },
+                            });
+                          }}
+                          className="form-input"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const form = newSlotForms[roomId];
+                          if (form?.startTime && form?.endTime) {
+                            addSlot(roomId, form.startTime, form.endTime);
+                            // Clear the form after adding
+                            setNewSlotForms({
+                              ...newSlotForms,
+                              [roomId]: { startTime: '', endTime: '' },
+                            });
+                          } else {
+                            toast.error('Please enter both start and end times');
+                          }
+                        }}
+                        className="btn btn-secondary"
+                      >
+                        Add Slot
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
