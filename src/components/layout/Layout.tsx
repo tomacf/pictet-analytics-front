@@ -25,9 +25,10 @@ const Layout = () => {
             <li className={isActive('/juries') ? 'active' : ''}>
               <Link to="/juries">Juries</Link>
             </li>
-            <li className={isActive('/room-sessions') ? 'active' : ''}>
+            {/* Room Sessions are now managed inside Session Detail pages */}
+            {/* <li className={isActive('/room-sessions') ? 'active' : ''}>
               <Link to="/room-sessions">Room Sessions</Link>
-            </li>
+            </li> */}
             <li className={isActive('/sessions') ? 'active' : ''}>
               <Link to="/sessions">Sessions</Link>
             </li>
