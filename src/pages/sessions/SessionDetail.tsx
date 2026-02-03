@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { SessionsService, type SessionExpanded, type RoomSessionExpanded } from '../../apiConfig';
+import { 
+  SessionsService, 
+  TeamsService, 
+  JuriesService, 
+  RoomsService, 
+  type SessionExpanded, 
+  type RoomSessionExpanded,
+  type Team,
+  type Jury,
+  type Room
+} from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
@@ -16,6 +26,12 @@ interface RoomSessionFormData {
   end_time: string;
   team_ids: number[];
   jury_ids: number[];
+}
+
+interface SessionScopeFormData {
+  team_ids: number[];
+  jury_ids: number[];
+  room_ids: number[];
 }
 
 // Helper function to convert ISO string to local datetime-local format
@@ -42,6 +58,8 @@ const SessionDetail = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Room Session Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRoomSession, setEditingRoomSession] = useState<RoomSessionExpanded | null>(null);
   const [formData, setFormData] = useState<RoomSessionFormData>({
@@ -50,6 +68,17 @@ const SessionDetail = () => {
     end_time: '',
     team_ids: [],
     jury_ids: [],
+  });
+
+  // Session Scope Modal State
+  const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const [allTeams, setAllTeams] = useState<Team[]>([]);
+  const [allJuries, setAllJuries] = useState<Jury[]>([]);
+  const [allRooms, setAllRooms] = useState<Room[]>([]);
+  const [scopeFormData, setScopeFormData] = useState<SessionScopeFormData>({
+    team_ids: [],
+    jury_ids: [],
+    room_ids: [],
   });
 
   const fetchSessionDetails = useCallback(async () => {
@@ -153,6 +182,69 @@ const SessionDetail = () => {
     }
   };
 
+  // Session Scope Handlers
+  const handleEditSessionScope = async () => {
+    try {
+      // Load all available teams, juries, and rooms
+      const [teamsData, juriesData, roomsData] = await Promise.all([
+        TeamsService.getAllTeams(),
+        JuriesService.getAllJuries(),
+        RoomsService.getAllRooms(),
+      ]);
+      
+      setAllTeams(teamsData);
+      setAllJuries(juriesData);
+      setAllRooms(roomsData);
+      
+      // Pre-fill with current session scope
+      setScopeFormData({
+        team_ids: session?.teams?.map(t => t.id) || [],
+        jury_ids: session?.juries?.map(j => j.id) || [],
+        room_ids: session?.rooms?.map(r => r.id) || [],
+      });
+      
+      setIsScopeModalOpen(true);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load data';
+      toast.error(message);
+    }
+  };
+
+  const handleSaveSessionScope = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!id || !session) return;
+
+    try {
+      setSaving(true);
+      
+      // Update session with new scope
+      await SessionsService.updateSession(parseInt(id), {
+        label: session.label,
+        start_time: session.start_time,
+        slot_duration: session.slot_duration,
+        time_between_slots: session.time_between_slots,
+        team_ids: scopeFormData.team_ids,
+        jury_ids: scopeFormData.jury_ids,
+        room_ids: scopeFormData.room_ids,
+      });
+      
+      toast.success('Session scope updated successfully');
+      setIsScopeModalOpen(false);
+      fetchSessionDetails();
+    } catch (err: any) {
+      // Handle 409 Conflict errors specially
+      if (err?.status === 409 || err?.message?.includes('409')) {
+        const message = err instanceof Error ? err.message : 'Cannot remove items that are in use by room sessions';
+        toast.error(message, { autoClose: 8000 });
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to update session scope';
+        toast.error(message);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const roomSessionColumns = [
     { key: 'id', label: 'ID' },
     {
@@ -249,7 +341,12 @@ const SessionDetail = () => {
 
       {/* Teams and Juries Section */}
       <div className="session-details-section">
-        <h2>Associated Teams & Juries</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+          <h2>Associated Teams & Juries</h2>
+          <button onClick={handleEditSessionScope} className="btn btn-secondary">
+            Edit Session Scope
+          </button>
+        </div>
         <div className="associations-grid">
           <div className="association-group">
             <h3>Teams</h3>
@@ -491,6 +588,194 @@ const SessionDetail = () => {
               disabled={saving}
             >
               {saving ? 'Saving...' : (editingRoomSession ? 'Update' : 'Create')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Modal for Edit Session Scope */}
+      <Modal
+        isOpen={isScopeModalOpen}
+        onClose={() => setIsScopeModalOpen(false)}
+        title="Edit Session Scope"
+      >
+        <form onSubmit={handleSaveSessionScope} className="form">
+          <div className="warning-message">
+            <strong>⚠️ Warning:</strong> Removing teams, juries, or rooms that are currently used by existing room sessions may fail. 
+            If you encounter an error, you'll need to update or remove those room sessions first before removing items from the session scope.
+          </div>
+
+          <div className="form-group">
+            <div className="form-group-header">
+              <label>Select Teams</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allTeamIds = allTeams.map((team) => team.id);
+                    setScopeFormData({ ...scopeFormData, team_ids: allTeamIds });
+                  }}
+                  disabled={saving}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setScopeFormData({ ...scopeFormData, team_ids: [] });
+                  }}
+                  disabled={saving}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="checkbox-group">
+              {allTeams.length > 0 ? (
+                allTeams.map((team) => (
+                  <label key={team.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={scopeFormData.team_ids.includes(team.id)}
+                      onChange={(e) => {
+                        const newIds = e.target.checked
+                          ? [...scopeFormData.team_ids, team.id]
+                          : scopeFormData.team_ids.filter((id) => id !== team.id);
+                        setScopeFormData({ ...scopeFormData, team_ids: newIds });
+                      }}
+                      disabled={saving}
+                    />
+                    {team.label}
+                  </label>
+                ))
+              ) : (
+                <p className="no-data-text">No teams available</p>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <div className="form-group-header">
+              <label>Select Juries</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allJuryIds = allJuries.map((jury) => jury.id);
+                    setScopeFormData({ ...scopeFormData, jury_ids: allJuryIds });
+                  }}
+                  disabled={saving}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setScopeFormData({ ...scopeFormData, jury_ids: [] });
+                  }}
+                  disabled={saving}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="checkbox-group">
+              {allJuries.length > 0 ? (
+                allJuries.map((jury) => (
+                  <label key={jury.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={scopeFormData.jury_ids.includes(jury.id)}
+                      onChange={(e) => {
+                        const newIds = e.target.checked
+                          ? [...scopeFormData.jury_ids, jury.id]
+                          : scopeFormData.jury_ids.filter((id) => id !== jury.id);
+                        setScopeFormData({ ...scopeFormData, jury_ids: newIds });
+                      }}
+                      disabled={saving}
+                    />
+                    {jury.label}
+                  </label>
+                ))
+              ) : (
+                <p className="no-data-text">No juries available</p>
+              )}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <div className="form-group-header">
+              <label>Select Rooms</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allRoomIds = allRooms.map((room) => room.id);
+                    setScopeFormData({ ...scopeFormData, room_ids: allRoomIds });
+                  }}
+                  disabled={saving}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setScopeFormData({ ...scopeFormData, room_ids: [] });
+                  }}
+                  disabled={saving}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <div className="checkbox-group">
+              {allRooms.length > 0 ? (
+                allRooms.map((room) => (
+                  <label key={room.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={scopeFormData.room_ids.includes(room.id)}
+                      onChange={(e) => {
+                        const newIds = e.target.checked
+                          ? [...scopeFormData.room_ids, room.id]
+                          : scopeFormData.room_ids.filter((id) => id !== room.id);
+                        setScopeFormData({ ...scopeFormData, room_ids: newIds });
+                      }}
+                      disabled={saving}
+                    />
+                    {room.label}
+                  </label>
+                ))
+              ) : (
+                <p className="no-data-text">No rooms available</p>
+              )}
+            </div>
+          </div>
+
+          <div className="form-actions">
+            <button 
+              type="button" 
+              onClick={() => setIsScopeModalOpen(false)} 
+              className="btn btn-secondary"
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
