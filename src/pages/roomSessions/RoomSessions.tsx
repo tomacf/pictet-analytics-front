@@ -102,14 +102,16 @@ const RoomSessions = () => {
     // Apply session filter
     if (filterSession) {
       filtered = filtered.filter(rs => 
-        rs.session?.label.toLowerCase().includes(filterSession.toLowerCase())
+        rs.session?.label.toLowerCase().includes(filterSession.toLowerCase()) ||
+        `ID ${rs.session_id}`.toLowerCase().includes(filterSession.toLowerCase())
       );
     }
 
     // Apply room filter
     if (filterRoom) {
       filtered = filtered.filter(rs => 
-        rs.room?.label.toLowerCase().includes(filterRoom.toLowerCase())
+        rs.room?.label.toLowerCase().includes(filterRoom.toLowerCase()) ||
+        `ID ${rs.room_id}`.toLowerCase().includes(filterRoom.toLowerCase())
       );
     }
 
