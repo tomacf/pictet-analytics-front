@@ -297,8 +297,10 @@ const SessionWizard = () => {
       
       toast.success('Session plan saved successfully');
       
-      // Navigate to sessions list
-      navigate('/sessions');
+      // Navigate to sessions list after a short delay to allow users to see the success message
+      setTimeout(() => {
+        navigate('/sessions');
+      }, 1000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to save session plan';
       toast.error(message);
