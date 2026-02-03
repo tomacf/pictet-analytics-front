@@ -102,6 +102,11 @@ export class SessionsService {
     /**
      * Update an existing session
      * Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
+     *
+     * Can update session metadata (label, start_time, slot_duration, time_between_slots) and/or session scope (team_ids, jury_ids, room_ids).
+     * When team_ids, jury_ids, or room_ids are provided, they replace the existing associations.
+     * If removing items that are used by existing room sessions, the operation may fail with a 409 Conflict error.
+     *
      * @param id Session ID
      * @param requestBody
      * @returns Session Session updated successfully
@@ -121,6 +126,7 @@ export class SessionsService {
             mediaType: 'application/json',
             errors: {
                 400: `Invalid request body or ID parameter`,
+                409: `Conflict - Cannot remove teams, juries, or rooms that are in use by room sessions`,
                 500: `Internal server error`,
             },
         });
