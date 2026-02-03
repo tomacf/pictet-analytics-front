@@ -6,6 +6,7 @@ import Teams from './pages/teams/Teams';
 import Rooms from './pages/rooms/Rooms';
 import Juries from './pages/juries/Juries';
 import Sessions from './pages/sessions/Sessions';
+import SessionWizard from './pages/sessions/SessionWizard';
 import RoomSessions from './pages/roomSessions/RoomSessions';
 import './App.css';
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="rooms" element={<Rooms />} />
           <Route path="juries" element={<Juries />} />
           <Route path="sessions" element={<Sessions />} />
+          <Route path="sessions/wizard" element={<SessionWizard />} />
           <Route path="room-sessions" element={<RoomSessions />} />
         </Route>
       </Routes>
