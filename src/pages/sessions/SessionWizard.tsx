@@ -264,14 +264,12 @@ const SessionWizard = () => {
     // Create a map for O(1) lookups
     const itemsMap = new Map(items.map((item) => [item.id, item.label]));
     
-    const selectedLabels = ids
-      .map((id) => itemsMap.get(id) || `ID:${id}`)
-      .filter(Boolean);
-    
     return (
       <div className="preview-chips">
-        {selectedLabels.map((label, idx) => (
-          <span key={idx} className="preview-chip">{label}</span>
+        {ids.map((id) => (
+          <span key={id} className="preview-chip">
+            {itemsMap.get(id) || `ID:${id}`}
+          </span>
         ))}
       </div>
     );
