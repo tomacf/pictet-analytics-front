@@ -916,7 +916,12 @@ paths:
       tags:
         - Sessions
       summary: Update an existing session
-      description: Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
+      description: |
+        Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
+        
+        Can update session metadata (label, start_time, slot_duration, time_between_slots) and/or session scope (team_ids, jury_ids, room_ids).
+        When team_ids, jury_ids, or room_ids are provided, they replace the existing associations.
+        If removing items that are used by existing room sessions, the operation may fail with a 409 Conflict error.
       operationId: updateSession
       parameters:
         - name: id
@@ -940,6 +945,9 @@ paths:
                   start_time: "2024-03-01T09:30:00Z"
                   slot_duration: 90
                   time_between_slots: 20
+                  team_ids: [1, 2, 3]
+                  jury_ids: [1, 2]
+                  room_ids: [1, 2]
       responses:
         '200':
           description: Session updated successfully
@@ -964,6 +972,16 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: Conflict - Cannot remove teams, juries, or rooms that are in use by room sessions
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                conflict:
+                  summary: Conflict example
+                  value: "Cannot remove team 3: it is used by room sessions 5, 7, 9"
         '500':
           description: Internal server error
           content:
@@ -2048,6 +2066,24 @@ components:
           type: integer
           description: Gap between slots in minutes
           example: 15
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: Optional array of team IDs to associate with the session
+          example: [1, 2, 3]
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: Optional array of jury IDs to associate with the session
+          example: [1, 2]
+        room_ids:
+          type: array
+          items:
+            type: integer
+          description: Optional array of room IDs to associate with the session
+          example: [1, 2]
 
     SessionExpanded:
       type: object
