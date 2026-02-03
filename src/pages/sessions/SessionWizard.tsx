@@ -43,6 +43,11 @@ interface ScheduleSlot {
   juryIds: number[];
 }
 
+interface SelectableItem {
+  id: number;
+  label: string;
+}
+
 const SessionWizard = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -125,7 +130,7 @@ const SessionWizard = () => {
         });
         setWizardState({ ...wizardState, sessionId: session.id });
         toast.success('Session created successfully');
-      } catch (apiErr) {
+      } catch {
         // If API is unavailable, use mock session ID for demo
         console.warn('API unavailable, using mock session for demo');
         setWizardState({ ...wizardState, sessionId: 999 });
@@ -252,6 +257,74 @@ const SessionWizard = () => {
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
   };
 
+  // Helper function to get all unique team IDs assigned to a room's slots
+  const getRoomTeamIds = (roomId: number): number[] => {
+    const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
+    const teamIds = new Set<number>();
+    roomSlots.forEach((slot) => {
+      slot.teamIds.forEach((id) => teamIds.add(id));
+    });
+    return Array.from(teamIds);
+  };
+
+  // Helper function to get all unique jury IDs assigned to a room's slots
+  const getRoomJuryIds = (roomId: number): number[] => {
+    const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
+    const juryIds = new Set<number>();
+    roomSlots.forEach((slot) => {
+      slot.juryIds.forEach((id) => juryIds.add(id));
+    });
+    return Array.from(juryIds);
+  };
+
+  // Helper function to get all assigned team IDs across all slots
+  const getAllAssignedTeamIds = (): Set<number> => {
+    const assignedIds = new Set<number>();
+    wizardState.scheduleSlots.forEach((slot) => {
+      slot.teamIds.forEach((id) => assignedIds.add(id));
+    });
+    return assignedIds;
+  };
+
+  // Helper function to get all assigned jury IDs across all slots
+  const getAllAssignedJuryIds = (): Set<number> => {
+    const assignedIds = new Set<number>();
+    wizardState.scheduleSlots.forEach((slot) => {
+      slot.juryIds.forEach((id) => assignedIds.add(id));
+    });
+    return assignedIds;
+  };
+
+  // Helper function to get unassigned team IDs
+  const getUnassignedTeamIds = (): number[] => {
+    const assignedIds = getAllAssignedTeamIds();
+    return wizardState.selectedTeamIds.filter((id) => !assignedIds.has(id));
+  };
+
+  // Helper function to get unassigned jury IDs
+  const getUnassignedJuryIds = (): number[] => {
+    const assignedIds = getAllAssignedJuryIds();
+    return wizardState.selectedJuryIds.filter((id) => !assignedIds.has(id));
+  };
+
+  // Helper function to render preview summary
+  const renderPreviewSummary = (ids: number[], items: SelectableItem[]) => {
+    if (ids.length === 0) return <span className="preview-empty">None selected</span>;
+    
+    // Create a map for O(1) lookups
+    const itemsMap = new Map(items.map((item) => [item.id, item.label]));
+    
+    return (
+      <div className="preview-chips">
+        {ids.map((id) => (
+          <span key={id} className="preview-chip">
+            {itemsMap.get(id) || `ID:${id}`}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   if (loading && rooms.length === 0) return <LoadingSpinner />;
   if (error) return <ErrorDisplay message={error} onRetry={() => window.location.reload()} />;
 
@@ -312,7 +385,31 @@ const SessionWizard = () => {
           <h2>Step 2: Configure Schedule Parameters</h2>
           <form onSubmit={handleGenerateSchedule} className="form">
             <div className="form-group">
-              <label>Select Rooms</label>
+              <div className="form-group-header">
+                <label>Select Rooms</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allRoomIds = rooms.map((room) => room.id);
+                      setWizardState({ ...wizardState, selectedRoomIds: allRoomIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedRoomIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {rooms.map((room) => (
                   <label key={room.id} className="checkbox-label">
@@ -333,7 +430,31 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-group">
-              <label>Select Teams</label>
+              <div className="form-group-header">
+                <label>Select Teams</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allTeamIds = teams.map((team) => team.id);
+                      setWizardState({ ...wizardState, selectedTeamIds: allTeamIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedTeamIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {teams.map((team) => (
                   <label key={team.id} className="checkbox-label">
@@ -354,7 +475,31 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-group">
-              <label>Select Juries</label>
+              <div className="form-group-header">
+                <label>Select Juries</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allJuryIds = juries.map((jury) => jury.id);
+                      setWizardState({ ...wizardState, selectedJuryIds: allJuryIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedJuryIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {juries.map((jury) => (
                   <label key={jury.id} className="checkbox-label">
@@ -462,6 +607,32 @@ const SessionWizard = () => {
             Generated {wizardState.scheduleSlots.length} time slots across {wizardState.selectedRoomIds.length} room(s)
           </p>
 
+          {/* Unassigned Teams and Juries Warning Section */}
+          {(getUnassignedTeamIds().length > 0 || getUnassignedJuryIds().length > 0) && (
+            <div className="unassigned-warning">
+              <h3>⚠️ Unassigned Items</h3>
+              <p>The following teams and juries were selected for the session but are not assigned to any slot:</p>
+              <div className="unassigned-content">
+                {getUnassignedTeamIds().length > 0 && (
+                  <div className="unassigned-section">
+                    <strong>Teams:</strong>
+                    <div className="selection-preview">
+                      {renderPreviewSummary(getUnassignedTeamIds(), teams)}
+                    </div>
+                  </div>
+                )}
+                {getUnassignedJuryIds().length > 0 && (
+                  <div className="unassigned-section">
+                    <strong>Juries:</strong>
+                    <div className="selection-preview">
+                      {renderPreviewSummary(getUnassignedJuryIds(), juries)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="schedule-grid">
             {wizardState.selectedRoomIds.map((roomId) => {
               const room = rooms.find((r) => r.id === roomId);
@@ -470,6 +641,23 @@ const SessionWizard = () => {
               return (
                 <div key={roomId} className="room-schedule">
                   <h3>{room?.label || `Room ${roomId}`}</h3>
+                  
+                  {/* Room-level summary */}
+                  <div className="room-summary">
+                    <div className="room-summary-section">
+                      <strong>All Teams in Room:</strong>
+                      <div className="selection-preview">
+                        {renderPreviewSummary(getRoomTeamIds(roomId), teams)}
+                      </div>
+                    </div>
+                    <div className="room-summary-section">
+                      <strong>All Juries in Room:</strong>
+                      <div className="selection-preview">
+                        {renderPreviewSummary(getRoomJuryIds(roomId), juries)}
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="slots-list">
                     {roomSlots.map((slot, idx) => {
                       const slotGlobalIdx = wizardState.scheduleSlots.indexOf(slot);
@@ -485,6 +673,9 @@ const SessionWizard = () => {
                           <div className="slot-content">
                             <div className="form-group">
                               <label>Teams</label>
+                              <div className="selection-preview">
+                                {renderPreviewSummary(slot.teamIds, teams)}
+                              </div>
                               <select
                                 multiple
                                 value={slot.teamIds.map(String)}
@@ -503,6 +694,9 @@ const SessionWizard = () => {
                             </div>
                             <div className="form-group">
                               <label>Juries</label>
+                              <div className="selection-preview">
+                                {renderPreviewSummary(slot.juryIds, juries)}
+                              </div>
                               <select
                                 multiple
                                 value={slot.juryIds.map(String)}
