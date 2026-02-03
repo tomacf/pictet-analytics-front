@@ -185,18 +185,22 @@ const SessionWizard = () => {
         const slotEndTime = new Date(slotStartTime);
         slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
 
-        // Assign teams (round-robin)
+        // Assign teams (round-robin: cycles through teams if there are more slots than teams)
         const assignedTeams: number[] = [];
-        for (let i = 0; i < teamsPerRoom && teamIndex < totalTeams; i++) {
-          assignedTeams.push(selectedTeamIds[teamIndex % totalTeams]);
-          teamIndex++;
+        for (let i = 0; i < teamsPerRoom; i++) {
+          if (teamIndex < totalTeams * slotsPerRoom * selectedRoomIds.length) {
+            assignedTeams.push(selectedTeamIds[teamIndex % totalTeams]);
+            teamIndex++;
+          }
         }
 
-        // Assign juries (round-robin)
+        // Assign juries (round-robin: cycles through juries if there are more slots than juries)
         const assignedJuries: number[] = [];
-        for (let i = 0; i < juriesPerRoom && juryIndex < totalJuries; i++) {
-          assignedJuries.push(selectedJuryIds[juryIndex % totalJuries]);
-          juryIndex++;
+        for (let i = 0; i < juriesPerRoom; i++) {
+          if (juryIndex < totalJuries * slotsPerRoom * selectedRoomIds.length) {
+            assignedJuries.push(selectedJuryIds[juryIndex % totalJuries]);
+            juryIndex++;
+          }
         }
 
         if (assignedTeams.length > 0) {
@@ -474,7 +478,7 @@ const SessionWizard = () => {
                           <div className="slot-header">
                             <strong>Slot {slot.slotIndex + 1}</strong>
                             <span className="slot-time">
-                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - 
+                              {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                               {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
