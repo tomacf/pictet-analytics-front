@@ -883,6 +883,72 @@ paths:
               schema:
                 type: string
 
+  /api/sessions/{id}/plan:
+    post:
+      tags:
+        - Sessions
+      summary: Save a full session plan
+      description: |
+        Saves a complete session plan including session-level links (rooms, teams, juries) and slots.
+        Validates that all IDs exist and that slot team/jury IDs are subsets of the session selections.
+        Persists transactionally: upserts session_rooms/session_teams/session_juries, creates/updates room_sessions,
+        and creates room_session_teams and room_session_juries rows.
+      operationId: saveSessionPlan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionPlan'
+            examples:
+              sessionPlan:
+                summary: Example session plan
+                value:
+                  room_ids: [1, 2]
+                  team_ids: [1, 2, 3, 4]
+                  jury_ids: [1, 2]
+                  teams_per_room: 2
+                  juries_per_room: 1
+                  slots:
+                    - room_id: 1
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
+                      team_ids: [1, 2]
+                      jury_ids: [1]
+                    - room_id: 2
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
+                      team_ids: [3, 4]
+                      jury_ids: [2]
+      responses:
+        '200':
+          description: Session plan saved successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Session plan saved successfully
+        '400':
+          description: Invalid request body or ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error (e.g., validation failed, IDs not found)
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /api/room-sessions:
     post:
       tags:
@@ -1413,3 +1479,81 @@ components:
           format: date-time
           description: Room session end time
           example: "2024-03-01T10:00:00Z"
+
+    SessionPlan:
+      type: object
+      required:
+        - room_ids
+        - team_ids
+        - jury_ids
+        - teams_per_room
+        - juries_per_room
+        - slots
+      properties:
+        room_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of rooms associated with the session
+          example: [1, 2]
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of teams associated with the session
+          example: [1, 2, 3, 4]
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of juries associated with the session
+          example: [1, 2]
+        teams_per_room:
+          type: integer
+          description: Number of teams per room
+          example: 2
+        juries_per_room:
+          type: integer
+          description: Number of juries per room
+          example: 1
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionPlanSlot'
+          description: Array of time slots with room, team, and jury assignments
+
+    SessionPlanSlot:
+      type: object
+      required:
+        - room_id
+        - start_time
+        - end_time
+        - team_ids
+        - jury_ids
+      properties:
+        room_id:
+          type: integer
+          description: ID of the room for this slot
+          example: 1
+        start_time:
+          type: string
+          format: date-time
+          description: Slot start time
+          example: "2024-03-01T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Slot end time
+          example: "2024-03-01T10:00:00Z"
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of teams assigned to this slot (must be subset of session team_ids)
+          example: [1, 2]
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of juries assigned to this slot (must be subset of session jury_ids)
+          example: [1]
