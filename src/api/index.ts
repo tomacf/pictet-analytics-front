@@ -7,11 +7,13 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { IDLabel } from './models/IDLabel';
 export type { Jury } from './models/Jury';
 export type { JuryInput } from './models/JuryInput';
 export type { Room } from './models/Room';
 export type { RoomInput } from './models/RoomInput';
 export type { RoomSession } from './models/RoomSession';
+export type { RoomSessionExpanded } from './models/RoomSessionExpanded';
 export type { RoomSessionInput } from './models/RoomSessionInput';
 export type { Session } from './models/Session';
 export type { SessionInput } from './models/SessionInput';

@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { RoomSession } from '../models/RoomSession';
+import type { RoomSessionExpanded } from '../models/RoomSessionExpanded';
 import type { RoomSessionInput } from '../models/RoomSessionInput';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -31,14 +32,27 @@ export class RoomSessionsService {
     }
     /**
      * Get all room sessions
-     * Retrieves a list of all room sessions
-     * @returns RoomSession List of room sessions
+     * Retrieves a list of all room sessions. Optionally expand related entities using the expand parameter.
+     *
+     * The expand parameter accepts comma-separated values to include related data:
+     * - `room`: Include room details (id and label)
+     * - `session`: Include session details (id and label)
+     * - `teams`: Include teams associated with the room session
+     * - `juries`: Include juries associated with the room session
+     *
+     * @param expand Comma-separated list of related entities to expand (room, session, teams, juries)
+     * @returns any List of room sessions
      * @throws ApiError
      */
-    public static getAllRoomSessions(): CancelablePromise<Array<RoomSession>> {
+    public static getAllRoomSessions(
+        expand?: string,
+    ): CancelablePromise<Array<(RoomSession | RoomSessionExpanded)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/room-sessions',
+            query: {
+                'expand': expand,
+            },
             errors: {
                 500: `Internal server error`,
             },
@@ -46,19 +60,31 @@ export class RoomSessionsService {
     }
     /**
      * Get a room session by ID
-     * Retrieves a specific room session by its ID
+     * Retrieves a specific room session by its ID. Optionally expand related entities using the expand parameter.
+     *
+     * The expand parameter accepts comma-separated values to include related data:
+     * - `room`: Include room details (id and label)
+     * - `session`: Include session details (id and label)
+     * - `teams`: Include teams associated with the room session
+     * - `juries`: Include juries associated with the room session
+     *
      * @param id Room session ID
-     * @returns RoomSession Room session found
+     * @param expand Comma-separated list of related entities to expand (room, session, teams, juries)
+     * @returns any Room session found
      * @throws ApiError
      */
     public static getRoomSessionById(
         id: number,
-    ): CancelablePromise<RoomSession> {
+        expand?: string,
+    ): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/room-sessions/{id}',
             path: {
                 'id': id,
+            },
+            query: {
+                'expand': expand,
             },
             errors: {
                 400: `Invalid ID parameter`,
