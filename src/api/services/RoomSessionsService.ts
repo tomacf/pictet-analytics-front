@@ -11,7 +11,9 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class RoomSessionsService {
     /**
-     * Create a new room session
+     * Create a new room session (Legacy - use /api/sessions/{id}/room-sessions instead)
+     * **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions**
+     *
      * Creates a new room session linking a room to a session with optional teams and juries.
      *
      * When team_ids or jury_ids are provided:
@@ -105,8 +107,11 @@ export class RoomSessionsService {
         });
     }
     /**
-     * Delete a room session
+     * Delete a room session (Legacy - use /api/sessions/{id}/room-sessions/{roomSessionId} instead)
+     * **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions/{roomSessionId}**
+     *
      * Deletes a specific room session by its ID
+     *
      * @param id Room session ID
      * @returns void
      * @throws ApiError
@@ -127,7 +132,9 @@ export class RoomSessionsService {
         });
     }
     /**
-     * Update a room session
+     * Update a room session (Legacy - use /api/sessions/{id}/room-sessions/{roomSessionId} instead)
+     * **Legacy endpoint - for new development, prefer /api/sessions/{id}/room-sessions/{roomSessionId}**
+     *
      * Updates a room session with new room/time and replaces team/jury assignments in a transaction.
      *
      * This endpoint:

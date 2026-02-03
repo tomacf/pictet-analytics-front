@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { RoomSessionExpanded } from '../models/RoomSessionExpanded';
 import type { Session } from '../models/Session';
 import type { SessionExpanded } from '../models/SessionExpanded';
 import type { SessionInput } from '../models/SessionInput';
@@ -69,12 +70,13 @@ export class SessionsService {
      * - `teams` - Include associated teams (id, label)
      * - `juries` - Include associated juries (id, label)
      * - `rooms` - Include associated rooms (id, label)
+     * - `room_sessions` - Include all room sessions for this session with expanded room, teams, and juries
      * - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
      *
-     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
+     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
      *
      * @param id Session ID
-     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, summary)
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
      * @returns any Session found
      * @throws ApiError
      */
@@ -172,6 +174,158 @@ export class SessionsService {
             errors: {
                 400: `Invalid request body or ID parameter`,
                 500: `Internal server error (e.g., validation failed, IDs not found)`,
+            },
+        });
+    }
+    /**
+     * Create a room session for a session (Preferred)
+     * **This is the preferred endpoint for creating room sessions scoped to a session.**
+     *
+     * Creates a new room session for a specific session, associating teams and juries.
+     * - Validates that the room exists
+     * - Validates that team_ids and jury_ids belong to the parent session
+     * - Creates the room session with the specified parameters
+     * - Associates teams and juries with the room session
+     * - Returns the expanded room session (with room, session, teams, juries)
+     *
+     * **Note:** For backward compatibility, the legacy /api/room-sessions endpoint is still available.
+     *
+     * @param id Session ID
+     * @param requestBody
+     * @returns RoomSessionExpanded Room session created successfully
+     * @throws ApiError
+     */
+    public static createRoomSessionForSession(
+        id: number,
+        requestBody: {
+            /**
+             * ID of the room
+             */
+            room_id: number;
+            /**
+             * Start time of the room session
+             */
+            start_time: string;
+            /**
+             * End time of the room session
+             */
+            end_time: string;
+            /**
+             * IDs of teams to associate with the room session (must be associated with the parent session)
+             */
+            team_ids?: Array<number>;
+            /**
+             * IDs of juries to associate with the room session (must be associated with the parent session)
+             */
+            jury_ids?: Array<number>;
+        },
+    ): CancelablePromise<RoomSessionExpanded> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/{id}/room-sessions',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid request body or validation failure`,
+                500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Update a room session for a session (Preferred)
+     * **This is the preferred endpoint for updating room sessions scoped to a session.**
+     *
+     * Updates an existing room session that belongs to a specific session.
+     * - Verifies that the room session belongs to the specified session
+     * - Validates that the room exists
+     * - Validates that team_ids and jury_ids belong to the parent session
+     * - Updates the room session with the specified parameters
+     * - Performs a transactional replace of teams and juries associations
+     * - Returns the expanded room session (with room, session, teams, juries)
+     *
+     * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
+     *
+     * @param id Session ID
+     * @param roomSessionId Room session ID
+     * @param requestBody
+     * @returns RoomSessionExpanded Room session updated successfully
+     * @throws ApiError
+     */
+    public static updateRoomSessionForSession(
+        id: number,
+        roomSessionId: number,
+        requestBody: {
+            /**
+             * ID of the room
+             */
+            room_id: number;
+            /**
+             * Start time of the room session
+             */
+            start_time: string;
+            /**
+             * End time of the room session
+             */
+            end_time: string;
+            /**
+             * IDs of teams to associate with the room session (must be associated with the parent session)
+             */
+            team_ids?: Array<number>;
+            /**
+             * IDs of juries to associate with the room session (must be associated with the parent session)
+             */
+            jury_ids?: Array<number>;
+        },
+    ): CancelablePromise<RoomSessionExpanded> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/sessions/{id}/room-sessions/{roomSessionId}',
+            path: {
+                'id': id,
+                'roomSessionId': roomSessionId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid request body, validation failure, or room session doesn't belong to session`,
+                404: `Room session not found`,
+                500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Delete a room session for a session (Preferred)
+     * **This is the preferred endpoint for deleting room sessions scoped to a session.**
+     *
+     * Deletes a room session that belongs to a specific session.
+     * - Verifies that the room session belongs to the specified session
+     * - Deletes the room session and all associated relationships (teams, juries)
+     *
+     * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
+     *
+     * @param id Session ID
+     * @param roomSessionId Room session ID
+     * @returns void
+     * @throws ApiError
+     */
+    public static deleteRoomSessionForSession(
+        id: number,
+        roomSessionId: number,
+    ): CancelablePromise<void> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/sessions/{id}/room-sessions/{roomSessionId}',
+            path: {
+                'id': id,
+                'roomSessionId': roomSessionId,
+            },
+            errors: {
+                400: `Invalid ID parameter or room session doesn't belong to session`,
+                404: `Room session not found`,
+                500: `Internal server error`,
             },
         });
     }
