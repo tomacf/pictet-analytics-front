@@ -1,14 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { toast } from 'react-toastify';
-import { RoomSessionsService, type RoomSession, type RoomSessionInput, RoomsService, SessionsService, type Room, type Session } from '../../apiConfig';
+import { RoomSessionsService, type RoomSessionExpanded, type RoomSessionInput, RoomsService, SessionsService, type Room, type Session } from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import '../teams/Teams.css';
+import './RoomSessions.css';
 
 const RoomSessions = () => {
-  const [roomSessions, setRoomSessions] = useState<RoomSession[]>([]);
+  const [roomSessions, setRoomSessions] = useState<RoomSessionExpanded[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
@@ -21,16 +22,22 @@ const RoomSessions = () => {
     end_time: '',
   });
 
+  // Filter states
+  const [filterSession, setFilterSession] = useState<string>('');
+  const [filterRoom, setFilterRoom] = useState<string>('');
+  const [filterDate, setFilterDate] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
   const fetchRoomSessions = async () => {
     try {
       setLoading(true);
       setError(null);
       const [roomSessionsData, roomsData, sessionsData] = await Promise.all([
-        RoomSessionsService.getAllRoomSessions(),
+        RoomSessionsService.getAllRoomSessions('session,room,teams,juries'),
         RoomsService.getAllRooms(),
         SessionsService.getAllSessions(),
       ]);
-      setRoomSessions(roomSessionsData);
+      setRoomSessions(roomSessionsData as RoomSessionExpanded[]);
       setRooms(roomsData);
       setSessions(sessionsData);
     } catch (err) {
@@ -56,11 +63,9 @@ const RoomSessions = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (roomSession: RoomSession) => {
-    const room = rooms.find(r => r.id === roomSession.room_id);
-    const session = sessions.find(s => s.id === roomSession.session_id);
-    const roomLabel = room ? room.label : `ID ${roomSession.room_id}`;
-    const sessionLabel = session ? session.label : `ID ${roomSession.session_id}`;
+  const handleDelete = async (roomSession: RoomSessionExpanded) => {
+    const roomLabel = roomSession.room ? roomSession.room.label : `ID ${roomSession.room_id}`;
+    const sessionLabel = roomSession.session ? roomSession.session.label : `ID ${roomSession.session_id}`;
     
     if (!window.confirm(`Are you sure you want to delete room session "${roomLabel} - ${sessionLabel}"?`)) {
       return;
@@ -90,42 +95,97 @@ const RoomSessions = () => {
     }
   };
 
-  const getRoomLabel = (roomId: number) => {
-    const room = rooms.find(r => r.id === roomId);
-    return room ? room.label : `ID ${roomId}`;
-  };
+  // Filter and sort room sessions
+  const filteredAndSortedRoomSessions = useMemo(() => {
+    let filtered = [...roomSessions];
 
-  const getSessionLabel = (sessionId: number) => {
-    const session = sessions.find(s => s.id === sessionId);
-    return session ? session.label : `ID ${sessionId}`;
-  };
+    // Apply session filter
+    if (filterSession) {
+      filtered = filtered.filter(rs => 
+        rs.session?.label.toLowerCase().includes(filterSession.toLowerCase())
+      );
+    }
+
+    // Apply room filter
+    if (filterRoom) {
+      filtered = filtered.filter(rs => 
+        rs.room?.label.toLowerCase().includes(filterRoom.toLowerCase())
+      );
+    }
+
+    // Apply date filter (checks if start_time matches the selected date)
+    if (filterDate) {
+      filtered = filtered.filter(rs => {
+        const startDate = new Date(rs.start_time).toISOString().split('T')[0];
+        return startDate === filterDate;
+      });
+    }
+
+    // Sort by start_time
+    filtered.sort((a, b) => {
+      const timeA = new Date(a.start_time).getTime();
+      const timeB = new Date(b.start_time).getTime();
+      return sortOrder === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+
+    return filtered;
+  }, [roomSessions, filterSession, filterRoom, filterDate, sortOrder]);
 
   const columns = [
     { key: 'id', label: 'ID' },
     {
-      key: 'room_id',
-      label: 'Room',
-      render: (rs: RoomSession) => getRoomLabel(rs.room_id),
+      key: 'session',
+      label: 'Session',
+      render: (rs: RoomSessionExpanded) => rs.session?.label || `ID ${rs.session_id}`,
     },
     {
-      key: 'session_id',
-      label: 'Session',
-      render: (rs: RoomSession) => getSessionLabel(rs.session_id),
+      key: 'room',
+      label: 'Room',
+      render: (rs: RoomSessionExpanded) => rs.room?.label || `ID ${rs.room_id}`,
+    },
+    {
+      key: 'teams',
+      label: 'Teams',
+      render: (rs: RoomSessionExpanded) => (
+        <div className="chips-container">
+          {rs.teams && rs.teams.length > 0 ? (
+            rs.teams.map((team) => (
+              <span key={team.id} className="chip chip-team">
+                {team.label}
+              </span>
+            ))
+          ) : (
+            <span className="no-data-text">No teams</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'juries',
+      label: 'Juries',
+      render: (rs: RoomSessionExpanded) => (
+        <div className="chips-container">
+          {rs.juries && rs.juries.length > 0 ? (
+            rs.juries.map((jury) => (
+              <span key={jury.id} className="chip chip-jury">
+                {jury.label}
+              </span>
+            ))
+          ) : (
+            <span className="no-data-text">No juries</span>
+          )}
+        </div>
+      ),
     },
     {
       key: 'start_time',
       label: 'Start Time',
-      render: (rs: RoomSession) => new Date(rs.start_time).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => new Date(rs.start_time).toLocaleString(),
     },
     {
       key: 'end_time',
       label: 'End Time',
-      render: (rs: RoomSession) => new Date(rs.end_time).toLocaleString(),
-    },
-    {
-      key: 'created_at',
-      label: 'Created At',
-      render: (rs: RoomSession) => new Date(rs.created_at).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => new Date(rs.end_time).toLocaleString(),
     },
   ];
 
@@ -141,9 +201,60 @@ const RoomSessions = () => {
         </button>
       </div>
 
+      {/* Filters section */}
+      <div className="filters-container">
+        <div className="filter-group">
+          <label htmlFor="filter-session">Filter by Session</label>
+          <input
+            type="text"
+            id="filter-session"
+            placeholder="Search session..."
+            value={filterSession}
+            onChange={(e) => setFilterSession(e.target.value)}
+            className="form-input"
+          />
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="filter-room">Filter by Room</label>
+          <input
+            type="text"
+            id="filter-room"
+            placeholder="Search room..."
+            value={filterRoom}
+            onChange={(e) => setFilterRoom(e.target.value)}
+            className="form-input"
+          />
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="filter-date">Filter by Date</label>
+          <input
+            type="date"
+            id="filter-date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="form-input"
+          />
+        </div>
+
+        <div className="filter-group">
+          <label htmlFor="sort-order">Sort by Start Time</label>
+          <select
+            id="sort-order"
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
+            className="form-input"
+          >
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+          </select>
+        </div>
+      </div>
+
       <DataTable
         columns={columns}
-        data={roomSessions}
+        data={filteredAndSortedRoomSessions}
         onDelete={handleDelete}
       />
 
