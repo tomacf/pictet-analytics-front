@@ -14,7 +14,7 @@ interface DataTableProps<T> {
   idKey?: keyof T;
 }
 
-function DataTable<T extends Record<string, any>>({
+function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   onEdit,
@@ -44,7 +44,7 @@ function DataTable<T extends Record<string, any>>({
               <tr key={String(item[idKey])}>
                 {columns.map((col) => (
                   <td key={col.key}>
-                    {col.render ? col.render(item) : item[col.key]}
+                    {col.render ? col.render(item) : String(item[col.key])}
                   </td>
                 ))}
                 {(onEdit || onDelete) && (
