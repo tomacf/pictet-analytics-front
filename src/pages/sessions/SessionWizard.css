@@ -113,6 +113,42 @@
   height: 1rem;
 }
 
+/* Form Group Header with Controls */
+.form-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.select-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.btn-link:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.control-separator {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
 /* Schedule Grid */
 .schedule-info {
   background-color: #eff6ff;
@@ -232,4 +268,41 @@
   .slot-content {
     grid-template-columns: 1fr;
   }
+}
+
+/* Selection Preview */
+.selection-preview {
+  margin-bottom: 0.5rem;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.preview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.preview-chip {
+  background-color: #e0e7ff;
+  color: #3730a3;
+  padding: 0.25rem 0.625rem;
+  border-radius: 4px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.preview-chip.preview-more {
+  background-color: #f1f5f9;
+  color: #64748b;
+}
+
+.preview-empty {
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-style: italic;
 }

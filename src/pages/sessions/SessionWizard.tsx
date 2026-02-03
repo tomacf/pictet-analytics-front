@@ -125,7 +125,7 @@ const SessionWizard = () => {
         });
         setWizardState({ ...wizardState, sessionId: session.id });
         toast.success('Session created successfully');
-      } catch (apiErr) {
+      } catch {
         // If API is unavailable, use mock session ID for demo
         console.warn('API unavailable, using mock session for demo');
         setWizardState({ ...wizardState, sessionId: 999 });
@@ -252,6 +252,36 @@ const SessionWizard = () => {
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
   };
 
+  // Helper function to render preview summary
+  const renderPreviewSummary = (ids: number[], items: { id: number; label: string }[]) => {
+    if (ids.length === 0) return <span className="preview-empty">None selected</span>;
+    
+    const selectedLabels = ids
+      .map((id) => items.find((item) => item.id === id)?.label || `ID:${id}`)
+      .filter(Boolean);
+    
+    if (selectedLabels.length <= 3) {
+      return (
+        <div className="preview-chips">
+          {selectedLabels.map((label, idx) => (
+            <span key={idx} className="preview-chip">{label}</span>
+          ))}
+        </div>
+      );
+    } else {
+      const visible = selectedLabels.slice(0, 3);
+      const remaining = selectedLabels.length - 3;
+      return (
+        <div className="preview-chips">
+          {visible.map((label, idx) => (
+            <span key={idx} className="preview-chip">{label}</span>
+          ))}
+          <span className="preview-chip preview-more">+{remaining}</span>
+        </div>
+      );
+    }
+  };
+
   if (loading && rooms.length === 0) return <LoadingSpinner />;
   if (error) return <ErrorDisplay message={error} onRetry={() => window.location.reload()} />;
 
@@ -312,7 +342,31 @@ const SessionWizard = () => {
           <h2>Step 2: Configure Schedule Parameters</h2>
           <form onSubmit={handleGenerateSchedule} className="form">
             <div className="form-group">
-              <label>Select Rooms</label>
+              <div className="form-group-header">
+                <label>Select Rooms</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allRoomIds = rooms.map((room) => room.id);
+                      setWizardState({ ...wizardState, selectedRoomIds: allRoomIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedRoomIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {rooms.map((room) => (
                   <label key={room.id} className="checkbox-label">
@@ -333,7 +387,31 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-group">
-              <label>Select Teams</label>
+              <div className="form-group-header">
+                <label>Select Teams</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allTeamIds = teams.map((team) => team.id);
+                      setWizardState({ ...wizardState, selectedTeamIds: allTeamIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedTeamIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {teams.map((team) => (
                   <label key={team.id} className="checkbox-label">
@@ -354,7 +432,31 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-group">
-              <label>Select Juries</label>
+              <div className="form-group-header">
+                <label>Select Juries</label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      const allJuryIds = juries.map((jury) => jury.id);
+                      setWizardState({ ...wizardState, selectedJuryIds: allJuryIds });
+                    }}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => {
+                      setWizardState({ ...wizardState, selectedJuryIds: [] });
+                    }}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
               <div className="checkbox-group">
                 {juries.map((jury) => (
                   <label key={jury.id} className="checkbox-label">
@@ -485,6 +587,9 @@ const SessionWizard = () => {
                           <div className="slot-content">
                             <div className="form-group">
                               <label>Teams</label>
+                              <div className="selection-preview">
+                                {renderPreviewSummary(slot.teamIds, teams)}
+                              </div>
                               <select
                                 multiple
                                 value={slot.teamIds.map(String)}
@@ -503,6 +608,9 @@ const SessionWizard = () => {
                             </div>
                             <div className="form-group">
                               <label>Juries</label>
+                              <div className="selection-preview">
+                                {renderPreviewSummary(slot.juryIds, juries)}
+                              </div>
                               <select
                                 multiple
                                 value={slot.juryIds.map(String)}
