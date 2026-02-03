@@ -138,52 +138,6 @@ paths:
               schema:
                 type: string
 
-    put:
-      tags:
-        - Teams
-      summary: Update an existing team
-      description: Updates a team with the provided information
-      operationId: updateTeam
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Team'
-            examples:
-              team:
-                summary: Updated team
-                value:
-                  id: 1
-                  label: Team Alpha Updated
-      responses:
-        '200':
-          description: Team updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Team'
-              examples:
-                team:
-                  summary: Updated team
-                  value:
-                    id: 1
-                    label: Team Alpha Updated
-                    created_at: "2024-03-01T10:00:00Z"
-                    updated_at: "2024-03-01T12:00:00Z"
-        '400':
-          description: Invalid request body
-          content:
-            text/plain:
-              schema:
-                type: string
-        '500':
-          description: Internal server error
-          content:
-            text/plain:
-              schema:
-                type: string
-
   /api/teams/{id}:
     get:
       tags:
@@ -222,6 +176,59 @@ paths:
                 type: string
         '404':
           description: Team not found
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    put:
+      tags:
+        - Teams
+      summary: Update an existing team
+      description: Updates a team with the provided information. The ID is provided in the URL path, not in the request body.
+      operationId: updateTeam
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Team ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamInput'
+            examples:
+              team:
+                summary: Updated team
+                value:
+                  label: Team Alpha Updated
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+              examples:
+                team:
+                  summary: Updated team
+                  value:
+                    id: 1
+                    label: Team Alpha Updated
+                    created_at: "2024-03-01T10:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+        '400':
+          description: Invalid request body or ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
           content:
             text/plain:
               schema:
@@ -341,54 +348,6 @@ paths:
               schema:
                 type: string
 
-    put:
-      tags:
-        - Rooms
-      summary: Update an existing room
-      description: Updates a room with the provided information
-      operationId: updateRoom
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Room'
-            examples:
-              room:
-                summary: Updated room
-                value:
-                  id: 1
-                  label: Room 101 Updated
-                  max_size: 35
-      responses:
-        '200':
-          description: Room updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Room'
-              examples:
-                room:
-                  summary: Updated room
-                  value:
-                    id: 1
-                    label: Room 101 Updated
-                    max_size: 35
-                    created_at: "2024-03-01T10:00:00Z"
-                    updated_at: "2024-03-01T12:00:00Z"
-        '400':
-          description: Invalid request body
-          content:
-            text/plain:
-              schema:
-                type: string
-        '500':
-          description: Internal server error
-          content:
-            text/plain:
-              schema:
-                type: string
-
   /api/rooms/{id}:
     get:
       tags:
@@ -428,6 +387,61 @@ paths:
                 type: string
         '404':
           description: Room not found
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    put:
+      tags:
+        - Rooms
+      summary: Update an existing room
+      description: Updates a room with the provided information. The ID is provided in the URL path, not in the request body.
+      operationId: updateRoom
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Room ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoomInput'
+            examples:
+              room:
+                summary: Updated room
+                value:
+                  label: Room 101 Updated
+                  max_size: 35
+      responses:
+        '200':
+          description: Room updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+              examples:
+                room:
+                  summary: Updated room
+                  value:
+                    id: 1
+                    label: Room 101 Updated
+                    max_size: 35
+                    created_at: "2024-03-01T10:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+        '400':
+          description: Invalid request body or ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
           content:
             text/plain:
               schema:
@@ -543,52 +557,6 @@ paths:
               schema:
                 type: string
 
-    put:
-      tags:
-        - Juries
-      summary: Update an existing jury
-      description: Updates a jury with the provided information
-      operationId: updateJury
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Jury'
-            examples:
-              jury:
-                summary: Updated jury
-                value:
-                  id: 1
-                  label: Dr. John Smith Updated
-      responses:
-        '200':
-          description: Jury updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Jury'
-              examples:
-                jury:
-                  summary: Updated jury
-                  value:
-                    id: 1
-                    label: Dr. John Smith Updated
-                    created_at: "2024-03-01T10:00:00Z"
-                    updated_at: "2024-03-01T12:00:00Z"
-        '400':
-          description: Invalid request body
-          content:
-            text/plain:
-              schema:
-                type: string
-        '500':
-          description: Internal server error
-          content:
-            text/plain:
-              schema:
-                type: string
-
   /api/juries/{id}:
     get:
       tags:
@@ -628,6 +596,59 @@ paths:
                 type: string
         '404':
           description: Jury not found
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    put:
+      tags:
+        - Juries
+      summary: Update an existing jury
+      description: Updates a jury with the provided information. The ID is provided in the URL path, not in the request body.
+      operationId: updateJury
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Jury ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JuryInput'
+            examples:
+              jury:
+                summary: Updated jury
+                value:
+                  label: Dr. John Smith Updated
+      responses:
+        '200':
+          description: Jury updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Jury'
+              examples:
+                jury:
+                  summary: Updated jury
+                  value:
+                    id: 1
+                    label: Dr. John Smith Updated
+                    created_at: "2024-03-01T10:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+        '400':
+          description: Invalid request body or ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
           content:
             text/plain:
               schema:
@@ -755,58 +776,6 @@ paths:
               schema:
                 type: string
 
-    put:
-      tags:
-        - Sessions
-      summary: Update an existing session
-      description: Updates a session with the provided information
-      operationId: updateSession
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Session'
-            examples:
-              session:
-                summary: Updated session
-                value:
-                  id: 1
-                  label: Morning Session Updated
-                  start_time: "2024-03-01T09:30:00Z"
-                  slot_duration: 90
-                  time_between_slots: 20
-      responses:
-        '200':
-          description: Session updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Session'
-              examples:
-                session:
-                  summary: Updated session
-                  value:
-                    id: 1
-                    label: Morning Session Updated
-                    start_time: "2024-03-01T09:30:00Z"
-                    slot_duration: 90
-                    time_between_slots: 20
-                    created_at: "2024-03-01T08:00:00Z"
-                    updated_at: "2024-03-01T12:00:00Z"
-        '400':
-          description: Invalid request body
-          content:
-            text/plain:
-              schema:
-                type: string
-        '500':
-          description: Internal server error
-          content:
-            text/plain:
-              schema:
-                type: string
-
   /api/sessions/{id}:
     get:
       tags:
@@ -848,6 +817,65 @@ paths:
                 type: string
         '404':
           description: Session not found
+          content:
+            text/plain:
+              schema:
+                type: string
+
+    put:
+      tags:
+        - Sessions
+      summary: Update an existing session
+      description: Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
+      operationId: updateSession
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionInput'
+            examples:
+              session:
+                summary: Updated session
+                value:
+                  label: Morning Session Updated
+                  start_time: "2024-03-01T09:30:00Z"
+                  slot_duration: 90
+                  time_between_slots: 20
+      responses:
+        '200':
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              examples:
+                session:
+                  summary: Updated session
+                  value:
+                    id: 1
+                    label: Morning Session Updated
+                    start_time: "2024-03-01T09:30:00Z"
+                    slot_duration: 90
+                    time_between_slots: 20
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+        '400':
+          description: Invalid request body or ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
           content:
             text/plain:
               schema:
