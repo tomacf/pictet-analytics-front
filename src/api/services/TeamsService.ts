@@ -46,17 +46,22 @@ export class TeamsService {
     }
     /**
      * Update an existing team
-     * Updates a team with the provided information
+     * Updates a team with the provided information. The ID is provided in the URL path, not in the request body.
+     * @param id Team ID
      * @param requestBody
      * @returns Team Team updated successfully
      * @throws ApiError
      */
     public static updateTeam(
-        requestBody: Team,
+        id: number,
+        requestBody: TeamInput,
     ): CancelablePromise<Team> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/teams',
+            url: '/api/teams/{id}',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

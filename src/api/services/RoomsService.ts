@@ -46,17 +46,22 @@ export class RoomsService {
     }
     /**
      * Update an existing room
-     * Updates a room with the provided information
+     * Updates a room with the provided information. The ID is provided in the URL path, not in the request body.
+     * @param id Room ID
      * @param requestBody
      * @returns Room Room updated successfully
      * @throws ApiError
      */
     public static updateRoom(
-        requestBody: Room,
+        id: number,
+        requestBody: RoomInput,
     ): CancelablePromise<Room> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/rooms',
+            url: '/api/rooms/{id}',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {
