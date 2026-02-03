@@ -1005,8 +1005,23 @@ paths:
       tags:
         - Room Sessions
       summary: Get all room sessions
-      description: Retrieves a list of all room sessions
+      description: |
+        Retrieves a list of all room sessions. Optionally expand related entities using the expand parameter.
+
+        The expand parameter accepts comma-separated values to include related data:
+        - `room`: Include room details (id and label)
+        - `session`: Include session details (id and label)
+        - `teams`: Include teams associated with the room session
+        - `juries`: Include juries associated with the room session
       operationId: getAllRoomSessions
+      parameters:
+        - name: expand
+          in: query
+          required: false
+          description: Comma-separated list of related entities to expand (room, session, teams, juries)
+          schema:
+            type: string
+            example: "room,session,teams,juries"
       responses:
         '200':
           description: List of room sessions
@@ -1015,10 +1030,12 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/RoomSession'
+                  oneOf:
+                    - $ref: '#/components/schemas/RoomSession'
+                    - $ref: '#/components/schemas/RoomSessionExpanded'
               examples:
                 roomSessions:
-                  summary: List of room sessions
+                  summary: List of room sessions (no expand)
                   value:
                     - id: 1
                       room_id: 1
@@ -1034,6 +1051,30 @@ paths:
                       end_time: "2024-03-01T11:00:00Z"
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
+                roomSessionsExpanded:
+                  summary: List of room sessions with expand
+                  value:
+                    - id: 1
+                      room_id: 1
+                      session_id: 1
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
+                      created_at: "2024-03-01T08:00:00Z"
+                      updated_at: "2024-03-01T08:00:00Z"
+                      room:
+                        id: 1
+                        label: "Room 101"
+                      session:
+                        id: 1
+                        label: "Morning Session"
+                      teams:
+                        - id: 1
+                          label: "Team Alpha"
+                        - id: 2
+                          label: "Team Beta"
+                      juries:
+                        - id: 1
+                          label: "Jury Smith"
         '500':
           description: Internal server error
           content:
@@ -1046,7 +1087,14 @@ paths:
       tags:
         - Room Sessions
       summary: Get a room session by ID
-      description: Retrieves a specific room session by its ID
+      description: |
+        Retrieves a specific room session by its ID. Optionally expand related entities using the expand parameter.
+
+        The expand parameter accepts comma-separated values to include related data:
+        - `room`: Include room details (id and label)
+        - `session`: Include session details (id and label)
+        - `teams`: Include teams associated with the room session
+        - `juries`: Include juries associated with the room session
       operationId: getRoomSessionById
       parameters:
         - name: id
@@ -1056,16 +1104,25 @@ paths:
           schema:
             type: integer
             example: 1
+        - name: expand
+          in: query
+          required: false
+          description: Comma-separated list of related entities to expand (room, session, teams, juries)
+          schema:
+            type: string
+            example: "room,session,teams,juries"
       responses:
         '200':
           description: Room session found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RoomSession'
+                oneOf:
+                  - $ref: '#/components/schemas/RoomSession'
+                  - $ref: '#/components/schemas/RoomSessionExpanded'
               examples:
                 roomSession:
-                  summary: Room session details
+                  summary: Room session details (no expand)
                   value:
                     id: 1
                     room_id: 1
@@ -1074,6 +1131,30 @@ paths:
                     end_time: "2024-03-01T10:00:00Z"
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
+                roomSessionExpanded:
+                  summary: Room session details with expand
+                  value:
+                    id: 1
+                    room_id: 1
+                    session_id: 1
+                    start_time: "2024-03-01T09:00:00Z"
+                    end_time: "2024-03-01T10:00:00Z"
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T08:00:00Z"
+                    room:
+                      id: 1
+                      label: "Room 101"
+                    session:
+                      id: 1
+                      label: "Morning Session"
+                    teams:
+                      - id: 1
+                        label: "Team Alpha"
+                      - id: 2
+                        label: "Team Beta"
+                    juries:
+                      - id: 1
+                        label: "Jury Smith"
         '400':
           description: Invalid ID parameter
           content:
@@ -1479,6 +1560,79 @@ components:
           format: date-time
           description: Room session end time
           example: "2024-03-01T10:00:00Z"
+
+    RoomSessionExpanded:
+      type: object
+      required:
+        - id
+        - room_id
+        - session_id
+        - start_time
+        - end_time
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Room session ID
+          example: 1
+        room_id:
+          type: integer
+          description: ID of the room
+          example: 1
+        session_id:
+          type: integer
+          description: ID of the session
+          example: 1
+        start_time:
+          type: string
+          format: date-time
+          description: Room session start time
+          example: "2024-03-01T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Room session end time
+          example: "2024-03-01T10:00:00Z"
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the room session was created
+          example: "2024-03-01T08:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the room session was last updated
+          example: "2024-03-01T08:00:00Z"
+        room:
+          $ref: '#/components/schemas/IDLabel'
+        session:
+          $ref: '#/components/schemas/IDLabel'
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/IDLabel'
+          description: Teams associated with this room session
+        juries:
+          type: array
+          items:
+            $ref: '#/components/schemas/IDLabel'
+          description: Juries associated with this room session
+
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: "Team Alpha"
 
     SessionPlan:
       type: object
