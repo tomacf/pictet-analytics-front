@@ -57,6 +57,7 @@ const SessionDetail = () => {
 
   useEffect(() => {
     fetchSessionDetails();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleCreateRoomSession = () => {
