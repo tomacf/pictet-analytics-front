@@ -43,6 +43,11 @@ interface ScheduleSlot {
   juryIds: number[];
 }
 
+interface SelectableItem {
+  id: number;
+  label: string;
+}
+
 const SessionWizard = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
@@ -253,11 +258,14 @@ const SessionWizard = () => {
   };
 
   // Helper function to render preview summary
-  const renderPreviewSummary = (ids: number[], items: { id: number; label: string }[]) => {
+  const renderPreviewSummary = (ids: number[], items: SelectableItem[]) => {
     if (ids.length === 0) return <span className="preview-empty">None selected</span>;
     
+    // Create a map for O(1) lookups
+    const itemsMap = new Map(items.map((item) => [item.id, item.label]));
+    
     const selectedLabels = ids
-      .map((id) => items.find((item) => item.id === id)?.label || `ID:${id}`)
+      .map((id) => itemsMap.get(id) || `ID:${id}`)
       .filter(Boolean);
     
     if (selectedLabels.length <= 3) {
