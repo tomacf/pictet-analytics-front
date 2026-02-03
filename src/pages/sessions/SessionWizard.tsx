@@ -9,6 +9,7 @@ import {
   type Room,
   type Team,
   type Jury,
+  type SessionPlan,
 } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
@@ -51,6 +52,7 @@ const SessionWizard = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Resources
@@ -262,6 +264,48 @@ const SessionWizard = () => {
     link.click();
     URL.revokeObjectURL(url);
     toast.success('Schedule exported successfully');
+  };
+
+  // Save plan to backend
+  const handleSavePlan = async () => {
+    if (!wizardState.sessionId) {
+      toast.error('No session ID available');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      // Build the session plan according to the API schema
+      const sessionPlan: SessionPlan = {
+        room_ids: wizardState.selectedRoomIds,
+        team_ids: wizardState.selectedTeamIds,
+        jury_ids: wizardState.selectedJuryIds,
+        teams_per_room: wizardState.teamsPerRoom,
+        juries_per_room: wizardState.juriesPerRoom,
+        slots: wizardState.scheduleSlots.map(slot => ({
+          room_id: slot.roomId,
+          start_time: slot.startTime,
+          end_time: slot.endTime,
+          team_ids: slot.teamIds,
+          jury_ids: slot.juryIds,
+        })),
+      };
+
+      // Call the API endpoint
+      await SessionsService.saveSessionPlan(wizardState.sessionId, sessionPlan);
+      
+      toast.success('Session plan saved successfully');
+      
+      // Navigate to sessions list
+      navigate('/sessions');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to save session plan';
+      toast.error(message);
+      // Keep draft state intact on error
+    } finally {
+      setSaving(false);
+    }
   };
 
   // Update slot assignments
@@ -722,6 +766,7 @@ const SessionWizard = () => {
                               onClick={() => removeSlot(slotGlobalIdx)}
                               className="btn btn-danger-small"
                               title="Remove this slot"
+                              disabled={saving}
                             >
                               Remove
                             </button>
@@ -740,6 +785,7 @@ const SessionWizard = () => {
                                   updateSlotTeams(slotGlobalIdx, selected);
                                 }}
                                 className="form-input multi-select"
+                                disabled={saving}
                               >
                                 {teams
                                   .filter((team) => wizardState.selectedTeamIds.includes(team.id))
@@ -763,6 +809,7 @@ const SessionWizard = () => {
                                   updateSlotJuries(slotGlobalIdx, selected);
                                 }}
                                 className="form-input multi-select"
+                                disabled={saving}
                               >
                                 {juries
                                   .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
@@ -803,6 +850,7 @@ const SessionWizard = () => {
                             });
                           }}
                           className="form-input"
+                          disabled={saving}
                         />
                       </div>
                       <div className="form-group">
@@ -825,6 +873,7 @@ const SessionWizard = () => {
                             });
                           }}
                           className="form-input"
+                          disabled={saving}
                         />
                       </div>
                       <button
@@ -843,6 +892,7 @@ const SessionWizard = () => {
                           }
                         }}
                         className="btn btn-secondary"
+                        disabled={saving}
                       >
                         Add Slot
                       </button>
@@ -854,13 +904,36 @@ const SessionWizard = () => {
           </div>
 
           <div className="form-actions">
-            <button type="button" onClick={() => setCurrentStep(2)} className="btn btn-secondary">
+            <button 
+              type="button" 
+              onClick={() => setCurrentStep(2)} 
+              className="btn btn-secondary"
+              disabled={saving}
+            >
               Back
             </button>
-            <button type="button" onClick={handleExportJSON} className="btn btn-primary">
+            <button 
+              type="button" 
+              onClick={handleExportJSON} 
+              className="btn btn-secondary"
+              disabled={saving}
+            >
               Export JSON
             </button>
+            <button 
+              type="button" 
+              onClick={handleSavePlan} 
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? 'Saving…' : 'Save Plan'}
+            </button>
           </div>
+          {saving && (
+            <div style={{ marginTop: '20px' }}>
+              <LoadingSpinner message="Saving session plan…" />
+            </div>
+          )}
         </div>
       )}
     </div>

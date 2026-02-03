@@ -4,6 +4,7 @@
 /* eslint-disable */
 import type { Session } from '../models/Session';
 import type { SessionInput } from '../models/SessionInput';
+import type { SessionPlan } from '../models/SessionPlan';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -106,6 +107,36 @@ export class SessionsService {
             errors: {
                 400: `Invalid ID parameter`,
                 500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Save a full session plan
+     * Saves a complete session plan including session-level links (rooms, teams, juries) and slots.
+     * Validates that all IDs exist and that slot team/jury IDs are subsets of the session selections.
+     * Persists transactionally: upserts session_rooms/session_teams/session_juries, creates/updates room_sessions,
+     * and creates room_session_teams and room_session_juries rows.
+     *
+     * @param id Session ID
+     * @param requestBody
+     * @returns string Session plan saved successfully
+     * @throws ApiError
+     */
+    public static saveSessionPlan(
+        id: number,
+        requestBody: SessionPlan,
+    ): CancelablePromise<string> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/{id}/plan',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid request body or ID parameter`,
+                500: `Internal server error (e.g., validation failed, IDs not found)`,
             },
         });
     }
