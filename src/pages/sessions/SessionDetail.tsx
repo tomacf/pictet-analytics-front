@@ -231,9 +231,12 @@ const SessionDetail = () => {
       toast.success('Session scope updated successfully');
       setIsScopeModalOpen(false);
       fetchSessionDetails();
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Handle 409 Conflict errors specially
-      if (err?.status === 409 || err?.message?.includes('409')) {
+      const isConflictError = (err as { status?: number })?.status === 409 || 
+                              (err instanceof Error && err.message?.includes('409'));
+      
+      if (isConflictError) {
         const message = err instanceof Error ? err.message : 'Cannot remove items that are in use by room sessions';
         toast.error(message, { autoClose: 8000 });
       } else {
@@ -420,7 +423,7 @@ const SessionDetail = () => {
           <div className="warning-message">
             <strong>⚠️ Note:</strong> Room sessions can only use teams and juries that are already associated with this session.
             {(session.teams && session.teams.length === 0) || (session.juries && session.juries.length === 0) ? (
-              <span> Please use the Scheduling Wizard to add teams and juries to this session first.</span>
+              <span> Please use the "Edit Session Scope" button to add teams and juries to this session first.</span>
             ) : null}
           </div>
 
