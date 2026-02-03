@@ -740,8 +740,25 @@ paths:
       tags:
         - Sessions
       summary: Get all sessions
-      description: Retrieves a list of all sessions
+      description: |
+        Retrieves a list of all sessions. Supports optional expansion of related data via the `expand` query parameter.
+
+        **Expand Options:**
+        - `teams` - Include associated teams (id, label)
+        - `juries` - Include associated juries (id, label)
+        - `rooms` - Include associated rooms (id, label)
+        - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
+
+        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
       operationId: getAllSessions
+      parameters:
+        - name: expand
+          in: query
+          required: false
+          description: Comma-separated list of fields to expand (teams, juries, rooms, summary)
+          schema:
+            type: string
+            example: "teams,juries,rooms,summary"
       responses:
         '200':
           description: List of sessions
@@ -750,10 +767,12 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Session'
+                  oneOf:
+                    - $ref: '#/components/schemas/Session'
+                    - $ref: '#/components/schemas/SessionExpanded'
               examples:
                 sessions:
-                  summary: List of sessions
+                  summary: List of sessions without expand
                   value:
                     - id: 1
                       label: Morning Session
@@ -769,6 +788,32 @@ paths:
                       time_between_slots: 10
                       created_at: "2024-03-01T08:00:00Z"
                       updated_at: "2024-03-01T08:00:00Z"
+                expandedSessions:
+                  summary: List of sessions with expand=teams,juries,rooms,summary
+                  value:
+                    - id: 1
+                      label: Morning Session
+                      start_time: "2024-03-01T09:00:00Z"
+                      slot_duration: 60
+                      time_between_slots: 15
+                      created_at: "2024-03-01T08:00:00Z"
+                      updated_at: "2024-03-01T08:00:00Z"
+                      teams:
+                        - id: 1
+                          label: Team Alpha
+                        - id: 2
+                          label: Team Beta
+                      juries:
+                        - id: 1
+                          label: Dr. John Smith
+                      rooms:
+                        - id: 1
+                          label: Room 101
+                        - id: 2
+                          label: Room 102
+                      room_sessions_count: 4
+                      first_room_session_start_time: "2024-03-01T09:00:00Z"
+                      last_room_session_end_time: "2024-03-01T12:00:00Z"
         '500':
           description: Internal server error
           content:
@@ -781,7 +826,16 @@ paths:
       tags:
         - Sessions
       summary: Get a session by ID
-      description: Retrieves a specific session by its ID
+      description: |
+        Retrieves a specific session by its ID. Supports optional expansion of related data via the `expand` query parameter.
+
+        **Expand Options:**
+        - `teams` - Include associated teams (id, label)
+        - `juries` - Include associated juries (id, label)
+        - `rooms` - Include associated rooms (id, label)
+        - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
+
+        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
       operationId: getSessionById
       parameters:
         - name: id
@@ -791,16 +845,25 @@ paths:
           schema:
             type: integer
             example: 1
+        - name: expand
+          in: query
+          required: false
+          description: Comma-separated list of fields to expand (teams, juries, rooms, summary)
+          schema:
+            type: string
+            example: "teams,juries,rooms,summary"
       responses:
         '200':
           description: Session found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                oneOf:
+                  - $ref: '#/components/schemas/Session'
+                  - $ref: '#/components/schemas/SessionExpanded'
               examples:
                 session:
-                  summary: Session details
+                  summary: Session details without expand
                   value:
                     id: 1
                     label: Morning Session
@@ -809,6 +872,32 @@ paths:
                     time_between_slots: 15
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T08:00:00Z"
+                expandedSession:
+                  summary: Session details with expand=teams,juries,rooms,summary
+                  value:
+                    id: 1
+                    label: Morning Session
+                    start_time: "2024-03-01T09:00:00Z"
+                    slot_duration: 60
+                    time_between_slots: 15
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T08:00:00Z"
+                    teams:
+                      - id: 1
+                        label: Team Alpha
+                      - id: 2
+                        label: Team Beta
+                    juries:
+                      - id: 1
+                        label: Dr. John Smith
+                    rooms:
+                      - id: 1
+                        label: Room 101
+                      - id: 2
+                        label: Room 102
+                    room_sessions_count: 4
+                    first_room_session_start_time: "2024-03-01T09:00:00Z"
+                    last_room_session_end_time: "2024-03-01T12:00:00Z"
         '400':
           description: Invalid ID parameter
           content:
@@ -1651,6 +1740,106 @@ components:
           type: integer
           description: Gap between slots in minutes
           example: 15
+
+    SessionExpanded:
+      type: object
+      required:
+        - id
+        - label
+        - start_time
+        - slot_duration
+        - time_between_slots
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Session ID
+          example: 1
+        label:
+          type: string
+          description: Session label
+          example: Morning Session
+        start_time:
+          type: string
+          format: date-time
+          description: Session start time
+          example: "2024-03-01T09:00:00Z"
+        slot_duration:
+          type: integer
+          description: Duration of each slot in minutes
+          example: 60
+        time_between_slots:
+          type: integer
+          description: Gap between slots in minutes
+          example: 15
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the session was created
+          example: "2024-03-01T08:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the session was last updated
+          example: "2024-03-01T08:00:00Z"
+        teams:
+          type: array
+          description: Associated teams (present when expand=teams is used)
+          items:
+            $ref: '#/components/schemas/IDLabel'
+          example:
+            - id: 1
+              label: Team Alpha
+            - id: 2
+              label: Team Beta
+        juries:
+          type: array
+          description: Associated juries (present when expand=juries is used)
+          items:
+            $ref: '#/components/schemas/IDLabel'
+          example:
+            - id: 1
+              label: Dr. John Smith
+        rooms:
+          type: array
+          description: Associated rooms (present when expand=rooms is used)
+          items:
+            $ref: '#/components/schemas/IDLabel'
+          example:
+            - id: 1
+              label: Room 101
+            - id: 2
+              label: Room 102
+        room_sessions_count:
+          type: integer
+          description: Total count of room sessions associated with this session (present when expand=summary is used)
+          example: 4
+        first_room_session_start_time:
+          type: string
+          format: date-time
+          description: Start time of the first room session (present when expand=summary is used)
+          example: "2024-03-01T09:00:00Z"
+        last_room_session_end_time:
+          type: string
+          format: date-time
+          description: End time of the last room session (present when expand=summary is used)
+          example: "2024-03-01T12:00:00Z"
+
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: Team Alpha
 
     RoomSession:
       type: object
