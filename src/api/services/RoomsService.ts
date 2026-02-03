@@ -45,6 +45,28 @@ export class RoomsService {
         });
     }
     /**
+     * Get a room by ID
+     * Retrieves a specific room by its ID
+     * @param id Room ID
+     * @returns Room Room found
+     * @throws ApiError
+     */
+    public static getRoomById(
+        id: number,
+    ): CancelablePromise<Room> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/rooms/{id}',
+            path: {
+                'id': id,
+            },
+            errors: {
+                400: `Invalid ID parameter`,
+                404: `Room not found`,
+            },
+        });
+    }
+    /**
      * Update an existing room
      * Updates a room with the provided information. The ID is provided in the URL path, not in the request body.
      * @param id Room ID
@@ -65,30 +87,8 @@ export class RoomsService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Invalid request body`,
+                400: `Invalid request body or ID parameter`,
                 500: `Internal server error`,
-            },
-        });
-    }
-    /**
-     * Get a room by ID
-     * Retrieves a specific room by its ID
-     * @param id Room ID
-     * @returns Room Room found
-     * @throws ApiError
-     */
-    public static getRoomById(
-        id: number,
-    ): CancelablePromise<Room> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/rooms/{id}',
-            path: {
-                'id': id,
-            },
-            errors: {
-                400: `Invalid ID parameter`,
-                404: `Room not found`,
             },
         });
     }

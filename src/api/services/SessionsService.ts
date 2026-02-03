@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { Session } from '../models/Session';
+import type { SessionExpanded } from '../models/SessionExpanded';
 import type { SessionInput } from '../models/SessionInput';
 import type { SessionPlan } from '../models/SessionPlan';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -32,16 +33,67 @@ export class SessionsService {
     }
     /**
      * Get all sessions
-     * Retrieves a list of all sessions
-     * @returns Session List of sessions
+     * Retrieves a list of all sessions. Supports optional expansion of related data via the `expand` query parameter.
+     *
+     * **Expand Options:**
+     * - `teams` - Include associated teams (id, label)
+     * - `juries` - Include associated juries (id, label)
+     * - `rooms` - Include associated rooms (id, label)
+     * - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
+     *
+     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
+     *
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, summary)
+     * @returns any List of sessions
      * @throws ApiError
      */
-    public static getAllSessions(): CancelablePromise<Array<Session>> {
+    public static getAllSessions(
+        expand?: string,
+    ): CancelablePromise<Array<(Session | SessionExpanded)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sessions',
+            query: {
+                'expand': expand,
+            },
             errors: {
                 500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Get a session by ID
+     * Retrieves a specific session by its ID. Supports optional expansion of related data via the `expand` query parameter.
+     *
+     * **Expand Options:**
+     * - `teams` - Include associated teams (id, label)
+     * - `juries` - Include associated juries (id, label)
+     * - `rooms` - Include associated rooms (id, label)
+     * - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
+     *
+     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
+     *
+     * @param id Session ID
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, summary)
+     * @returns any Session found
+     * @throws ApiError
+     */
+    public static getSessionById(
+        id: number,
+        expand?: string,
+    ): CancelablePromise<(Session | SessionExpanded)> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sessions/{id}',
+            path: {
+                'id': id,
+            },
+            query: {
+                'expand': expand,
+            },
+            errors: {
+                400: `Invalid ID parameter`,
+                404: `Session not found`,
             },
         });
     }
@@ -66,30 +118,8 @@ export class SessionsService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Invalid request body`,
+                400: `Invalid request body or ID parameter`,
                 500: `Internal server error`,
-            },
-        });
-    }
-    /**
-     * Get a session by ID
-     * Retrieves a specific session by its ID
-     * @param id Session ID
-     * @returns Session Session found
-     * @throws ApiError
-     */
-    public static getSessionById(
-        id: number,
-    ): CancelablePromise<Session> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/sessions/{id}',
-            path: {
-                'id': id,
-            },
-            errors: {
-                400: `Invalid ID parameter`,
-                404: `Session not found`,
             },
         });
     }
