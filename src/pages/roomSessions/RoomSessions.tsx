@@ -157,12 +157,12 @@ const RoomSessions = () => {
             <label htmlFor="room_id">Room</label>
             <select
               id="room_id"
-              value={formData.room_id}
+              value={formData.room_id || ''}
               onChange={(e) => setFormData({ ...formData, room_id: parseInt(e.target.value) })}
               required
               className="form-input"
             >
-              <option value="">Select a room</option>
+              <option value="" disabled>Select a room</option>
               {rooms.map((room) => (
                 <option key={room.id} value={room.id}>
                   {room.label}
@@ -175,12 +175,12 @@ const RoomSessions = () => {
             <label htmlFor="session_id">Session</label>
             <select
               id="session_id"
-              value={formData.session_id}
+              value={formData.session_id || ''}
               onChange={(e) => setFormData({ ...formData, session_id: parseInt(e.target.value) })}
               required
               className="form-input"
             >
-              <option value="">Select a session</option>
+              <option value="" disabled>Select a session</option>
               {sessions.map((session) => (
                 <option key={session.id} value={session.id}>
                   {session.label}
