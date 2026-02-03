@@ -66,7 +66,7 @@ const Rooms = () => {
 
     try {
       if (editingRoom) {
-        await RoomsService.updateRoom(editingRoom.id, formData);
+        await RoomsService.updateRoom({ ...editingRoom, ...formData });
         toast.success('Room updated successfully');
       } else {
         await RoomsService.createRoom(formData);

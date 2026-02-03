@@ -47,22 +47,17 @@ export class SessionsService {
     }
     /**
      * Update an existing session
-     * Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
-     * @param id Session ID
+     * Updates a session with the provided information
      * @param requestBody
      * @returns Session Session updated successfully
      * @throws ApiError
      */
     public static updateSession(
-        id: number,
-        requestBody: SessionInput,
+        requestBody: Session,
     ): CancelablePromise<Session> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/sessions/{id}',
-            path: {
-                'id': id,
-            },
+            url: '/api/sessions',
             body: requestBody,
             mediaType: 'application/json',
             errors: {

@@ -66,7 +66,7 @@ const Teams = () => {
 
     try {
       if (editingTeam) {
-        await TeamsService.updateTeam(editingTeam.id, formData);
+        await TeamsService.updateTeam({ ...editingTeam, ...formData });
         toast.success('Team updated successfully');
       } else {
         await TeamsService.createTeam(formData);

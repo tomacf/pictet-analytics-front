@@ -83,7 +83,7 @@ const Sessions = () => {
 
     try {
       if (editingSession) {
-        await SessionsService.updateSession(editingSession.id, formData);
+        await SessionsService.updateSession({ ...editingSession, ...formData });
         toast.success('Session updated successfully');
       } else {
         await SessionsService.createSession(formData);
