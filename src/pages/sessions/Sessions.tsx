@@ -100,7 +100,19 @@ const Sessions = () => {
 
   const columns = [
     { key: 'id', label: 'ID' },
-    { key: 'label', label: 'Label' },
+    { 
+      key: 'label', 
+      label: 'Label',
+      render: (session: SessionExpanded) => (
+        <button 
+          onClick={() => navigate(`/sessions/${session.id}`)}
+          className="btn-link"
+          style={{ fontSize: '1rem', fontWeight: '500' }}
+        >
+          {session.label}
+        </button>
+      ),
+    },
     {
       key: 'start_time',
       label: 'Start Time',
