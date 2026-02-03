@@ -46,17 +46,22 @@ export class JuriesService {
     }
     /**
      * Update an existing jury
-     * Updates a jury with the provided information
+     * Updates a jury with the provided information. The ID is provided in the URL path, not in the request body.
+     * @param id Jury ID
      * @param requestBody
      * @returns Jury Jury updated successfully
      * @throws ApiError
      */
     public static updateJury(
-        requestBody: Jury,
+        id: number,
+        requestBody: JuryInput,
     ): CancelablePromise<Jury> {
         return __request(OpenAPI, {
             method: 'PUT',
-            url: '/api/juries',
+            url: '/api/juries/{id}',
+            path: {
+                'id': id,
+            },
             body: requestBody,
             mediaType: 'application/json',
             errors: {

@@ -66,7 +66,7 @@ const Juries = () => {
 
     try {
       if (editingJury) {
-        await JuriesService.updateJury({ ...editingJury, ...formData });
+        await JuriesService.updateJury(editingJury.id, formData);
         toast.success('Jury updated successfully');
       } else {
         await JuriesService.createJury(formData);
