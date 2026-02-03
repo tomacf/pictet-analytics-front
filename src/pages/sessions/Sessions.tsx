@@ -1,20 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { SessionsService, type Session, type SessionInput } from '../../apiConfig';
+import { SessionsService, type SessionExpanded, type SessionInput } from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import '../teams/Teams.css';
+import '../roomSessions/RoomSessions.css';
 
 const Sessions = () => {
   const navigate = useNavigate();
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessions, setSessions] = useState<SessionExpanded[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingSession, setEditingSession] = useState<Session | null>(null);
+  const [editingSession, setEditingSession] = useState<SessionExpanded | null>(null);
   const [formData, setFormData] = useState<SessionInput>({
     label: '',
     start_time: '',
@@ -26,8 +27,8 @@ const Sessions = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await SessionsService.getAllSessions();
-      setSessions(data);
+      const data = await SessionsService.getAllSessions('teams,juries,rooms,summary');
+      setSessions(data as SessionExpanded[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch sessions';
       setError(message);
@@ -52,7 +53,7 @@ const Sessions = () => {
     setIsModalOpen(true);
   };
 
-  const handleEdit = (session: Session) => {
+  const handleEdit = (session: SessionExpanded) => {
     setEditingSession(session);
     setFormData({
       label: session.label,
@@ -63,7 +64,7 @@ const Sessions = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (session: Session) => {
+  const handleDelete = async (session: SessionExpanded) => {
     if (!window.confirm(`Are you sure you want to delete "${session.label}"?`)) {
       return;
     }
@@ -103,14 +104,75 @@ const Sessions = () => {
     {
       key: 'start_time',
       label: 'Start Time',
-      render: (session: Session) => new Date(session.start_time).toLocaleString(),
+      render: (session: SessionExpanded) => new Date(session.start_time).toLocaleString(),
     },
     { key: 'slot_duration', label: 'Slot Duration (min)' },
     { key: 'time_between_slots', label: 'Time Between Slots (min)' },
     {
+      key: 'teams',
+      label: 'Teams',
+      render: (session: SessionExpanded) => {
+        if (!session.teams || session.teams.length === 0) {
+          return <span className="no-data-text">—</span>;
+        }
+        return (
+          <div className="chips-container">
+            {session.teams.map(team => (
+              <span key={team.id} className="chip chip-team">
+                {team.label}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'juries',
+      label: 'Juries',
+      render: (session: SessionExpanded) => {
+        if (!session.juries || session.juries.length === 0) {
+          return <span className="no-data-text">—</span>;
+        }
+        return (
+          <div className="chips-container">
+            {session.juries.map(jury => (
+              <span key={jury.id} className="chip chip-jury">
+                {jury.label}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'room_sessions_count',
+      label: 'Room Sessions',
+      render: (session: SessionExpanded) => {
+        return session.room_sessions_count !== undefined ? session.room_sessions_count : <span className="no-data-text">—</span>;
+      },
+    },
+    {
+      key: 'first_room_session_start_time',
+      label: 'First Start',
+      render: (session: SessionExpanded) => {
+        return session.first_room_session_start_time 
+          ? new Date(session.first_room_session_start_time).toLocaleString()
+          : <span className="no-data-text">—</span>;
+      },
+    },
+    {
+      key: 'last_room_session_end_time',
+      label: 'Last End',
+      render: (session: SessionExpanded) => {
+        return session.last_room_session_end_time 
+          ? new Date(session.last_room_session_end_time).toLocaleString()
+          : <span className="no-data-text">—</span>;
+      },
+    },
+    {
       key: 'created_at',
       label: 'Created At',
-      render: (session: Session) => new Date(session.created_at).toLocaleString(),
+      render: (session: SessionExpanded) => new Date(session.created_at).toLocaleString(),
     },
   ];
 

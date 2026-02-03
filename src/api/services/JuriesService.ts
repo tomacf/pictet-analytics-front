@@ -45,6 +45,28 @@ export class JuriesService {
         });
     }
     /**
+     * Get a jury by ID
+     * Retrieves a specific jury by its ID
+     * @param id Jury ID
+     * @returns Jury Jury found
+     * @throws ApiError
+     */
+    public static getJuryById(
+        id: number,
+    ): CancelablePromise<Jury> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/juries/{id}',
+            path: {
+                'id': id,
+            },
+            errors: {
+                400: `Invalid ID parameter`,
+                404: `Jury not found`,
+            },
+        });
+    }
+    /**
      * Update an existing jury
      * Updates a jury with the provided information. The ID is provided in the URL path, not in the request body.
      * @param id Jury ID
@@ -65,30 +87,8 @@ export class JuriesService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Invalid request body`,
+                400: `Invalid request body or ID parameter`,
                 500: `Internal server error`,
-            },
-        });
-    }
-    /**
-     * Get a jury by ID
-     * Retrieves a specific jury by its ID
-     * @param id Jury ID
-     * @returns Jury Jury found
-     * @throws ApiError
-     */
-    public static getJuryById(
-        id: number,
-    ): CancelablePromise<Jury> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/juries/{id}',
-            path: {
-                'id': id,
-            },
-            errors: {
-                400: `Invalid ID parameter`,
-                404: `Jury not found`,
             },
         });
     }

@@ -45,6 +45,28 @@ export class TeamsService {
         });
     }
     /**
+     * Get a team by ID
+     * Retrieves a specific team by its ID
+     * @param id Team ID
+     * @returns Team Team found
+     * @throws ApiError
+     */
+    public static getTeamById(
+        id: number,
+    ): CancelablePromise<Team> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/teams/{id}',
+            path: {
+                'id': id,
+            },
+            errors: {
+                400: `Invalid ID parameter`,
+                404: `Team not found`,
+            },
+        });
+    }
+    /**
      * Update an existing team
      * Updates a team with the provided information. The ID is provided in the URL path, not in the request body.
      * @param id Team ID
@@ -65,30 +87,8 @@ export class TeamsService {
             body: requestBody,
             mediaType: 'application/json',
             errors: {
-                400: `Invalid request body`,
+                400: `Invalid request body or ID parameter`,
                 500: `Internal server error`,
-            },
-        });
-    }
-    /**
-     * Get a team by ID
-     * Retrieves a specific team by its ID
-     * @param id Team ID
-     * @returns Team Team found
-     * @throws ApiError
-     */
-    public static getTeamById(
-        id: number,
-    ): CancelablePromise<Team> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/teams/{id}',
-            path: {
-                'id': id,
-            },
-            errors: {
-                400: `Invalid ID parameter`,
-                404: `Team not found`,
             },
         });
     }
