@@ -19,6 +19,8 @@ interface StatusPanelProps {
   onConflictClick?: (slotIndex: number) => void;
   isOpen?: boolean;
   onToggle?: () => void;
+  isCollapsed?: boolean;
+  onCollapse?: () => void;
 }
 
 const StatusPanel = ({
@@ -33,12 +35,16 @@ const StatusPanel = ({
   onConflictClick,
   isOpen = true,
   onToggle,
+  isCollapsed = false,
+  onCollapse,
 }: StatusPanelProps) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
   const hasUnassigned = unassignedTeams.length > 0 || unassignedJuries.length > 0;
   const hasConflicts = teamConflicts.length > 0 || juryConflicts.length > 0;
   const hasIssues = hasUnassigned || hasConflicts;
+  const hasWarnings = hasUnassigned;
+  const hasErrors = hasConflicts;
 
   // Get slot description for conflicts
   const getSlotDescription = (slotIndex: number) => {
@@ -78,10 +84,30 @@ const StatusPanel = ({
         {hasIssues && !isOpen && <span className="badge">{(unassignedTeams.length + unassignedJuries.length + teamConflicts.length + juryConflicts.length)}</span>}
       </button>
 
+      {/* Desktop Collapse Toggle Button */}
+      {onCollapse && (
+        <button
+          className={`status-panel-collapse-toggle ${isCollapsed ? 'collapsed' : ''}`}
+          onClick={onCollapse}
+          aria-label={isCollapsed ? "Expand status panel" : "Collapse status panel"}
+          title={isCollapsed ? "Expand status panel" : "Collapse status panel"}
+        >
+          {isCollapsed ? (
+            <>
+              <span className="collapse-arrow">›</span>
+              {hasWarnings && <span className="collapse-icon warning-icon">⚠</span>}
+              {hasErrors && <span className="collapse-icon error-icon">🚫</span>}
+            </>
+          ) : (
+            <span className="collapse-arrow">›</span>
+          )}
+        </button>
+      )}
+
       {/* Status Panel */}
       <div 
         ref={panelRef}
-        className={`status-panel ${isOpen ? 'status-panel-open' : 'status-panel-closed'}`}
+        className={`status-panel ${isOpen ? 'status-panel-open' : 'status-panel-closed'} ${isCollapsed ? 'status-panel-collapsed' : ''}`}
       >
         <div className="status-panel-header">
           <h3>Status</h3>

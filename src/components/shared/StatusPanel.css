@@ -1,22 +1,29 @@
 /* Status Panel - Sticky Right Sidebar */
 .status-panel {
+  --status-panel-width: 350px;
   position: fixed;
   top: 80px; /* Below the topbar */
   right: 0;
-  width: 350px;
+  width: var(--status-panel-width);
   height: calc(100vh - 80px);
   background-color: white;
   border-left: 1px solid #e2e8f0;
   overflow-y: auto;
   z-index: 100;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
+  transition: width 0.3s ease, transform 0.3s ease;
 }
 
-/* Desktop - Always visible */
+/* Desktop - Collapsible */
 @media (min-width: 1025px) {
   .status-panel {
     transform: translateX(0);
-    transition: none;
+  }
+
+  .status-panel.status-panel-collapsed {
+    width: 0;
+    overflow: hidden;
+    border-left: none;
   }
 }
 
@@ -282,6 +289,69 @@
   justify-content: center;
   font-size: 0.625rem;
   font-weight: 700;
+}
+
+/* Desktop Collapse Toggle Button */
+.status-panel-collapse-toggle {
+  display: none; /* Hidden on mobile/tablet */
+  position: fixed;
+  top: 50%;
+  right: var(--status-panel-width);
+  transform: translateY(-50%);
+  background-color: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  border-right: none;
+  border-radius: 4px 0 0 4px;
+  width: 2rem;
+  height: 4rem;
+  cursor: pointer;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+  z-index: 101;
+  transition: all 0.3s ease;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+@media (min-width: 1025px) {
+  .status-panel-collapse-toggle {
+    display: flex;
+  }
+}
+
+.status-panel-collapse-toggle.collapsed {
+  right: 0;
+}
+
+.status-panel-collapse-toggle:hover {
+  background-color: #f8fafc;
+  color: #334155;
+}
+
+.status-panel-collapse-toggle .collapse-arrow {
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 0.3s ease;
+}
+
+.status-panel-collapse-toggle.collapsed .collapse-arrow {
+  transform: rotate(180deg);
+}
+
+.status-panel-collapse-toggle .collapse-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.status-panel-collapse-toggle .warning-icon {
+  color: #eab308;
+}
+
+.status-panel-collapse-toggle .error-icon {
+  color: #dc2626;
 }
 
 /* Mobile Overlay */

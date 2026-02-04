@@ -110,6 +110,30 @@ const SessionWizard = () => {
   // Status panel state - default open on desktop, closed on mobile
   const [statusPanelOpen, setStatusPanelOpen] = useState(true);
 
+  // Status panel collapsed state - default false (expanded) on desktop, persisted to localStorage
+  const [statusPanelCollapsed, setStatusPanelCollapsed] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('statusPanelCollapsed');
+        return saved === 'true';
+      }
+    } catch {
+      // localStorage not available
+    }
+    return false;
+  });
+
+  // Persist status panel collapsed state to localStorage
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('statusPanelCollapsed', String(statusPanelCollapsed));
+      }
+    } catch {
+      // localStorage not available
+    }
+  }, [statusPanelCollapsed]);
+
   // Rebalance state
   const [rebalanceModalOpen, setRebalanceModalOpen] = useState(false);
   const [rebalanceResult, setRebalanceResult] = useState<RebalanceResult | null>(null);
@@ -1329,6 +1353,8 @@ const SessionWizard = () => {
             onConflictClick={handleScrollToSlot}
             isOpen={statusPanelOpen}
             onToggle={() => setStatusPanelOpen(!statusPanelOpen)}
+            isCollapsed={statusPanelCollapsed}
+            onCollapse={() => setStatusPanelCollapsed(!statusPanelCollapsed)}
           />
         </div>
       )}
