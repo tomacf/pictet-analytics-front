@@ -42,14 +42,19 @@ const RebalanceModal = ({
 
   // Convert RebalanceSlot[] to RoomSessionExpanded[] for ScheduleOverview
   const convertSlotsToRoomSessions = (slots: RebalanceSlot[]): RoomSessionExpanded[] => {
+    // Create lookup maps for O(1) access instead of O(n) find operations
+    const roomsMap = new Map(rooms.map(r => [r.id, r]));
+    const teamsMap = new Map(teams.map(t => [t.id, t]));
+    const juriesMap = new Map(juries.map(j => [j.id, j]));
+
     return slots.map((slot, index) => {
-      const room = rooms.find(r => r.id === slot.roomId);
+      const room = roomsMap.get(slot.roomId);
       const slotTeams = slot.teamIds.map(id => {
-        const team = teams.find(t => t.id === id);
+        const team = teamsMap.get(id);
         return team ? { id: team.id, label: team.label } as IDLabel : { id, label: `Team ${id}` } as IDLabel;
       });
       const slotJuries = slot.juryIds.map(id => {
-        const jury = juries.find(j => j.id === id);
+        const jury = juriesMap.get(id);
         return jury ? { id: jury.id, label: jury.label } as IDLabel : { id, label: `Jury ${id}` } as IDLabel;
       });
 
