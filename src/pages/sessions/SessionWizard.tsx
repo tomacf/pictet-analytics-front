@@ -516,15 +516,15 @@ const SessionWizard = () => {
         behavior: 'smooth', 
         block: 'center' 
       });
-      // Highlight the slot briefly
-      slotElement.style.transition = 'box-shadow 0.3s';
-      slotElement.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.5)';
+      // Highlight the slot briefly using CSS class
+      slotElement.classList.add('slot-highlighted');
       setTimeout(() => {
-        slotElement.style.boxShadow = '';
+        slotElement.classList.remove('slot-highlighted');
       }, 2000);
     }
-    // Close mobile panel after clicking
-    if (window.innerWidth <= 1024) {
+    // Close mobile panel after clicking (using constant breakpoint)
+    const MOBILE_BREAKPOINT = 1024;
+    if (window.innerWidth <= MOBILE_BREAKPOINT) {
       setStatusPanelOpen(false);
     }
   };

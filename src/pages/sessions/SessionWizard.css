@@ -213,6 +213,12 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Slot highlight effect when navigating from conflicts */
+.slot-highlighted {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
 .slot-time {
   font-size: 0.875rem;
   color: #64748b;

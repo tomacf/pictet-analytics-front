@@ -56,7 +56,6 @@
 }
 
 .status-panel-close {
-  display: none; /* Hidden on desktop */
   background: none;
   border: none;
   font-size: 1.5rem;
@@ -321,6 +320,12 @@
 
   .status-panel-closed + .status-panel-overlay {
     display: none;
+  }
+}
+
+@media (min-width: 1025px) {
+  .status-panel-close {
+    display: none; /* Hidden on desktop */
   }
 }
 
