@@ -52,7 +52,7 @@ const Juries = () => {
     }
 
     try {
-      await JuriesService.deleteJury(jury.id);
+      await JuriesService.deleteJury({ id: jury.id });
       toast.success('Jury deleted successfully');
       fetchJuries();
     } catch (err) {
@@ -66,10 +66,10 @@ const Juries = () => {
 
     try {
       if (editingJury) {
-        await JuriesService.updateJury(editingJury.id, formData);
+        await JuriesService.updateJury({ id: editingJury.id, requestBody: formData });
         toast.success('Jury updated successfully');
       } else {
-        await JuriesService.createJury(formData);
+        await JuriesService.createJury({ requestBody: formData });
         toast.success('Jury created successfully');
       }
       setIsModalOpen(false);

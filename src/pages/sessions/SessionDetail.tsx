@@ -87,10 +87,10 @@ const SessionDetail = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await SessionsService.getSessionById(
-        parseInt(id),
-        'teams,juries,rooms,room_sessions'
-      );
+      const data = await SessionsService.getSessionById({
+        id: parseInt(id),
+        expand: 'teams,juries,rooms,room_sessions'
+      });
       setSession(data as SessionExpanded);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch session details';
@@ -139,7 +139,7 @@ const SessionDetail = () => {
     }
 
     try {
-      await SessionsService.deleteRoomSessionForSession(parseInt(id), roomSession.id);
+      await SessionsService.deleteRoomSessionForSession({ id: parseInt(id), roomSessionId: roomSession.id });
       toast.success('Room session deleted successfully');
       fetchSessionDetails();
     } catch (err) {
@@ -157,18 +157,18 @@ const SessionDetail = () => {
       
       if (editingRoomSession) {
         // Update existing room session
-        await SessionsService.updateRoomSessionForSession(
-          parseInt(id),
-          editingRoomSession.id,
-          formData
-        );
+        await SessionsService.updateRoomSessionForSession({
+          id: parseInt(id),
+          roomSessionId: editingRoomSession.id,
+          requestBody: formData
+        });
         toast.success('Room session updated successfully');
       } else {
         // Create new room session
-        await SessionsService.createRoomSessionForSession(
-          parseInt(id),
-          formData
-        );
+        await SessionsService.createRoomSessionForSession({
+          id: parseInt(id),
+          requestBody: formData
+        });
         toast.success('Room session created successfully');
       }
       
@@ -218,7 +218,7 @@ const SessionDetail = () => {
       setSaving(true);
       
       // Update session with new scope
-      await SessionsService.updateSession(parseInt(id), {
+      await SessionsService.updateSession({ id: parseInt(id), requestBody: {
         label: session.label,
         start_time: session.start_time,
         slot_duration: session.slot_duration,
@@ -226,7 +226,7 @@ const SessionDetail = () => {
         team_ids: scopeFormData.team_ids,
         jury_ids: scopeFormData.jury_ids,
         room_ids: scopeFormData.room_ids,
-      });
+      }});
       
       toast.success('Session scope updated successfully');
       setIsScopeModalOpen(false);
