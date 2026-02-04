@@ -1,10 +1,10 @@
 import {Link, Outlet, useLocation} from 'react-router-dom';
-import { useState } from 'react';
+import {useState} from 'react';
 import './Layout.css';
 
 const Layout = () => {
   const location = useLocation();
-  const [isConfigurationOpen, setIsConfigurationOpen] = useState(true);
+  const [isConfigurationExpanded, setIsConfigurationExpanded] = useState(true);
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -25,13 +25,14 @@ const Layout = () => {
             <li className={`parent-item ${isConfigurationActive() ? 'active' : ''}`}>
               <button 
                 className="parent-toggle"
-                onClick={() => setIsConfigurationOpen(!isConfigurationOpen)}
-                aria-expanded={isConfigurationOpen}
+                onClick={() => setIsConfigurationExpanded(!isConfigurationExpanded)}
+                aria-expanded={isConfigurationExpanded}
+                aria-label="Toggle Configuration menu"
               >
-                <span className={`arrow ${isConfigurationOpen ? 'open' : ''}`}>▶</span>
+                <span className={`arrow ${isConfigurationExpanded ? 'expanded' : ''}`}>▶</span>
                 Configuration
               </button>
-              {isConfigurationOpen && (
+              {isConfigurationExpanded && (
                 <ul className="sub-items">
                   <li className={isActive('/teams') ? 'active' : ''}>
                     <Link to="/teams">Teams</Link>
