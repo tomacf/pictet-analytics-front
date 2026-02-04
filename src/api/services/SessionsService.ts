@@ -7,6 +7,7 @@ import type { Session } from '../models/Session';
 import type { SessionExpanded } from '../models/SessionExpanded';
 import type { SessionInput } from '../models/SessionInput';
 import type { SessionPlan } from '../models/SessionPlan';
+import type { SessionUpdateRequest } from '../models/SessionUpdateRequest';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -14,13 +15,14 @@ export class SessionsService {
     /**
      * Create a new session
      * Creates a new session with label and scheduling parameters
-     * @param requestBody
      * @returns Session Session created successfully
      * @throws ApiError
      */
-    public static createSession(
+    public static createSession({
+        requestBody,
+    }: {
         requestBody: SessionInput,
-    ): CancelablePromise<Session> {
+    }): CancelablePromise<Session> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions',
@@ -44,13 +46,17 @@ export class SessionsService {
      *
      * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
      *
-     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, summary)
      * @returns any List of sessions
      * @throws ApiError
      */
-    public static getAllSessions(
+    public static getAllSessions({
+        expand,
+    }: {
+        /**
+         * Comma-separated list of fields to expand (teams, juries, rooms, summary)
+         */
         expand?: string,
-    ): CancelablePromise<Array<(Session | SessionExpanded)>> {
+    }): CancelablePromise<Array<(Session | SessionExpanded)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sessions',
@@ -75,15 +81,22 @@ export class SessionsService {
      *
      * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
      *
-     * @param id Session ID
-     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
      * @returns any Session found
      * @throws ApiError
      */
-    public static getSessionById(
+    public static getSessionById({
+        id,
+        expand,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
+        /**
+         * Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
+         */
         expand?: string,
-    ): CancelablePromise<(Session | SessionExpanded)> {
+    }): CancelablePromise<(Session | SessionExpanded)> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sessions/{id}',
@@ -100,22 +113,32 @@ export class SessionsService {
         });
     }
     /**
-     * Update an existing session
+     * Update an existing session with optional scope relations
      * Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
      *
-     * Can update session metadata (label, start_time, slot_duration, time_between_slots) and/or session scope (team_ids, jury_ids, room_ids).
-     * When team_ids, jury_ids, or room_ids are provided, they replace the existing associations.
-     * If removing items that are used by existing room sessions, the operation may fail with a 409 Conflict error.
+     * **Scope Relations (Optional):**
+     * You can optionally include `team_ids`, `jury_ids`, and `room_ids` arrays to manage session-level scope relations:
+     * - When these arrays are provided, the session's scope relations are replaced transactionally
+     * - Validates that all referenced IDs exist (returns 500 if not found)
+     * - Prevents removing teams/juries/rooms that are used in room_sessions (returns 409 Conflict)
+     * - Use `force: true` to override conflict protection and delete affected room_session relationships
      *
-     * @param id Session ID
-     * @param requestBody
-     * @returns Session Session updated successfully
+     * **Backward Compatibility:**
+     * If `team_ids`, `jury_ids`, and `room_ids` are omitted, the endpoint behaves like the old simple update (only updates core session fields).
+     *
+     * @returns any Session updated successfully
      * @throws ApiError
      */
-    public static updateSession(
+    public static updateSession({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
-        requestBody: SessionInput,
-    ): CancelablePromise<Session> {
+        requestBody: SessionUpdateRequest,
+    }): CancelablePromise<(Session | SessionExpanded)> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/sessions/{id}',
@@ -126,21 +149,25 @@ export class SessionsService {
             mediaType: 'application/json',
             errors: {
                 400: `Invalid request body or ID parameter`,
-                409: `Conflict - Cannot remove teams, juries, or rooms that are in use by room sessions`,
-                500: `Internal server error`,
+                409: `Conflict - cannot remove teams/juries/rooms that are used in room sessions (use force=true to override)`,
+                500: `Internal server error or validation error (e.g., non-existent team/jury/room IDs)`,
             },
         });
     }
     /**
      * Delete a session
      * Deletes a specific session by its ID
-     * @param id Session ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteSession(
+    public static deleteSession({
+        id,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
-    ): CancelablePromise<void> {
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/sessions/{id}',
@@ -160,15 +187,19 @@ export class SessionsService {
      * Persists transactionally: upserts session_rooms/session_teams/session_juries, creates/updates room_sessions,
      * and creates room_session_teams and room_session_juries rows.
      *
-     * @param id Session ID
-     * @param requestBody
      * @returns string Session plan saved successfully
      * @throws ApiError
      */
-    public static saveSessionPlan(
+    public static saveSessionPlan({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
         requestBody: SessionPlan,
-    ): CancelablePromise<string> {
+    }): CancelablePromise<string> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions/{id}/plan',
@@ -179,6 +210,10 @@ export class SessionsService {
             mediaType: 'application/json',
             errors: {
                 400: `Invalid request body or ID parameter`,
+                409: `Scheduling constraint violated. This occurs when:
+                - A team is assigned to multiple slots within the session
+                - A jury is assigned to overlapping time ranges within the session
+                `,
                 500: `Internal server error (e.g., validation failed, IDs not found)`,
             },
         });
@@ -196,12 +231,16 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions endpoint is still available.
      *
-     * @param id Session ID
-     * @param requestBody
      * @returns RoomSessionExpanded Room session created successfully
      * @throws ApiError
      */
-    public static createRoomSessionForSession(
+    public static createRoomSessionForSession({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
         requestBody: {
             /**
@@ -225,7 +264,7 @@ export class SessionsService {
              */
             jury_ids?: Array<number>;
         },
-    ): CancelablePromise<RoomSessionExpanded> {
+    }): CancelablePromise<RoomSessionExpanded> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions/{id}/room-sessions',
@@ -236,6 +275,10 @@ export class SessionsService {
             mediaType: 'application/json',
             errors: {
                 400: `Invalid request body or validation failure`,
+                409: `Scheduling constraint violated. This occurs when:
+                - A team is already assigned to another room session within the same session
+                - A jury is already assigned to an overlapping time range within the same session
+                `,
                 500: `Internal server error`,
             },
         });
@@ -254,14 +297,21 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
      *
-     * @param id Session ID
-     * @param roomSessionId Room session ID
-     * @param requestBody
      * @returns RoomSessionExpanded Room session updated successfully
      * @throws ApiError
      */
-    public static updateRoomSessionForSession(
+    public static updateRoomSessionForSession({
+        id,
+        roomSessionId,
+        requestBody,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
+        /**
+         * Room session ID
+         */
         roomSessionId: number,
         requestBody: {
             /**
@@ -285,7 +335,7 @@ export class SessionsService {
              */
             jury_ids?: Array<number>;
         },
-    ): CancelablePromise<RoomSessionExpanded> {
+    }): CancelablePromise<RoomSessionExpanded> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/sessions/{id}/room-sessions/{roomSessionId}',
@@ -298,6 +348,10 @@ export class SessionsService {
             errors: {
                 400: `Invalid request body, validation failure, or room session doesn't belong to session`,
                 404: `Room session not found`,
+                409: `Scheduling constraint violated. This occurs when:
+                - A team is already assigned to another room session within the same session
+                - A jury is already assigned to an overlapping time range within the same session
+                `,
                 500: `Internal server error`,
             },
         });
@@ -312,15 +366,22 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
      *
-     * @param id Session ID
-     * @param roomSessionId Room session ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteRoomSessionForSession(
+    public static deleteRoomSessionForSession({
+        id,
+        roomSessionId,
+    }: {
+        /**
+         * Session ID
+         */
         id: number,
+        /**
+         * Room session ID
+         */
         roomSessionId: number,
-    ): CancelablePromise<void> {
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/sessions/{id}/room-sessions/{roomSessionId}',

@@ -2559,21 +2559,6 @@ components:
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
 
-    IDLabel:
-      type: object
-      required:
-        - id
-        - label
-      properties:
-        id:
-          type: integer
-          description: Entity ID
-          example: 1
-        label:
-          type: string
-          description: Entity label
-          example: "Team Alpha"
-
     SessionPlan:
       type: object
       required:
