@@ -13,10 +13,15 @@ export class ImportService {
      * The PDF should contain a table with rooms, times, and team codes.
      *
      * **Features:**
-     * - Deterministic text extraction (no OCR unless needed)
-     * - Extracts room schedule table (rooms, times, team codes)
-     * - Resolves room labels to room_id from database (case-insensitive)
-     * - Resolves team labels to team_ids from database (case-insensitive)
+     * - Deterministic text extraction (no OCR)
+     * - Normalizes whitespace while preserving UTF-8 characters
+     * - Extracts slot_duration from line "Durée et format de l'épreuve : XX minutes"
+     * - Locates room header by finding all room labels from DB (in order, possibly on consecutive lines)
+     * - Reads time slots (lines starting with HH:MM) and following team labels
+     * - Extracts team labels using regex \b[A-Z]\d+\b
+     * - Groups teams by room (handles multi-line cells and comma continuations)
+     * - Derives time_between_slots from difference between first two start times minus duration
+     * - Resolves room/team labels to IDs from database (case-insensitive)
      * - Auto-assigns juries round-robin with no overlap
      * - Returns draft plan without writing to database
      *
@@ -34,12 +39,11 @@ export class ImportService {
      * **Error Handling:**
      * - If parsed room or team labels are not found in database, returns HTTP 400 with structured error including missing labels and extracted schedule context
      *
+     * @param formData
      * @returns DraftPlan PDF parsed successfully, returns draft plan
      * @throws ApiError
      */
-    public static parseSessionDocument({
-        formData,
-    }: {
+    public static parseSessionDocument(
         formData: {
             /**
              * PDF file containing the session schedule
@@ -62,7 +66,7 @@ export class ImportService {
              */
             slot_duration?: number;
             /**
-             * Gap between slots in minutes (optional - derived from PDF if not provided)
+             * Gap between slots in minutes (optional - derived from PDF schedule if not provided)
              */
             time_between_slots?: number;
             /**
@@ -74,7 +78,7 @@ export class ImportService {
              */
             juries_per_room: number;
         },
-    }): CancelablePromise<DraftPlan> {
+    ): CancelablePromise<DraftPlan> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/import/session-document/parse',

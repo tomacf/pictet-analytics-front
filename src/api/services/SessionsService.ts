@@ -15,14 +15,13 @@ export class SessionsService {
     /**
      * Create a new session
      * Creates a new session with label and scheduling parameters
+     * @param requestBody
      * @returns Session Session created successfully
      * @throws ApiError
      */
-    public static createSession({
-        requestBody,
-    }: {
+    public static createSession(
         requestBody: SessionInput,
-    }): CancelablePromise<Session> {
+    ): CancelablePromise<Session> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions',
@@ -46,17 +45,13 @@ export class SessionsService {
      *
      * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,summary`)
      *
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, summary)
      * @returns any List of sessions
      * @throws ApiError
      */
-    public static getAllSessions({
-        expand,
-    }: {
-        /**
-         * Comma-separated list of fields to expand (teams, juries, rooms, summary)
-         */
+    public static getAllSessions(
         expand?: string,
-    }): CancelablePromise<Array<(Session | SessionExpanded)>> {
+    ): CancelablePromise<Array<(Session | SessionExpanded)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sessions',
@@ -81,22 +76,15 @@ export class SessionsService {
      *
      * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
      *
+     * @param id Session ID
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
      * @returns any Session found
      * @throws ApiError
      */
-    public static getSessionById({
-        id,
-        expand,
-    }: {
-        /**
-         * Session ID
-         */
+    public static getSessionById(
         id: number,
-        /**
-         * Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
-         */
         expand?: string,
-    }): CancelablePromise<(Session | SessionExpanded)> {
+    ): CancelablePromise<(Session | SessionExpanded)> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/sessions/{id}',
@@ -126,19 +114,15 @@ export class SessionsService {
      * **Backward Compatibility:**
      * If `team_ids`, `jury_ids`, and `room_ids` are omitted, the endpoint behaves like the old simple update (only updates core session fields).
      *
+     * @param id Session ID
+     * @param requestBody
      * @returns any Session updated successfully
      * @throws ApiError
      */
-    public static updateSession({
-        id,
-        requestBody,
-    }: {
-        /**
-         * Session ID
-         */
+    public static updateSession(
         id: number,
         requestBody: SessionUpdateRequest,
-    }): CancelablePromise<(Session | SessionExpanded)> {
+    ): CancelablePromise<(Session | SessionExpanded)> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/sessions/{id}',
@@ -157,17 +141,13 @@ export class SessionsService {
     /**
      * Delete a session
      * Deletes a specific session by its ID
+     * @param id Session ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteSession({
-        id,
-    }: {
-        /**
-         * Session ID
-         */
+    public static deleteSession(
         id: number,
-    }): CancelablePromise<void> {
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/sessions/{id}',
@@ -187,19 +167,15 @@ export class SessionsService {
      * Persists transactionally: upserts session_rooms/session_teams/session_juries, creates/updates room_sessions,
      * and creates room_session_teams and room_session_juries rows.
      *
+     * @param id Session ID
+     * @param requestBody
      * @returns string Session plan saved successfully
      * @throws ApiError
      */
-    public static saveSessionPlan({
-        id,
-        requestBody,
-    }: {
-        /**
-         * Session ID
-         */
+    public static saveSessionPlan(
         id: number,
         requestBody: SessionPlan,
-    }): CancelablePromise<string> {
+    ): CancelablePromise<string> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions/{id}/plan',
@@ -231,16 +207,12 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions endpoint is still available.
      *
+     * @param id Session ID
+     * @param requestBody
      * @returns RoomSessionExpanded Room session created successfully
      * @throws ApiError
      */
-    public static createRoomSessionForSession({
-        id,
-        requestBody,
-    }: {
-        /**
-         * Session ID
-         */
+    public static createRoomSessionForSession(
         id: number,
         requestBody: {
             /**
@@ -264,7 +236,7 @@ export class SessionsService {
              */
             jury_ids?: Array<number>;
         },
-    }): CancelablePromise<RoomSessionExpanded> {
+    ): CancelablePromise<RoomSessionExpanded> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sessions/{id}/room-sessions',
@@ -297,21 +269,14 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
      *
+     * @param id Session ID
+     * @param roomSessionId Room session ID
+     * @param requestBody
      * @returns RoomSessionExpanded Room session updated successfully
      * @throws ApiError
      */
-    public static updateRoomSessionForSession({
-        id,
-        roomSessionId,
-        requestBody,
-    }: {
-        /**
-         * Session ID
-         */
+    public static updateRoomSessionForSession(
         id: number,
-        /**
-         * Room session ID
-         */
         roomSessionId: number,
         requestBody: {
             /**
@@ -335,7 +300,7 @@ export class SessionsService {
              */
             jury_ids?: Array<number>;
         },
-    }): CancelablePromise<RoomSessionExpanded> {
+    ): CancelablePromise<RoomSessionExpanded> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/sessions/{id}/room-sessions/{roomSessionId}',
@@ -366,22 +331,15 @@ export class SessionsService {
      *
      * **Note:** For backward compatibility, the legacy /api/room-sessions/{id} endpoint is still available.
      *
+     * @param id Session ID
+     * @param roomSessionId Room session ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteRoomSessionForSession({
-        id,
-        roomSessionId,
-    }: {
-        /**
-         * Session ID
-         */
+    public static deleteRoomSessionForSession(
         id: number,
-        /**
-         * Room session ID
-         */
         roomSessionId: number,
-    }): CancelablePromise<void> {
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/sessions/{id}/room-sessions/{roomSessionId}',
