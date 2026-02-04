@@ -29,7 +29,7 @@ function DataTable<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th key={col.key}>{col.label}</th>
             ))}
-            {(onEdit || onDelete) && <th>Actions</th>}
+            {(onEdit || onDelete) && <th className="actions-header">Actions</th>}
           </tr>
         </thead>
         <tbody>

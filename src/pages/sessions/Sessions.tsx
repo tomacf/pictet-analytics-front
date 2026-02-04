@@ -7,6 +7,7 @@ import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import { formatEuropeanDateTime } from '../../utils/dateUtils';
+import './Sessions.css';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 
@@ -100,7 +101,6 @@ const Sessions = () => {
   };
 
   const columns = [
-    { key: 'id', label: 'ID' },
     { 
       key: 'label', 
       label: 'Label',
@@ -115,12 +115,22 @@ const Sessions = () => {
       ),
     },
     {
-      key: 'start_time',
-      label: 'Start Time',
-      render: (session: SessionExpanded) => formatEuropeanDateTime(session.start_time),
+      key: 'time_window',
+      label: 'Time Window',
+      render: (session: SessionExpanded) => {
+        const start = formatEuropeanDateTime(session.start_time);
+        const end = session.last_room_session_end_time 
+          ? formatEuropeanDateTime(session.last_room_session_end_time)
+          : null;
+        
+        if (start && end) {
+          return <span style={{ whiteSpace: 'nowrap' }}>{start} → {end}</span>;
+        } else if (start) {
+          return <span style={{ whiteSpace: 'nowrap' }}>{start}</span>;
+        }
+        return <span className="no-data-text">—</span>;
+      },
     },
-    { key: 'slot_duration', label: 'Slot Duration (min)' },
-    { key: 'time_between_slots', label: 'Time Between Slots (min)' },
     {
       key: 'teams',
       label: 'Teams',
@@ -128,13 +138,21 @@ const Sessions = () => {
         if (!session.teams || session.teams.length === 0) {
           return <span className="no-data-text">—</span>;
         }
+        
+        const MAX_VISIBLE = 4;
+        const visibleTeams = session.teams.slice(0, MAX_VISIBLE);
+        const remainingCount = session.teams.length - MAX_VISIBLE;
+        
         return (
-          <div className="chips-container">
-            {session.teams.map(team => (
+          <div className="chips-container-compact">
+            {visibleTeams.map(team => (
               <span key={team.id} className="chip chip-team">
                 {team.label}
               </span>
             ))}
+            {remainingCount > 0 && (
+              <span className="chip chip-more">+{remainingCount} more</span>
+            )}
           </div>
         );
       },
@@ -146,13 +164,21 @@ const Sessions = () => {
         if (!session.juries || session.juries.length === 0) {
           return <span className="no-data-text">—</span>;
         }
+        
+        const MAX_VISIBLE = 4;
+        const visibleJuries = session.juries.slice(0, MAX_VISIBLE);
+        const remainingCount = session.juries.length - MAX_VISIBLE;
+        
         return (
-          <div className="chips-container">
-            {session.juries.map(jury => (
+          <div className="chips-container-compact">
+            {visibleJuries.map(jury => (
               <span key={jury.id} className="chip chip-jury">
                 {jury.label}
               </span>
             ))}
+            {remainingCount > 0 && (
+              <span className="chip chip-more">+{remainingCount} more</span>
+            )}
           </div>
         );
       },
@@ -162,24 +188,6 @@ const Sessions = () => {
       label: 'Room Sessions',
       render: (session: SessionExpanded) => {
         return session.room_sessions_count !== undefined ? session.room_sessions_count : <span className="no-data-text">—</span>;
-      },
-    },
-    {
-      key: 'first_room_session_start_time',
-      label: 'First Start',
-      render: (session: SessionExpanded) => {
-        return session.first_room_session_start_time 
-          ? formatEuropeanDateTime(session.first_room_session_start_time)
-          : <span className="no-data-text">—</span>;
-      },
-    },
-    {
-      key: 'last_room_session_end_time',
-      label: 'Last End',
-      render: (session: SessionExpanded) => {
-        return session.last_room_session_end_time 
-          ? formatEuropeanDateTime(session.last_room_session_end_time)
-          : <span className="no-data-text">—</span>;
       },
     },
   ];
