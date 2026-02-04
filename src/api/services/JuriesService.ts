@@ -11,14 +11,13 @@ export class JuriesService {
     /**
      * Create a new jury
      * Creates a new jury with the provided name and email
+     * @param requestBody
      * @returns Jury Jury created successfully
      * @throws ApiError
      */
-    public static createJury({
-        requestBody,
-    }: {
+    public static createJury(
         requestBody: JuryInput,
-    }): CancelablePromise<Jury> {
+    ): CancelablePromise<Jury> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/juries',
@@ -48,17 +47,13 @@ export class JuriesService {
     /**
      * Get a jury by ID
      * Retrieves a specific jury by its ID
+     * @param id Jury ID
      * @returns Jury Jury found
      * @throws ApiError
      */
-    public static getJuryById({
-        id,
-    }: {
-        /**
-         * Jury ID
-         */
+    public static getJuryById(
         id: number,
-    }): CancelablePromise<Jury> {
+    ): CancelablePromise<Jury> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/juries/{id}',
@@ -74,19 +69,15 @@ export class JuriesService {
     /**
      * Update an existing jury
      * Updates a jury with the provided information. The ID is provided in the URL path, not in the request body.
+     * @param id Jury ID
+     * @param requestBody
      * @returns Jury Jury updated successfully
      * @throws ApiError
      */
-    public static updateJury({
-        id,
-        requestBody,
-    }: {
-        /**
-         * Jury ID
-         */
+    public static updateJury(
         id: number,
         requestBody: JuryInput,
-    }): CancelablePromise<Jury> {
+    ): CancelablePromise<Jury> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/juries/{id}',
@@ -104,17 +95,13 @@ export class JuriesService {
     /**
      * Delete a jury
      * Deletes a specific jury by its ID
+     * @param id Jury ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteJury({
-        id,
-    }: {
-        /**
-         * Jury ID
-         */
+    public static deleteJury(
         id: number,
-    }): CancelablePromise<void> {
+    ): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/juries/{id}',

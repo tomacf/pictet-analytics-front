@@ -45,30 +45,21 @@ export class AnalyticsService {
      * - Team-vs-team matrix: count how many times each pair of teams met in the same room session
      * - Team waiting times: total and average waiting time between session start and first room session, with per-session breakdown
      * - Team room distributions: count of room sessions per room for each team
+     * - Team-jury matrix: count how many times each team and jury were assigned together in room sessions, with per-team and per-jury totals
      *
      * Supports optional filtering by session_id or date range.
      *
+     * @param sessionId Filter results by a specific session ID
+     * @param startDate Filter results by start date (ISO 8601 timestamp)
+     * @param endDate Filter results by end date (ISO 8601 timestamp)
      * @returns AnalyticsSummary Analytics summary retrieved successfully
      * @throws ApiError
      */
-    public static getAnalyticsSummary({
-        sessionId,
-        startDate,
-        endDate,
-    }: {
-        /**
-         * Filter results by a specific session ID
-         */
+    public static getAnalyticsSummary(
         sessionId?: number,
-        /**
-         * Filter results by start date (ISO 8601 timestamp)
-         */
         startDate?: string,
-        /**
-         * Filter results by end date (ISO 8601 timestamp)
-         */
         endDate?: string,
-    }): CancelablePromise<AnalyticsSummary> {
+    ): CancelablePromise<AnalyticsSummary> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/analytics/summary',

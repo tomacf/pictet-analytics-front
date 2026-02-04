@@ -4,6 +4,7 @@ import { AnalyticsService, type AnalyticsSummary, SessionsService, type Session 
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import TeamVsTeamMatrix from './TeamVsTeamMatrix';
+import TeamJuryMatrix from './TeamJuryMatrix';
 import WaitingTimeChart from './WaitingTimeChart';
 import RoomDistributionChart from './RoomDistributionChart';
 import './Analytics.css';
@@ -21,7 +22,7 @@ const Analytics = () => {
 
   const fetchSessions = async () => {
     try {
-      const sessionsData = await SessionsService.getAllSessions({});
+      const sessionsData = await SessionsService.getAllSessions();
       setSessions(sessionsData);
     } catch (err) {
       console.error('Failed to fetch sessions:', err);
@@ -32,11 +33,11 @@ const Analytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const analyticsData = await AnalyticsService.getAnalyticsSummary({
-        sessionId: selectedSessionId,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-      });
+      const analyticsData = await AnalyticsService.getAnalyticsSummary(
+        selectedSessionId,
+        startDate || undefined,
+        endDate || undefined,
+      );
       setData(analyticsData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch analytics data';
@@ -127,6 +128,16 @@ const Analytics = () => {
 
       {/* Visualizations */}
       <div className="analytics-content">
+        {/* Team vs Jury Matrix */}
+        <div className="analytics-section">
+          <h2>Team ↔ Jury Interaction Matrix</h2>
+          <p className="section-description">
+            Shows how many times each team and jury were assigned together in room sessions. 
+            Use sorting to identify patterns and highlighting to surface imbalances.
+          </p>
+          <TeamJuryMatrix data={data.team_jury_matrix} />
+        </div>
+
         {/* Team vs Team Matrix */}
         <div className="analytics-section">
           <h2>Team Interactions Matrix</h2>

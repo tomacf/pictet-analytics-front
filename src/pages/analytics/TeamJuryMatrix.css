@@ -1,0 +1,279 @@
+.jury-matrix-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.matrix-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.control-group label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.sort-button,
+.highlight-button {
+  padding: 0.5rem 1rem;
+  background-color: #e2e8f0;
+  color: #475569;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.sort-button:hover,
+.highlight-button:hover {
+  background-color: #cbd5e1;
+}
+
+.highlight-button.active {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.matrix-wrapper {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.jury-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 600px;
+  table-layout: auto;
+}
+
+.corner-cell {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  min-width: 120px;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.75rem;
+  text-align: left;
+}
+
+.jury-header {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.75rem;
+  min-width: 50px;
+  max-width: 50px;
+  height: 120px;
+  position: relative;
+  vertical-align: bottom;
+}
+
+.team-header-row {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.75rem;
+  text-align: left;
+  min-width: 120px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.jury-label-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 110px;
+}
+
+.team-label-horizontal {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.matrix-cell {
+  border: 1px solid #e2e8f0;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: default;
+  transition: all 0.2s;
+  min-width: 50px;
+  max-width: 50px;
+}
+
+.matrix-cell:hover,
+.matrix-cell.hovered {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+  z-index: 1;
+  position: relative;
+}
+
+.matrix-cell.highlighted {
+  box-shadow: 0 0 0 3px #fbbf24 inset;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 3px #fbbf24 inset;
+  }
+  50% {
+    box-shadow: 0 0 0 3px #f59e0b inset;
+  }
+}
+
+.total-header {
+  background-color: #e0f2fe;
+  border: 1px solid #bae6fd;
+  padding: 0.5rem;
+  font-weight: 600;
+  color: #0c4a6e;
+  font-size: 0.75rem;
+  text-align: center;
+  min-width: 60px;
+}
+
+.total-cell {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  text-align: center;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0c4a6e;
+  min-width: 50px;
+}
+
+.total-row {
+  background-color: #f0f9ff;
+}
+
+.total-cell.grand-total {
+  background-color: #0ea5e9;
+  color: white;
+  font-weight: 700;
+}
+
+.matrix-legend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.legend-label {
+  font-weight: 500;
+  color: #334155;
+  font-size: 0.875rem;
+}
+
+.legend-gradient {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  max-width: 400px;
+}
+
+.gradient-bar {
+  flex: 1;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.legend-gradient span {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.matrix-empty {
+  padding: 2rem;
+  text-align: center;
+  color: #64748b;
+  font-style: italic;
+}
+
+.matrix-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f0f9ff;
+  border-left: 4px solid #0ea5e9;
+  border-radius: 4px;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: #334155;
+  margin: 0.5rem 0;
+}
+
+.info-text strong {
+  color: #0c4a6e;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .matrix-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .control-group {
+    width: 100%;
+  }
+
+  .jury-matrix {
+    font-size: 0.75rem;
+  }
+
+  .matrix-cell,
+  .total-cell {
+    padding: 0.5rem 0.25rem;
+    min-width: 40px;
+    max-width: 40px;
+  }
+
+  .jury-header {
+    min-width: 40px;
+    max-width: 40px;
+    height: 100px;
+  }
+
+  .team-header-row {
+    min-width: 100px;
+    max-width: 150px;
+  }
+}
