@@ -12,8 +12,11 @@ const Rooms = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [formData, setFormData] = useState<RoomInput>({ label: '', max_size: 0 });
+  const [bulkInput, setBulkInput] = useState('');
+  const [bulkMaxSize, setBulkMaxSize] = useState(30);
 
   const fetchRooms = async () => {
     try {
@@ -80,6 +83,50 @@ const Rooms = () => {
     }
   };
 
+  const handleBulkCreate = () => {
+    setBulkInput('');
+    setBulkMaxSize(30);
+    setIsBulkModalOpen(true);
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const labels = bulkInput
+      .split(',')
+      .map(label => label.trim())
+      .filter(label => label.length > 0);
+
+    if (labels.length === 0) {
+      toast.warning('Please enter at least one room label');
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const label of labels) {
+      try {
+        await RoomsService.createRoom({ requestBody: { label, max_size: bulkMaxSize } });
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        const message = err instanceof Error ? err.message : 'Failed to create room';
+        toast.error(`Failed to create "${label}": ${message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully created ${successCount} room(s)`);
+      fetchRooms();
+      setBulkInput('');
+    }
+
+    if (errorCount === 0) {
+      // Keep modal open for continuous adding
+    }
+  };
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'label', label: 'Label' },
@@ -103,9 +150,14 @@ const Rooms = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Rooms</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          Create Room
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleCreate} className="btn btn-primary">
+            Create Room
+          </button>
+          <button onClick={handleBulkCreate} className="btn btn-primary">
+            Bulk Create
+          </button>
+        </div>
       </div>
 
       <DataTable
@@ -152,6 +204,57 @@ const Rooms = () => {
             </button>
             <button type="submit" className="btn btn-primary">
               {editingRoom ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="Bulk Create Rooms"
+      >
+        <form onSubmit={handleBulkSubmit} className="form">
+          <div className="form-group">
+            <label htmlFor="bulkMaxSize">Default Max Size</label>
+            <input
+              type="number"
+              id="bulkMaxSize"
+              value={bulkMaxSize}
+              onChange={(e) => setBulkMaxSize(parseInt(e.target.value, 10) || 30)}
+              required
+              min="1"
+              className="form-input"
+            />
+            <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+              This max size will be applied to all rooms created in this batch.
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="bulkInput">
+              Room Labels (comma-separated)
+            </label>
+            <textarea
+              id="bulkInput"
+              value={bulkInput}
+              onChange={(e) => setBulkInput(e.target.value)}
+              placeholder="e.g., Room A, Room B, Room C"
+              rows={5}
+              className="form-input"
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+              Enter room labels separated by commas. The modal will stay open so you can add more.
+            </small>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={() => setIsBulkModalOpen(false)} className="btn btn-secondary">
+              Close
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Create Rooms
             </button>
           </div>
         </form>
