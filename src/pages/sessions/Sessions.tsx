@@ -6,6 +6,7 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import { formatEuropeanDateTime } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 
@@ -116,7 +117,7 @@ const Sessions = () => {
     {
       key: 'start_time',
       label: 'Start Time',
-      render: (session: SessionExpanded) => new Date(session.start_time).toLocaleString(),
+      render: (session: SessionExpanded) => formatEuropeanDateTime(session.start_time),
     },
     { key: 'slot_duration', label: 'Slot Duration (min)' },
     { key: 'time_between_slots', label: 'Time Between Slots (min)' },
@@ -168,7 +169,7 @@ const Sessions = () => {
       label: 'First Start',
       render: (session: SessionExpanded) => {
         return session.first_room_session_start_time 
-          ? new Date(session.first_room_session_start_time).toLocaleString()
+          ? formatEuropeanDateTime(session.first_room_session_start_time)
           : <span className="no-data-text">—</span>;
       },
     },
@@ -177,14 +178,9 @@ const Sessions = () => {
       label: 'Last End',
       render: (session: SessionExpanded) => {
         return session.last_room_session_end_time 
-          ? new Date(session.last_room_session_end_time).toLocaleString()
+          ? formatEuropeanDateTime(session.last_room_session_end_time)
           : <span className="no-data-text">—</span>;
       },
-    },
-    {
-      key: 'created_at',
-      label: 'Created At',
-      render: (session: SessionExpanded) => new Date(session.created_at).toLocaleString(),
     },
   ];
 

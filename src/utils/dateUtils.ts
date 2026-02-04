@@ -15,3 +15,25 @@ export const toISOString = (value: string): string => {
 export const fromISOString = (isoString: string): string => {
   return isoString ? isoString.slice(0, 16) : '';
 };
+
+/**
+ * Formats a date string or Date object to European format (dd/MM/yyyy HH:mm)
+ * @param date - The date string or Date object to format
+ * @returns Formatted date string in European format (dd/MM/yyyy HH:mm) using 24h format, or empty string if invalid
+ */
+export const formatEuropeanDateTime = (date: string | Date): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  // Check if the date is valid
+  if (isNaN(dateObj.getTime())) {
+    return '';
+  }
+  
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const year = dateObj.getFullYear();
+  const hours = String(dateObj.getHours()).padStart(2, '0');
+  const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+  
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+};
