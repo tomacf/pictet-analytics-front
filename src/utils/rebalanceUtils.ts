@@ -282,13 +282,8 @@ function validateConstraints(
     });
   });
   
-  for (const [teamId, count] of teamSlotCount.entries()) {
-    if (count > 1) {
-      // Team appears in multiple slots - this is allowed
-      // The constraint is "at most once per session" but the current implementation
-      // allows teams in multiple slots. Let's not enforce this strictly.
-    }
-  }
+  // Note: The constraint "at most once per session" is interpreted as allowing teams
+  // in multiple slots in the current implementation, so we don't enforce strict uniqueness
 
   // Check: no jury overlap in time
   const juryTimeSlots = new Map<number, Array<{ start: number; end: number }>>();
@@ -304,7 +299,7 @@ function validateConstraints(
     });
   });
 
-  for (const [juryId, timeSlots] of juryTimeSlots.entries()) {
+  for (const timeSlots of juryTimeSlots.values()) {
     for (let i = 0; i < timeSlots.length; i++) {
       for (let j = i + 1; j < timeSlots.length; j++) {
         const a = timeSlots[i];
@@ -340,9 +335,7 @@ function validateConstraints(
  */
 function performSwap(
   slots: RebalanceSlot[],
-  rng: SeededRandom,
-  selectedTeamIds: number[],
-  selectedJuryIds: number[]
+  rng: SeededRandom
 ): RebalanceSlot[] {
   const newSlots = JSON.parse(JSON.stringify(slots)) as RebalanceSlot[];
   
@@ -422,7 +415,7 @@ export function magicRebalance(config: RebalanceConfig): RebalanceResult {
   // Perform iterations
   for (let i = 0; i < iterations; i++) {
     // Try a random swap
-    const candidateSlots = performSwap(bestSlots, rng, selectedTeamIds, selectedJuryIds);
+    const candidateSlots = performSwap(bestSlots, rng);
 
     // Validate constraints
     if (!validateConstraints(candidateSlots, selectedTeamIds, selectedJuryIds)) {

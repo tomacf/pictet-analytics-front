@@ -1,4 +1,4 @@
-import { RebalanceMetrics } from '../../utils/rebalanceUtils';
+import type { RebalanceMetrics } from '../../utils/rebalanceUtils';
 import './RebalanceModal.css';
 
 interface RebalanceModalProps {

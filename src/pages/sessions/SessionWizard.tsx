@@ -26,7 +26,6 @@ import {
 import { is409Error, format409Error } from '../../utils/errorUtils';
 import {
   magicRebalance,
-  type RebalanceMetrics,
   type RebalanceResult,
 } from '../../utils/rebalanceUtils';
 import './SessionWizard.css';
