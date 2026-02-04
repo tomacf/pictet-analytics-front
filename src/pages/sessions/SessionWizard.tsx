@@ -1331,6 +1331,11 @@ const SessionWizard = () => {
               onApply={handleApplyRebalance}
               onUndo={handleUndoRebalance}
               hasApplied={preRebalanceSlots !== null}
+              beforeSlots={rebalanceResult.originalSlots}
+              afterSlots={rebalanceResult.slots}
+              rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
+              teams={teams.map(t => ({ id: t.id, label: t.label }))}
+              juries={juries.map(j => ({ id: j.id, label: j.label }))}
             />
           )}
 

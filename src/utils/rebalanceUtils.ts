@@ -39,6 +39,7 @@ export interface RebalanceMetrics {
 }
 
 export interface RebalanceResult {
+  originalSlots: RebalanceSlot[];
   slots: RebalanceSlot[];
   beforeMetrics: RebalanceMetrics;
   afterMetrics: RebalanceMetrics;
@@ -447,6 +448,7 @@ export function magicRebalance(config: RebalanceConfig): RebalanceResult {
     : 0;
 
   return {
+    originalSlots,
     slots: bestSlots,
     beforeMetrics,
     afterMetrics,

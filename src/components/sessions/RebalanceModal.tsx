@@ -1,4 +1,6 @@
-import type { RebalanceMetrics } from '../../utils/rebalanceUtils';
+import type { RebalanceMetrics, RebalanceSlot } from '../../utils/rebalanceUtils';
+import type { RoomSessionExpanded, IDLabel } from '../../apiConfig';
+import ScheduleOverview from './ScheduleOverview';
 import './RebalanceModal.css';
 
 interface RebalanceModalProps {
@@ -10,6 +12,11 @@ interface RebalanceModalProps {
   onApply: () => void;
   onUndo: () => void;
   hasApplied: boolean;
+  beforeSlots: RebalanceSlot[];
+  afterSlots: RebalanceSlot[];
+  rooms: Array<{ id: number; label: string }>;
+  teams: Array<{ id: number; label: string }>;
+  juries: Array<{ id: number; label: string }>;
 }
 
 const METRIC_DECIMAL_PLACES = 2; // Number of decimal places to show for metrics
@@ -23,10 +30,46 @@ const RebalanceModal = ({
   onApply,
   onUndo,
   hasApplied,
+  beforeSlots,
+  afterSlots,
+  rooms,
+  teams,
+  juries,
 }: RebalanceModalProps) => {
   if (!isOpen) return null;
 
   const formatNumber = (num: number) => num.toFixed(METRIC_DECIMAL_PLACES);
+
+  // Convert RebalanceSlot[] to RoomSessionExpanded[] for ScheduleOverview
+  const convertSlotsToRoomSessions = (slots: RebalanceSlot[]): RoomSessionExpanded[] => {
+    return slots.map((slot, index) => {
+      const room = rooms.find(r => r.id === slot.roomId);
+      const slotTeams = slot.teamIds.map(id => {
+        const team = teams.find(t => t.id === id);
+        return team ? { id: team.id, label: team.label } as IDLabel : { id, label: `Team ${id}` } as IDLabel;
+      });
+      const slotJuries = slot.juryIds.map(id => {
+        const jury = juries.find(j => j.id === id);
+        return jury ? { id: jury.id, label: jury.label } as IDLabel : { id, label: `Jury ${id}` } as IDLabel;
+      });
+
+      return {
+        id: index,
+        room_id: slot.roomId,
+        session_id: 0, // Not needed for preview
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        room: room ? { id: room.id, label: room.label } as IDLabel : undefined,
+        teams: slotTeams,
+        juries: slotJuries,
+      };
+    });
+  };
+
+  const beforeRoomSessions = convertSlotsToRoomSessions(beforeSlots);
+  const afterRoomSessions = convertSlotsToRoomSessions(afterSlots);
 
   const renderMetricRow = (label: string, before: number, after: number, unit: string = '') => {
     const change = after - before;
@@ -52,7 +95,7 @@ const RebalanceModal = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content rebalance-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content rebalance-modal rebalance-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>✨ Magic Rebalance Results</h2>
           <button className="modal-close" onClick={onClose} aria-label="Close">
@@ -77,6 +120,25 @@ const RebalanceModal = ({
             </div>
           </div>
 
+          {/* Schedule Preview Section */}
+          <div className="schedule-preview-section">
+            <div className="schedule-preview-container">
+              <div className="schedule-preview-column">
+                <h3 className="schedule-preview-title">Before Rebalance</h3>
+                <div className="schedule-preview-content">
+                  <ScheduleOverview roomSessions={beforeRoomSessions} rooms={rooms} />
+                </div>
+              </div>
+              <div className="schedule-preview-column">
+                <h3 className="schedule-preview-title">After Rebalance</h3>
+                <div className="schedule-preview-content">
+                  <ScheduleOverview roomSessions={afterRoomSessions} rooms={rooms} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Table */}
           <table className="metrics-table">
             <thead>
               <tr>
