@@ -119,6 +119,9 @@ const SessionWizard = () => {
   // Refs for scrolling to slots
   const slotRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
+  // Tab state for step 3
+  const [activeTab, setActiveTab] = useState<'overview' | number>('overview');
+
   // Conflict detection
   const conflicts = useMemo(() => {
     const slots: SlotAssignment[] = wizardState.scheduleSlots.map((slot) => ({
@@ -1011,16 +1014,47 @@ const SessionWizard = () => {
               </div>
             )}
 
-            {/* Schedule Overview - Non-editable compact view */}
-            {renderScheduleOverview()}
+            {/* Tab Navigation */}
+            <div className="tabs-container">
+              <div className="tabs-header">
+                <button 
+                  className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('overview')}
+                >
+                  📅 Schedule Overview
+                </button>
+                {wizardState.selectedRoomIds.map((roomId) => {
+                  const room = rooms.find((r) => r.id === roomId);
+                  return (
+                    <button 
+                      key={roomId}
+                      className={`tab-button ${activeTab === roomId ? 'active' : ''}`}
+                      onClick={() => setActiveTab(roomId)}
+                    >
+                      🏛️ {room?.label || `Room ${roomId}`}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <div className="tabs-content">
+                {/* Overview Tab */}
+                {activeTab === 'overview' && (
+                  <div className="tab-panel">
+                    {renderScheduleOverview()}
+                  </div>
+                )}
 
-          <div className="schedule-grid">
-            {wizardState.selectedRoomIds.map((roomId) => {
-              const room = rooms.find((r) => r.id === roomId);
-              const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
+                {/* Room Tabs */}
+                {wizardState.selectedRoomIds.map((roomId) => {
+                  if (activeTab !== roomId) return null;
+                  
+                  const room = rooms.find((r) => r.id === roomId);
+                  const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
 
-              return (
-                <div key={roomId} className="room-schedule">
+                  return (
+                    <div key={roomId} className="tab-panel">
+                      <div className="room-schedule">
                   <h3>{room?.label || `Room ${roomId}`}</h3>
                   
                   {/* Room-level summary */}
@@ -1199,12 +1233,14 @@ const SessionWizard = () => {
                       </button>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-          <div className="form-actions">
+            <div className="form-actions">
             <button 
               type="button" 
               onClick={() => setCurrentStep(2)} 
