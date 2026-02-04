@@ -1,5 +1,5 @@
 import React from 'react';
-import type { RoomSessionExpanded } from '../../apiConfig';
+import type {RoomSessionExpanded} from '../../apiConfig';
 import './ScheduleOverview.css';
 
 interface ScheduleOverviewProps {
@@ -42,10 +42,10 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
 
   // Group sessions by time slots
   const timeSlotsMap = new Map<string, TimeSlot>();
-  
+
   roomSessions.forEach(session => {
     const key = `${session.start_time}_${session.end_time}`;
-    
+
     if (!timeSlotsMap.has(key)) {
       timeSlotsMap.set(key, {
         startTime: session.start_time,
@@ -53,13 +53,13 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
         sessions: new Map()
       });
     }
-    
+
     const slot = timeSlotsMap.get(key)!;
     slot.sessions.set(session.room_id, session);
   });
 
   // Sort time slots by start time
-  const sortedTimeSlots = Array.from(timeSlotsMap.values()).sort((a, b) => 
+  const sortedTimeSlots = Array.from(timeSlotsMap.values()).sort((a, b) =>
     new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
 
@@ -97,7 +97,6 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                         <div className="session-content">
                           {session.teams && session.teams.length > 0 && (
                             <div className="cell-group">
-                              <div className="cell-label">Teams:</div>
                               <div className="cell-chips">
                                 {session.teams.map(team => (
                                   <span key={team.id} className="cell-chip chip-team">
@@ -109,7 +108,6 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                           )}
                           {session.juries && session.juries.length > 0 && (
                             <div className="cell-group">
-                              <div className="cell-label">Juries:</div>
                               <div className="cell-chips">
                                 {session.juries.map(jury => (
                                   <span key={jury.id} className="cell-chip chip-jury">
@@ -119,7 +117,7 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                               </div>
                             </div>
                           )}
-                          {(!session.teams || session.teams.length === 0) && 
+                          {(!session.teams || session.teams.length === 0) &&
                            (!session.juries || session.juries.length === 0) && (
                             <span className="empty-session">No assignments</span>
                           )}

@@ -1,20 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
-import { toast } from 'react-toastify';
-import { AnalyticsService, type AnalyticsSummary, SessionsService, type Session } from '../../apiConfig';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import {useCallback, useEffect, useState} from 'react';
+import {toast} from 'react-toastify';
+import {AnalyticsService, SessionsService, type AnalyticsSummary, type Session} from '../../apiConfig';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
-import TeamVsTeamMatrix from './TeamVsTeamMatrix';
-import TeamJuryMatrix from './TeamJuryMatrix';
-import WaitingTimeChart from './WaitingTimeChart';
-import RoomDistributionChart from './RoomDistributionChart';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import './Analytics.css';
+import RoomDistributionChart from './RoomDistributionChart';
+import TeamJuryMatrix from './TeamJuryMatrix';
+import TeamVsTeamMatrix from './TeamVsTeamMatrix';
+import WaitingTimeChart from './WaitingTimeChart';
 
 const Analytics = () => {
   const [data, setData] = useState<AnalyticsSummary | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Filter states
   const [selectedSessionId, setSelectedSessionId] = useState<number | undefined>(undefined);
   const [startDate, setStartDate] = useState<string>('');
@@ -128,21 +128,11 @@ const Analytics = () => {
 
       {/* Visualizations */}
       <div className="analytics-content">
-        {/* Team vs Jury Matrix */}
-        <div className="analytics-section">
-          <h2>Team ↔ Jury Interaction Matrix</h2>
-          <p className="section-description">
-            Shows how many times each team and jury were assigned together in room sessions. 
-            Use sorting to identify patterns and highlighting to surface imbalances.
-          </p>
-          <TeamJuryMatrix data={data.team_jury_matrix} />
-        </div>
-
         {/* Team vs Team Matrix */}
         <div className="analytics-section">
           <h2>Team Interactions Matrix</h2>
           <p className="section-description">
-            Shows how many times each pair of teams met in the same room session. 
+            Shows how many times each pair of teams met in the same room session.
             Darker colors indicate more meetings.
           </p>
           <TeamVsTeamMatrix data={data.team_vs_team_matrix} />
@@ -165,6 +155,16 @@ const Analytics = () => {
             Distribution of room sessions per room for each team.
           </p>
           <RoomDistributionChart data={data.team_room_distributions} />
+        </div>
+
+        {/* Team vs Jury Matrix */}
+        <div className="analytics-section">
+          <h2>Team ↔ Jury Interaction Matrix</h2>
+          <p className="section-description">
+            Shows how many times each team and jury were assigned together in room sessions.
+            Use sorting to identify patterns and highlighting to surface imbalances.
+          </p>
+          <TeamJuryMatrix data={data.team_jury_matrix} />
         </div>
       </div>
     </div>
