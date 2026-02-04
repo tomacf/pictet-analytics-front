@@ -1,4 +1,6 @@
-import type { RebalanceMetrics } from '../../utils/rebalanceUtils';
+import type { RebalanceMetrics, RebalanceSlot } from '../../utils/rebalanceUtils';
+import type { RoomSessionExpanded, IDLabel } from '../../apiConfig';
+import ScheduleOverview from './ScheduleOverview';
 import './RebalanceModal.css';
 
 interface RebalanceModalProps {
@@ -10,6 +12,11 @@ interface RebalanceModalProps {
   onApply: () => void;
   onUndo: () => void;
   hasApplied: boolean;
+  beforeSlots: RebalanceSlot[];
+  afterSlots: RebalanceSlot[];
+  rooms: Array<{ id: number; label: string }>;
+  teams: Array<{ id: number; label: string }>;
+  juries: Array<{ id: number; label: string }>;
 }
 
 const METRIC_DECIMAL_PLACES = 2; // Number of decimal places to show for metrics
@@ -23,10 +30,55 @@ const RebalanceModal = ({
   onApply,
   onUndo,
   hasApplied,
+  beforeSlots,
+  afterSlots,
+  rooms,
+  teams,
+  juries,
 }: RebalanceModalProps) => {
   if (!isOpen) return null;
 
   const formatNumber = (num: number) => num.toFixed(METRIC_DECIMAL_PLACES);
+
+  // Helper function to get or create IDLabel
+  const getOrCreateIDLabel = (
+    map: Map<number, { id: number; label: string }>,
+    id: number,
+    prefix: string
+  ): IDLabel => {
+    const entity = map.get(id);
+    return entity ? { id: entity.id, label: entity.label } : { id, label: `${prefix} ${id}` };
+  };
+
+  // Convert RebalanceSlot[] to RoomSessionExpanded[] for ScheduleOverview
+  const convertSlotsToRoomSessions = (slots: RebalanceSlot[]): RoomSessionExpanded[] => {
+    // Create lookup maps for O(1) access instead of O(n) find operations
+    const roomsMap = new Map(rooms.map(r => [r.id, r]));
+    const teamsMap = new Map(teams.map(t => [t.id, t]));
+    const juriesMap = new Map(juries.map(j => [j.id, j]));
+
+    return slots.map((slot, index) => {
+      const room = roomsMap.get(slot.roomId);
+      const slotTeams = slot.teamIds.map(id => getOrCreateIDLabel(teamsMap, id, 'Team'));
+      const slotJuries = slot.juryIds.map(id => getOrCreateIDLabel(juriesMap, id, 'Jury'));
+
+      return {
+        id: index,
+        room_id: slot.roomId,
+        session_id: 0, // Placeholder: not needed for preview display
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        room: room ? { id: room.id, label: room.label } as IDLabel : undefined,
+        teams: slotTeams,
+        juries: slotJuries,
+      };
+    });
+  };
+
+  const beforeRoomSessions = convertSlotsToRoomSessions(beforeSlots);
+  const afterRoomSessions = convertSlotsToRoomSessions(afterSlots);
 
   const renderMetricRow = (label: string, before: number, after: number, unit: string = '') => {
     const change = after - before;
@@ -52,7 +104,7 @@ const RebalanceModal = ({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content rebalance-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content rebalance-modal rebalance-modal-wide" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>✨ Magic Rebalance Results</h2>
           <button className="modal-close" onClick={onClose} aria-label="Close">
@@ -77,6 +129,25 @@ const RebalanceModal = ({
             </div>
           </div>
 
+          {/* Schedule Preview Section */}
+          <div className="schedule-preview-section">
+            <div className="schedule-preview-container">
+              <div className="schedule-preview-column">
+                <h3 className="schedule-preview-title">Before Rebalance</h3>
+                <div className="schedule-preview-content">
+                  <ScheduleOverview roomSessions={beforeRoomSessions} rooms={rooms} />
+                </div>
+              </div>
+              <div className="schedule-preview-column">
+                <h3 className="schedule-preview-title">After Rebalance</h3>
+                <div className="schedule-preview-content">
+                  <ScheduleOverview roomSessions={afterRoomSessions} rooms={rooms} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Metrics Table */}
           <table className="metrics-table">
             <thead>
               <tr>

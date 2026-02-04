@@ -5,6 +5,11 @@
   overflow-y: auto;
 }
 
+.rebalance-modal-wide {
+  max-width: 95vw;
+  width: 1400px;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -200,4 +205,57 @@
 
 .btn-warning:hover {
   background-color: #d97706;
+}
+
+/* Schedule Preview Section */
+.schedule-preview-section {
+  margin: 2rem 0;
+  padding: 1rem;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.schedule-preview-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.schedule-preview-column {
+  min-width: 0; /* Allows grid items to shrink below their content size */
+}
+
+.schedule-preview-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  text-align: center;
+  padding: 0.5rem;
+  background-color: #e0e7ff;
+  border-radius: 6px;
+}
+
+.schedule-preview-content {
+  background: white;
+  border-radius: 6px;
+  padding: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Make the schedule overview table more compact in preview */
+.schedule-preview-content .schedule-overview-table {
+  font-size: 0.85rem;
+}
+
+.schedule-preview-content .schedule-overview-table th,
+.schedule-preview-content .schedule-overview-table td {
+  padding: 0.4rem;
+}
+
+.schedule-preview-content .cell-chip {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
 }

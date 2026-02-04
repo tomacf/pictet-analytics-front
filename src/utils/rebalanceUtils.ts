@@ -3,6 +3,8 @@
  * Reorganizes team/jury assignments to optimize schedule quality
  */
 
+import type { AnalyticsSummary } from '../apiConfig';
+
 export interface RebalanceSlot {
   roomId: number;
   slotIndex: number;
@@ -39,6 +41,7 @@ export interface RebalanceMetrics {
 }
 
 export interface RebalanceResult {
+  originalSlots: RebalanceSlot[];
   slots: RebalanceSlot[];
   beforeMetrics: RebalanceMetrics;
   afterMetrics: RebalanceMetrics;
@@ -447,9 +450,100 @@ export function magicRebalance(config: RebalanceConfig): RebalanceResult {
     : 0;
 
   return {
+    originalSlots,
     slots: bestSlots,
     beforeMetrics,
     afterMetrics,
     improvementPercentage,
   };
+}
+
+/**
+ * Enhanced rebalance function that fetches global analytics from API
+ * Uses real-world data from ALL sessions to inform weight adjustments and better optimization
+ */
+export async function magicRebalanceWithAnalytics(config: RebalanceConfig): Promise<RebalanceResult> {
+  // Fetch global analytics to inform our weights (not limited to a specific session)
+  let adjustedWeights = config.weights || DEFAULT_WEIGHTS;
+  
+  try {
+    // Dynamically import the analytics service to avoid circular dependencies
+    const { AnalyticsService } = await import('../apiConfig');
+    
+    // Fetch analytics summary for ALL sessions (no session_id filter)
+    // This gives us a complete picture of historical patterns across all scheduling
+    console.log('Fetching global analytics to inform rebalancing...');
+    const summary = await AnalyticsService.getAnalyticsSummary();
+    
+    // Analyze the summary to adjust weights based on current issues across all data
+    adjustedWeights = adjustWeightsFromAnalytics(summary, DEFAULT_WEIGHTS);
+    
+    console.log('Enhanced rebalance with global analytics data:', {
+      teamVsTeamIssues: summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length,
+      teamJuryRepeatedPairings: summary.team_jury_matrix.counts.filter(c => c.meet_count > 1).length,
+      teamsAnalyzed: summary.team_waiting_times.length,
+      roomDistributions: summary.team_room_distributions.length,
+      adjustedWeights,
+    });
+  } catch (error) {
+    // If API call fails (e.g., no saved sessions yet), fall back to default weights
+    console.warn('Failed to fetch global analytics, using default weights:', error);
+    console.log('This is normal for new installations or if no sessions have been saved yet.');
+  }
+  
+  // Run the standard rebalance with adjusted weights
+  return magicRebalance({
+    ...config,
+    weights: adjustedWeights,
+  });
+}
+
+/**
+ * Analyze analytics summary to adjust penalty weights
+ * Increases weights for metrics that show problems in current data
+ */
+function adjustWeightsFromAnalytics(
+  summary: AnalyticsSummary,
+  baseWeights: PenaltyWeights
+): PenaltyWeights {
+  const adjustedWeights = { ...baseWeights };
+  
+  // Increase weight for repeated team meetings if we see many in the data
+  const repeatedMeetings = summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length;
+  if (repeatedMeetings > 3) {
+    adjustedWeights.repeatedTeamMeetings = baseWeights.repeatedTeamMeetings * 1.5;
+  }
+  
+  // Increase weight for team-jury interactions if there are many repeated pairings
+  const teamJuryInteractions = summary.team_jury_matrix.counts || [];
+  const repeatedPairings = teamJuryInteractions.filter(interaction => 
+    interaction.meet_count > 1
+  ).length;
+  if (repeatedPairings > 5) {
+    adjustedWeights.repeatedTeamJuryInteractions = baseWeights.repeatedTeamJuryInteractions * 1.5;
+  }
+  
+  // Increase weight for waiting time if there's high variance
+  const waitingTimes = summary.team_waiting_times.map(t => t.average_waiting_time_minutes);
+  if (waitingTimes.length > 0) {
+    const mean = waitingTimes.reduce((sum, t) => sum + t, 0) / waitingTimes.length;
+    const variance = waitingTimes.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / waitingTimes.length;
+    const stdDev = Math.sqrt(variance);
+    
+    if (stdDev > 15) { // More than 15 minutes standard deviation
+      adjustedWeights.waitingTimeDisparity = baseWeights.waitingTimeDisparity * 1.5;
+    }
+  }
+  
+  // Increase weight for room distribution if there's imbalance
+  const roomCounts = summary.team_room_distributions.map(d => d.room_counts.length);
+  if (roomCounts.length > 0) {
+    const maxRooms = Math.max(...roomCounts);
+    const minRooms = Math.min(...roomCounts);
+    if (maxRooms - minRooms > 2) {
+      adjustedWeights.unevenRoomAttendance = baseWeights.unevenRoomAttendance * 1.5;
+    }
+  }
+  
+  return adjustedWeights;
 }
