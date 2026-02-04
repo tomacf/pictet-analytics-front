@@ -22,7 +22,11 @@ const Layout = () => {
   };
 
   const isConfigurationActive = () => {
-    return isActive('/teams') || isActive('/rooms') || isActive('/juries');
+    // Parent item should never be active when sub-items are active
+    // This is intentional per the requirements: "when sub-items are active, 
+    // the parent-item should not get the active state"
+    // Since there's no dedicated /configuration route, this always returns false
+    return false;
   };
 
   const isAnalyticsActive = () => {
@@ -62,25 +66,29 @@ const Layout = () => {
                 <span className="icon">⚙️</span>
                 <span className="menu-text">Configuration</span>
               </button>
-              {isConfigurationExpanded && !isSidebarCollapsed && (
-                <ul className="sub-items">
+              {/* Show sub-items when expanded in normal mode, or always show in collapsed mode as a dropdown */}
+              {(!isSidebarCollapsed && isConfigurationExpanded) || isSidebarCollapsed ? (
+                <ul className={`sub-items ${isSidebarCollapsed ? 'collapsed-dropdown' : ''}`}>
                   <li className={isActive('/teams') ? 'active' : ''}>
                     <Link to="/teams" title="Teams">
+                      <span className="icon">👥</span>
                       <span className="menu-text">Teams</span>
                     </Link>
                   </li>
                   <li className={isActive('/rooms') ? 'active' : ''}>
                     <Link to="/rooms" title="Rooms">
+                      <span className="icon">🏠</span>
                       <span className="menu-text">Rooms</span>
                     </Link>
                   </li>
                   <li className={isActive('/juries') ? 'active' : ''}>
                     <Link to="/juries" title="Juries">
+                      <span className="icon">⚖️</span>
                       <span className="menu-text">Juries</span>
                     </Link>
                   </li>
                 </ul>
-              )}
+              ) : null}
             </li>
             <li className={isActive('/sessions') ? 'active' : ''}>
               <Link to="/sessions" title="Sessions">
