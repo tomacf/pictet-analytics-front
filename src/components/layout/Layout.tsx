@@ -22,9 +22,11 @@ const Layout = () => {
   };
 
   const isConfigurationActive = () => {
-    // Parent should only be active if we're on /configuration path itself
-    // Not when we're on sub-items like /teams, /rooms, /juries
-    return location.pathname === '/configuration';
+    // Parent item should never be active when sub-items are active
+    // This is intentional per the requirements: "when sub-items are active, 
+    // the parent-item should not get the active state"
+    // Since there's no dedicated /configuration route, this always returns false
+    return false;
   };
 
   const isAnalyticsActive = () => {
@@ -64,7 +66,8 @@ const Layout = () => {
                 <span className="icon">⚙️</span>
                 <span className="menu-text">Configuration</span>
               </button>
-              {(isConfigurationExpanded || isSidebarCollapsed) && (
+              {/* Show sub-items when expanded in normal mode, or always show in collapsed mode as a dropdown */}
+              {(!isSidebarCollapsed && isConfigurationExpanded) || isSidebarCollapsed ? (
                 <ul className={`sub-items ${isSidebarCollapsed ? 'collapsed-dropdown' : ''}`}>
                   <li className={isActive('/teams') ? 'active' : ''}>
                     <Link to="/teams" title="Teams">
@@ -85,7 +88,7 @@ const Layout = () => {
                     </Link>
                   </li>
                 </ul>
-              )}
+              ) : null}
             </li>
             <li className={isActive('/sessions') ? 'active' : ''}>
               <Link to="/sessions" title="Sessions">
