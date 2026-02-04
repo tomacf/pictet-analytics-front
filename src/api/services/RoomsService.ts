@@ -11,13 +11,14 @@ export class RoomsService {
     /**
      * Create a new room
      * Creates a new room with the provided label and max_size
-     * @param requestBody
      * @returns Room Room created successfully
      * @throws ApiError
      */
-    public static createRoom(
+    public static createRoom({
+        requestBody,
+    }: {
         requestBody: RoomInput,
-    ): CancelablePromise<Room> {
+    }): CancelablePromise<Room> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/rooms',
@@ -47,13 +48,17 @@ export class RoomsService {
     /**
      * Get a room by ID
      * Retrieves a specific room by its ID
-     * @param id Room ID
      * @returns Room Room found
      * @throws ApiError
      */
-    public static getRoomById(
+    public static getRoomById({
+        id,
+    }: {
+        /**
+         * Room ID
+         */
         id: number,
-    ): CancelablePromise<Room> {
+    }): CancelablePromise<Room> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/rooms/{id}',
@@ -69,15 +74,19 @@ export class RoomsService {
     /**
      * Update an existing room
      * Updates a room with the provided information. The ID is provided in the URL path, not in the request body.
-     * @param id Room ID
-     * @param requestBody
      * @returns Room Room updated successfully
      * @throws ApiError
      */
-    public static updateRoom(
+    public static updateRoom({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Room ID
+         */
         id: number,
         requestBody: RoomInput,
-    ): CancelablePromise<Room> {
+    }): CancelablePromise<Room> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/rooms/{id}',
@@ -95,13 +104,17 @@ export class RoomsService {
     /**
      * Delete a room
      * Deletes a specific room by its ID
-     * @param id Room ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteRoom(
+    public static deleteRoom({
+        id,
+    }: {
+        /**
+         * Room ID
+         */
         id: number,
-    ): CancelablePromise<void> {
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/rooms/{id}',
