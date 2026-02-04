@@ -584,8 +584,8 @@ const SessionWizard = () => {
     const juriesMap = new Map(juries.map((j) => [j.id, j]));
     const roomsMap = new Map(rooms.map((r) => [r.id, r]));
 
-    const roomSessions = wizardState.scheduleSlots.map((slot, index) => ({
-      id: index, // temporary ID for the draft
+    const roomSessions = wizardState.scheduleSlots.map((slot) => ({
+      id: slot.roomId * 1000 + slot.slotIndex, // stable composite numeric ID
       room_id: slot.roomId,
       session_id: 0, // not yet created
       start_time: slot.startTime,

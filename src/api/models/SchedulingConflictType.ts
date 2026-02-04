@@ -8,9 +8,9 @@
  * * `jury_time_overlap` - A jury cannot be assigned to overlapping time ranges
  *
  */
-export const SchedulingConflictType = {
+export const SCHEDULING_CONFLICT_TYPES = {
     TEAM_DUPLICATE: 'team_duplicate',
     JURY_TIME_OVERLAP: 'jury_time_overlap',
 } as const;
 
-export type SchedulingConflictType = typeof SchedulingConflictType[keyof typeof SchedulingConflictType];
+export type SchedulingConflictType = typeof SCHEDULING_CONFLICT_TYPES[keyof typeof SCHEDULING_CONFLICT_TYPES];
