@@ -572,6 +572,79 @@ const SessionWizard = () => {
     );
   };
 
+  // Helper function to render compact schedule overview
+  const renderScheduleOverview = () => {
+    if (wizardState.scheduleSlots.length === 0) {
+      return null;
+    }
+
+    // Sort slots by start time and room
+    const sortedSlots = [...wizardState.scheduleSlots].sort((a, b) => {
+      const timeCompare = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      if (timeCompare !== 0) return timeCompare;
+      return a.roomId - b.roomId;
+    });
+
+    return (
+      <div className="schedule-overview">
+        <h3>📋 Schedule Overview</h3>
+        <table className="overview-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Room</th>
+              <th>Teams</th>
+              <th>Juries</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedSlots.map((slot, idx) => {
+              const room = rooms.find((r) => r.id === slot.roomId);
+              const slotTeams = slot.teamIds.map(id => teams.find(t => t.id === id));
+              const slotJuries = slot.juryIds.map(id => juries.find(j => j.id === id));
+              
+              return (
+                <tr key={idx}>
+                  <td className="time-cell">
+                    {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                    {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td className="room-cell">{room?.label || `Room ${slot.roomId}`}</td>
+                  <td>
+                    {slotTeams.length > 0 ? (
+                      <div className="overview-chips">
+                        {slotTeams.map((team) => (
+                          <span key={team?.id} className="overview-chip">
+                            {team?.label || `Team ${team?.id}`}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="overview-empty">None</span>
+                    )}
+                  </td>
+                  <td>
+                    {slotJuries.length > 0 ? (
+                      <div className="overview-chips">
+                        {slotJuries.map((jury) => (
+                          <span key={jury?.id} className="overview-chip">
+                            {jury?.label || `Jury ${jury?.id}`}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="overview-empty">None</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // Scroll to slot when clicking on conflict
   const handleScrollToSlot = (slotIndex: number) => {
     const slotElement = slotRefs.current.get(slotIndex);
@@ -882,6 +955,9 @@ const SessionWizard = () => {
                 🚫 <strong>Conflicts detected.</strong> Check the status panel on the right for details.
               </div>
             )}
+
+            {/* Schedule Overview - Non-editable compact view */}
+            {renderScheduleOverview()}
 
           <div className="schedule-grid">
             {wizardState.selectedRoomIds.map((roomId) => {
