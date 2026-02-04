@@ -425,7 +425,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                     type="number"
                     min="1"
                     value={formData.juriesPerRoom}
-                    onChange={(e) => setFormData({ ...formData, juriesPerRoom: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, juriesPerRoom: parseInt(e.target.value, 10) || 1 })}
                   />
                 </div>
 
@@ -436,7 +436,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                     type="number"
                     min="5"
                     value={formData.slotDuration}
-                    onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value, 10) || 5 })}
                   />
                 </div>
 
@@ -447,7 +447,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                     type="number"
                     min="0"
                     value={formData.timeBetweenSlots}
-                    onChange={(e) => setFormData({ ...formData, timeBetweenSlots: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, timeBetweenSlots: parseInt(e.target.value, 10) || 0 })}
                   />
                 </div>
               </div>
