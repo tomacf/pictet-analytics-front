@@ -35,6 +35,8 @@ interface ParseState {
   draftPlan: DraftPlan | null;
   error: string | null;
   parseErrors: string[];
+  missingRooms: string[];
+  missingTeams: string[];
 }
 
 const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
@@ -56,6 +58,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     draftPlan: null,
     error: null,
     parseErrors: [],
+    missingRooms: [],
+    missingTeams: [],
   });
 
   const [juries, setJuries] = useState<Jury[]>([]);
@@ -91,6 +95,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       draftPlan: null,
       error: null,
       parseErrors: [],
+      missingRooms: [],
+      missingTeams: [],
     });
   };
 
@@ -101,7 +107,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     try {
-      setParseState({ status: 'parsing', draftPlan: null, error: null, parseErrors: [] });
+      setParseState({ 
+        status: 'parsing', 
+        draftPlan: null, 
+        error: null, 
+        parseErrors: [], 
+        missingRooms: [], 
+        missingTeams: [] 
+      });
 
       const draftPlan = await SessionsService.parsePdfForSession({
         formData: {
@@ -119,7 +132,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         juriesPerRoom: draftPlan.juries_per_room,
       });
 
-      setParseState({ status: 'parsed', draftPlan, error: null, parseErrors: [] });
+      setParseState({ 
+        status: 'parsed', 
+        draftPlan, 
+        error: null, 
+        parseErrors: [], 
+        missingRooms: [], 
+        missingTeams: [] 
+      });
       toast.success('PDF parsed successfully');
     } catch (err: unknown) {
       let errorMessage = 'Failed to parse PDF';
@@ -134,7 +154,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         errorMessage = err.message;
       }
 
-      setParseState({ status: 'error', draftPlan: null, error: errorMessage, parseErrors });
+      setParseState({ 
+        status: 'error', 
+        draftPlan: null, 
+        error: errorMessage, 
+        parseErrors, 
+        missingRooms: [], 
+        missingTeams: [] 
+      });
       toast.error(errorMessage);
     }
   };
@@ -165,6 +192,45 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         TeamsService.getAllTeams(),
         JuriesService.getAllJuries(),
       ]);
+
+      // Check for missing entities before conversion
+      const missingRooms: string[] = [];
+      const missingTeams: string[] = [];
+      
+      const roomMap = new Map(rooms.map(r => [r.label.toLowerCase(), r.id]));
+      const teamMap = new Map(teams.map(t => [t.label.toLowerCase(), t.id]));
+      
+      // Check rooms
+      for (const draftRoom of parseState.draftPlan.rooms) {
+        if (!roomMap.has(draftRoom.label.toLowerCase())) {
+          missingRooms.push(draftRoom.label);
+        }
+      }
+      
+      // Check teams
+      for (const draftTeam of parseState.draftPlan.teams) {
+        if (!teamMap.has(draftTeam.label.toLowerCase())) {
+          missingTeams.push(draftTeam.label);
+        }
+      }
+      
+      // If there are missing entities, update state and show error
+      if (missingRooms.length > 0 || missingTeams.length > 0) {
+        setParseState({
+          ...parseState,
+          status: 'error',
+          error: 'Missing entities found in database',
+          missingRooms,
+          missingTeams,
+        });
+        
+        const entityTypes = [];
+        if (missingRooms.length > 0) entityTypes.push(`${missingRooms.length} room(s)`);
+        if (missingTeams.length > 0) entityTypes.push(`${missingTeams.length} team(s)`);
+        
+        toast.error(`Missing ${entityTypes.join(' and ')} - please create them first`);
+        return;
+      }
 
       // Convert DraftPlan to WizardState
       const wizardState = await convertDraftPlanToWizardState(
@@ -292,6 +358,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       draftPlan: null,
       error: null,
       parseErrors: [],
+      missingRooms: [],
+      missingTeams: [],
     });
   };
 
@@ -334,6 +402,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             {parseState.status === 'parsing' ? 'Parsing PDF...' : 'Parse PDF'}
           </button>
 
+          {/* Parse Progress */}
+          {parseState.status === 'parsing' && (
+            <div className="parse-progress">
+              <div className="progress-spinner"></div>
+              <p>Parsing PDF and extracting scheduling data...</p>
+            </div>
+          )}
+
           {/* Parse Status */}
           {parseState.status === 'parsed' && (
             <div className="parse-success">
@@ -350,6 +426,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
           {parseState.status === 'error' && (
             <div className="parse-error">
               <p className="error-message">✗ {parseState.error}</p>
+              
+              {/* General parse errors */}
               {parseState.parseErrors.length > 0 && (
                 <ul className="error-list">
                   {parseState.parseErrors.map((err, idx) => (
@@ -357,12 +435,59 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                   ))}
                 </ul>
               )}
+              
+              {/* Missing Rooms */}
+              {parseState.missingRooms.length > 0 && (
+                <div className="missing-entities">
+                  <h4>Missing Rooms ({parseState.missingRooms.length}):</h4>
+                  <ul className="missing-list">
+                    {parseState.missingRooms.map((room, idx) => (
+                      <li key={idx}>{room}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="btn btn-action"
+                    onClick={() => {
+                      navigate('/rooms');
+                      onClose();
+                    }}
+                  >
+                    Go to Rooms → Create Missing Rooms
+                  </button>
+                </div>
+              )}
+              
+              {/* Missing Teams */}
+              {parseState.missingTeams.length > 0 && (
+                <div className="missing-entities">
+                  <h4>Missing Teams ({parseState.missingTeams.length}):</h4>
+                  <ul className="missing-list">
+                    {parseState.missingTeams.map((team, idx) => (
+                      <li key={idx}>{team}</li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="btn btn-action"
+                    onClick={() => {
+                      navigate('/teams');
+                      onClose();
+                    }}
+                  >
+                    Go to Teams → Create Missing Teams
+                  </button>
+                </div>
+              )}
+              
               <button
                 type="button"
                 className="btn btn-link"
                 onClick={handleRetry}
               >
-                Try Again
+                {parseState.missingRooms.length > 0 || parseState.missingTeams.length > 0 
+                  ? 'Retry Import' 
+                  : 'Try Again'}
               </button>
             </div>
           )}

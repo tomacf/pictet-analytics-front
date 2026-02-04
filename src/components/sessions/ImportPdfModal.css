@@ -95,6 +95,43 @@
   color: #155724;
 }
 
+.parse-progress {
+  padding: 1rem;
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 4px;
+  color: #004085;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.progress-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #b3d9ff;
+  border-top-color: #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.parse-progress p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.parse-success {
+  padding: 1rem;
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  border-radius: 4px;
+  color: #155724;
+}
+
 .parse-success p {
   margin: 0.25rem 0;
 }
@@ -125,6 +162,44 @@
 .error-list li {
   margin: 0.25rem 0;
   font-size: 0.9rem;
+}
+
+.missing-entities {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 4px;
+}
+
+.missing-entities h4 {
+  margin: 0 0 0.5rem 0;
+  color: #856404;
+  font-size: 1rem;
+}
+
+.missing-list {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.missing-list li {
+  margin: 0.25rem 0;
+  font-size: 0.9rem;
+  color: #856404;
+  font-weight: 500;
+}
+
+.btn-action {
+  margin-top: 0.5rem;
+  background-color: #ffc107;
+  color: #000;
+}
+
+.btn-action:hover:not(:disabled) {
+  background-color: #e0a800;
 }
 
 .form-actions {
