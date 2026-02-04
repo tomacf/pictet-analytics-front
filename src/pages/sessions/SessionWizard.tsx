@@ -222,7 +222,7 @@ const SessionWizard = () => {
     setCurrentStep(3);
   };
 
-  // Round-robin scheduling algorithm
+  // Round-robin scheduling algorithm with jury room affinity
   const generateSchedule = (state: WizardState): ScheduleSlot[] => {
     const slots: ScheduleSlot[] = [];
     const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, slotDuration, timeBetweenSlots } = state;
@@ -232,7 +232,13 @@ const SessionWizard = () => {
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
     let teamIndex = 0;
-    let juryIndex = 0;
+    
+    // Track jury-to-room assignments for room affinity
+    // Map: roomId -> array of jury IDs currently in that room
+    const roomToJuries = new Map<number, number[]>();
+    
+    // Track which juries are available (not yet assigned to any room)
+    const availableJuries = new Set(selectedJuryIds);
 
     for (let slotIdx = 0; slotIdx < slotsPerRoom; slotIdx++) {
       for (const roomId of selectedRoomIds) {
@@ -252,14 +258,56 @@ const SessionWizard = () => {
           }
         }
 
-        // Assign juries (round-robin: cycles through juries if there are more slots than juries)
+        // Assign juries with room affinity
         const assignedJuries: number[] = [];
-        for (let i = 0; i < juriesPerRoom; i++) {
-          if (juryIndex < totalJuries * slotsPerRoom * selectedRoomIds.length) {
-            assignedJuries.push(selectedJuryIds[juryIndex % totalJuries]);
-            juryIndex++;
+        
+        if (slotIdx === 0) {
+          // First slot: assign juries in round-robin fashion
+          for (let i = 0; i < juriesPerRoom && availableJuries.size > 0; i++) {
+            const jury = Array.from(availableJuries)[0];
+            assignedJuries.push(jury);
+            availableJuries.delete(jury);
+          }
+        } else {
+          // Subsequent slots: prefer juries that were in this room in the previous slot
+          const previousJuriesInRoom = roomToJuries.get(roomId) || [];
+          
+          // First, try to reuse juries from the same room
+          for (const juryId of previousJuriesInRoom) {
+            if (assignedJuries.length < juriesPerRoom) {
+              assignedJuries.push(juryId);
+            }
+          }
+          
+          // If we need more juries, assign from available pool
+          for (const juryId of availableJuries) {
+            if (assignedJuries.length >= juriesPerRoom) break;
+            assignedJuries.push(juryId);
+            availableJuries.delete(juryId);
+          }
+          
+          // If still not enough and we have juries in other rooms, take from them
+          if (assignedJuries.length < juriesPerRoom) {
+            for (const [otherRoomId, otherJuries] of roomToJuries.entries()) {
+              if (otherRoomId === roomId) continue;
+              for (const juryId of otherJuries) {
+                if (assignedJuries.length >= juriesPerRoom) break;
+                if (!assignedJuries.includes(juryId)) {
+                  assignedJuries.push(juryId);
+                  // Remove from the other room
+                  roomToJuries.set(
+                    otherRoomId,
+                    otherJuries.filter(j => j !== juryId)
+                  );
+                  break;
+                }
+              }
+            }
           }
         }
+        
+        // Update room-to-jury mapping for the next slot
+        roomToJuries.set(roomId, assignedJuries);
 
         if (assignedTeams.length > 0) {
           slots.push({
@@ -272,6 +320,9 @@ const SessionWizard = () => {
           });
         }
       }
+      
+      // After each slot round, reset available juries for rooms that need changes
+      // This allows juries to be reused in the next slot
     }
 
     return slots;
