@@ -3,12 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   ImportService,
-  RoomsService,
-  TeamsService,
   JuriesService,
   type DraftPlan,
-  type Room,
-  type Team,
   type Jury,
   type ImportError,
 } from '../../apiConfig';
@@ -134,7 +130,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       // Pre-fill form data with parsed values if they were in the response
       setFormData({
         ...formData,
-        sessionLabel: formData.sessionLabel || draftPlan.session_label || '',
+        sessionLabel: draftPlan.session_label || formData.sessionLabel,
         sessionDate: formData.sessionDate, // Already provided
         slotDuration: draftPlan.slot_duration,
         timeBetweenSlots: draftPlan.time_between_slots,
@@ -198,20 +194,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     try {
-      // Fetch all entities for validation and mapping
-      const [rooms, teams, allJuries] = await Promise.all([
-        RoomsService.getAllRooms(),
-        TeamsService.getAllTeams(),
-        JuriesService.getAllJuries(),
-      ]);
-
-      // Convert DraftPlan to WizardState
-      const wizardState = await convertDraftPlanToWizardState(
+      // Convert DraftPlan to WizardState (backend has already resolved all IDs)
+      const wizardState = convertDraftPlanToWizardState(
         parseState.draftPlan,
-        formData,
-        rooms,
-        teams,
-        allJuries
+        formData
       );
 
       // Navigate to SessionWizard with the pre-populated state
@@ -225,12 +211,9 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
   };
 
-  const convertDraftPlanToWizardState = async (
+  const convertDraftPlanToWizardState = (
     draftPlan: DraftPlan,
-    formData: FormData,
-    _rooms: Room[],
-    _teams: Team[],
-    _allJuries: Jury[]
+    formData: FormData
   ) => {
     // Extract unique room IDs from slots
     const selectedRoomIds = Array.from(
