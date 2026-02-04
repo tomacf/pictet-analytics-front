@@ -15,6 +15,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import StatusPanel from '../../components/shared/StatusPanel';
 import ScheduleOverview from '../../components/sessions/ScheduleOverview';
+import RebalanceModal from '../../components/sessions/RebalanceModal';
 import {
   detectTeamConflicts,
   detectJuryConflicts,
@@ -23,6 +24,11 @@ import {
   type SlotAssignment,
 } from '../../utils/validationUtils';
 import { is409Error, format409Error } from '../../utils/errorUtils';
+import {
+  magicRebalance,
+  type RebalanceMetrics,
+  type RebalanceResult,
+} from '../../utils/rebalanceUtils';
 import './SessionWizard.css';
 
 interface WizardState {
@@ -104,6 +110,12 @@ const SessionWizard = () => {
 
   // Status panel state - default open on desktop, closed on mobile
   const [statusPanelOpen, setStatusPanelOpen] = useState(true);
+
+  // Rebalance state
+  const [rebalanceModalOpen, setRebalanceModalOpen] = useState(false);
+  const [rebalanceResult, setRebalanceResult] = useState<RebalanceResult | null>(null);
+  const [preRebalanceSlots, setPreRebalanceSlots] = useState<ScheduleSlot[] | null>(null);
+  const [isRebalancing, setIsRebalancing] = useState(false);
 
   // Refs for scrolling to slots
   const slotRefs = useRef<Map<number, HTMLDivElement>>(new Map());
@@ -414,6 +426,81 @@ const SessionWizard = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  // Magic Rebalance handlers
+  const handleMagicRebalance = () => {
+    if (wizardState.scheduleSlots.length === 0) {
+      toast.error('No schedule to rebalance');
+      return;
+    }
+
+    setIsRebalancing(true);
+    toast.info('Running Magic Rebalance...');
+
+    // Use setTimeout to allow UI to update
+    setTimeout(() => {
+      try {
+        const result = magicRebalance({
+          slots: wizardState.scheduleSlots.map(slot => ({
+            roomId: slot.roomId,
+            slotIndex: slot.slotIndex,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            teamIds: [...slot.teamIds],
+            juryIds: [...slot.juryIds],
+          })),
+          selectedTeamIds: wizardState.selectedTeamIds,
+          selectedJuryIds: wizardState.selectedJuryIds,
+          seed: Date.now(),
+          iterations: 1000,
+        });
+
+        setRebalanceResult(result);
+        setRebalanceModalOpen(true);
+        toast.success('Rebalance complete!');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to rebalance schedule';
+        toast.error(message);
+      } finally {
+        setIsRebalancing(false);
+      }
+    }, 100);
+  };
+
+  const handleApplyRebalance = () => {
+    if (!rebalanceResult) return;
+
+    // Save current state for undo
+    setPreRebalanceSlots([...wizardState.scheduleSlots]);
+
+    // Apply the rebalanced slots
+    const updatedSlots = rebalanceResult.slots.map(slot => ({
+      roomId: slot.roomId,
+      slotIndex: slot.slotIndex,
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      teamIds: [...slot.teamIds],
+      juryIds: [...slot.juryIds],
+    }));
+
+    setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+    toast.success('Rebalanced schedule applied');
+  };
+
+  const handleUndoRebalance = () => {
+    if (!preRebalanceSlots) return;
+
+    // Restore the previous state
+    setWizardState({ ...wizardState, scheduleSlots: preRebalanceSlots });
+    setPreRebalanceSlots(null);
+    setRebalanceResult(null);
+    setRebalanceModalOpen(false);
+    toast.success('Rebalance undone');
+  };
+
+  const handleCloseRebalanceModal = () => {
+    setRebalanceModalOpen(false);
   };
 
   // Update slot assignments
@@ -1121,15 +1208,24 @@ const SessionWizard = () => {
               type="button" 
               onClick={() => setCurrentStep(2)} 
               className="btn btn-secondary"
-              disabled={saving}
+              disabled={saving || isRebalancing}
             >
               Back
             </button>
             <button 
               type="button" 
+              onClick={handleMagicRebalance} 
+              className="btn btn-magic"
+              disabled={saving || isRebalancing || wizardState.scheduleSlots.length === 0}
+              title="Automatically optimize team and jury assignments"
+            >
+              {isRebalancing ? '⏳ Rebalancing...' : '✨ Magic Rebalance'}
+            </button>
+            <button 
+              type="button" 
               onClick={handleExportJSON} 
               className="btn btn-secondary"
-              disabled={saving}
+              disabled={saving || isRebalancing}
             >
               Export JSON
             </button>
@@ -1137,7 +1233,7 @@ const SessionWizard = () => {
               type="button" 
               onClick={handleSavePlan} 
               className="btn btn-primary"
-              disabled={saving || hasConflicts}
+              disabled={saving || hasConflicts || isRebalancing}
               title={hasConflicts ? 'Please resolve all conflicts before saving' : ''}
             >
               {saving ? 'Saving…' : 'Save Plan'}
@@ -1149,6 +1245,20 @@ const SessionWizard = () => {
             </div>
           )}
           </div>
+
+          {/* Rebalance Modal */}
+          {rebalanceResult && (
+            <RebalanceModal
+              isOpen={rebalanceModalOpen}
+              onClose={handleCloseRebalanceModal}
+              beforeMetrics={rebalanceResult.beforeMetrics}
+              afterMetrics={rebalanceResult.afterMetrics}
+              improvementPercentage={rebalanceResult.improvementPercentage}
+              onApply={handleApplyRebalance}
+              onUndo={handleUndoRebalance}
+              hasApplied={preRebalanceSlots !== null}
+            />
+          )}
 
           {/* Status Panel */}
           <StatusPanel
