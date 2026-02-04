@@ -45,6 +45,13 @@
   padding: 0.5rem 0;
 }
 
+.form-group small {
+  color: #666;
+  font-size: 0.85rem;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
 .file-info {
   margin: 0;
   color: #666;
@@ -190,6 +197,46 @@
   font-size: 0.9rem;
   color: #856404;
   font-weight: 500;
+}
+
+.extracted-context {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background-color: #e7f3ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 4px;
+}
+
+.extracted-context h4 {
+  margin: 0 0 0.5rem 0;
+  color: #004085;
+  font-size: 1rem;
+}
+
+.context-table {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.context-table table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  font-size: 0.85rem;
+}
+
+.context-table th,
+.context-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border: 1px solid #ddd;
+}
+
+.context-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
 }
 
 .btn-action {
