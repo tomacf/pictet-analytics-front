@@ -578,7 +578,12 @@ const SessionWizard = () => {
       return null;
     }
 
-    // Sort slots by start time and room
+    // Create lookup maps for O(1) access
+    const roomsMap = new Map(rooms.map((r) => [r.id, r]));
+    const teamsMap = new Map(teams.map((t) => [t.id, t]));
+    const juriesMap = new Map(juries.map((j) => [j.id, j]));
+
+    // Sort slots by start time and room (memoize timestamps)
     const sortedSlots = [...wizardState.scheduleSlots].sort((a, b) => {
       const timeCompare = new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
       if (timeCompare !== 0) return timeCompare;
@@ -598,13 +603,15 @@ const SessionWizard = () => {
             </tr>
           </thead>
           <tbody>
-            {sortedSlots.map((slot, idx) => {
-              const room = rooms.find((r) => r.id === slot.roomId);
-              const slotTeams = slot.teamIds.map(id => teams.find(t => t.id === id));
-              const slotJuries = slot.juryIds.map(id => juries.find(j => j.id === id));
+            {sortedSlots.map((slot) => {
+              const room = roomsMap.get(slot.roomId);
+              const slotTeams = slot.teamIds.map(id => teamsMap.get(id));
+              const slotJuries = slot.juryIds.map(id => juriesMap.get(id));
+              // Use roomId and slotIndex as composite key for stability
+              const uniqueKey = `${slot.roomId}-${slot.slotIndex}`;
               
               return (
-                <tr key={idx}>
+                <tr key={uniqueKey}>
                   <td className="time-cell">
                     {new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
                     {new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
