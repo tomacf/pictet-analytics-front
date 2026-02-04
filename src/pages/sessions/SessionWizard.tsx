@@ -112,13 +112,26 @@ const SessionWizard = () => {
 
   // Status panel collapsed state - default false (expanded) on desktop, persisted to localStorage
   const [statusPanelCollapsed, setStatusPanelCollapsed] = useState(() => {
-    const saved = localStorage.getItem('statusPanelCollapsed');
-    return saved === 'true';
+    try {
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('statusPanelCollapsed');
+        return saved === 'true';
+      }
+    } catch {
+      // localStorage not available
+    }
+    return false;
   });
 
   // Persist status panel collapsed state to localStorage
   useEffect(() => {
-    localStorage.setItem('statusPanelCollapsed', String(statusPanelCollapsed));
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('statusPanelCollapsed', String(statusPanelCollapsed));
+      }
+    } catch {
+      // localStorage not available
+    }
   }, [statusPanelCollapsed]);
 
   // Rebalance state

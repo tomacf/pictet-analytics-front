@@ -1,9 +1,10 @@
 /* Status Panel - Sticky Right Sidebar */
 .status-panel {
+  --status-panel-width: 350px;
   position: fixed;
   top: 80px; /* Below the topbar */
   right: 0;
-  width: 350px;
+  width: var(--status-panel-width);
   height: calc(100vh - 80px);
   background-color: white;
   border-left: 1px solid #e2e8f0;
@@ -295,7 +296,7 @@
   display: none; /* Hidden on mobile/tablet */
   position: fixed;
   top: 50%;
-  right: 350px;
+  right: var(--status-panel-width);
   transform: translateY(-50%);
   background-color: white;
   color: #64748b;
