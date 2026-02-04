@@ -1993,6 +1993,7 @@ paths:
         - Team-vs-team matrix: count how many times each pair of teams met in the same room session
         - Team waiting times: total and average waiting time between session start and first room session, with per-session breakdown
         - Team room distributions: count of room sessions per room for each team
+        - Team-jury matrix: count how many times each team and jury were assigned together in room sessions, with per-team and per-jury totals
 
         Supports optional filtering by session_id or date range.
       operationId: getAnalyticsSummary
@@ -2881,6 +2882,7 @@ components:
         - team_vs_team_matrix
         - team_waiting_times
         - team_room_distributions
+        - team_jury_matrix
       properties:
         team_vs_team_matrix:
           type: array
@@ -2897,6 +2899,9 @@ components:
           items:
             $ref: '#/components/schemas/TeamRoomDistribution'
           description: Room usage distribution for each team
+        team_jury_matrix:
+          $ref: '#/components/schemas/TeamJuryMatrix'
+          description: Matrix showing how many times each team and jury were assigned together in room sessions
 
     TeamPairMeeting:
       type: object
@@ -3034,6 +3039,107 @@ components:
           type: integer
           description: Number of room sessions this team had in this room
           example: 5
+
+    TeamJuryMatrix:
+      type: object
+      required:
+        - teams
+        - juries
+        - counts
+        - per_team_totals
+        - per_jury_totals
+      properties:
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamLabel'
+          description: List of all teams that appear in the matrix
+        juries:
+          type: array
+          items:
+            $ref: '#/components/schemas/JuryLabel'
+          description: List of all juries that appear in the matrix
+        counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamJuryInteraction'
+          description: List of team-jury interaction counts
+        per_team_totals:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total number of room sessions per team (key is team ID)
+          example:
+            "1": 5
+            "2": 3
+        per_jury_totals:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Total number of room sessions per jury (key is jury ID)
+          example:
+            "1": 4
+            "2": 6
+
+    TeamLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Team ID
+          example: 1
+        label:
+          type: string
+          description: Team label
+          example: "Team Alpha"
+
+    JuryLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Jury ID
+          example: 1
+        label:
+          type: string
+          description: Jury label
+          example: "Dr. Smith"
+
+    TeamJuryInteraction:
+      type: object
+      required:
+        - team_id
+        - team_label
+        - jury_id
+        - jury_label
+        - meet_count
+      properties:
+        team_id:
+          type: integer
+          description: Team ID
+          example: 1
+        team_label:
+          type: string
+          description: Team label
+          example: "Team Alpha"
+        jury_id:
+          type: integer
+          description: Jury ID
+          example: 1
+        jury_label:
+          type: string
+          description: Jury label
+          example: "Dr. Smith"
+        meet_count:
+          type: integer
+          description: Number of room sessions where this team and jury were assigned together
+          example: 2
 
 
     DraftPlan:
