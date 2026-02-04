@@ -221,7 +221,7 @@ const Rooms = () => {
               type="number"
               id="bulkMaxSize"
               value={bulkMaxSize}
-              onChange={(e) => setBulkMaxSize(parseInt(e.target.value))}
+              onChange={(e) => setBulkMaxSize(parseInt(e.target.value, 10) || 30)}
               required
               min="1"
               className="form-input"

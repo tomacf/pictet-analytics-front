@@ -115,7 +115,7 @@ const Juries = () => {
     }
 
     if (successCount > 0) {
-      toast.success(`Successfully created ${successCount} jury/juries`);
+      toast.success(`Successfully created ${successCount} ${successCount === 1 ? 'jury' : 'juries'}`);
       fetchJuries();
       setBulkInput('');
     }
