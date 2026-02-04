@@ -54,7 +54,7 @@ const Teams = () => {
     }
 
     try {
-      await TeamsService.deleteTeam({ id: team.id });
+      await TeamsService.deleteTeam(team.id);
       toast.success('Team deleted successfully');
       fetchTeams();
     } catch (err) {
@@ -68,10 +68,10 @@ const Teams = () => {
 
     try {
       if (editingTeam) {
-        await TeamsService.updateTeam({ id: editingTeam.id, requestBody: formData });
+        await TeamsService.updateTeam(editingTeam.id, formData);
         toast.success('Team updated successfully');
       } else {
-        await TeamsService.createTeam({ requestBody: formData });
+        await TeamsService.createTeam(formData);
         toast.success('Team created successfully');
       }
       setIsModalOpen(false);
@@ -105,7 +105,7 @@ const Teams = () => {
 
     for (const label of labels) {
       try {
-        await TeamsService.createTeam({ requestBody: { label } });
+        await TeamsService.createTeam({ label });
         successCount++;
       } catch (err) {
         errorCount++;

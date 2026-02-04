@@ -55,7 +55,7 @@ const Rooms = () => {
     }
 
     try {
-      await RoomsService.deleteRoom({ id: room.id });
+      await RoomsService.deleteRoom(room.id);
       toast.success('Room deleted successfully');
       fetchRooms();
     } catch (err) {
@@ -69,10 +69,10 @@ const Rooms = () => {
 
     try {
       if (editingRoom) {
-        await RoomsService.updateRoom({ id: editingRoom.id, requestBody: formData });
+        await RoomsService.updateRoom(editingRoom.id, formData);
         toast.success('Room updated successfully');
       } else {
-        await RoomsService.createRoom({ requestBody: formData });
+        await RoomsService.createRoom(formData);
         toast.success('Room created successfully');
       }
       setIsModalOpen(false);
@@ -107,7 +107,7 @@ const Rooms = () => {
 
     for (const label of labels) {
       try {
-        await RoomsService.createRoom({ requestBody: { label, max_size: bulkMaxSize } });
+        await RoomsService.createRoom({ label, max_size: bulkMaxSize });
         successCount++;
       } catch (err) {
         errorCount++;
