@@ -5,6 +5,13 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import {
+  detectTeamConflicts,
+  detectJuryConflicts,
+  isTeamConflicted,
+  isJuryConflicted,
+  type SlotAssignment,
+} from '../../utils/validationUtils';
 import '../teams/Teams.css';
 import './RoomSessions.css';
 
@@ -32,6 +39,41 @@ const RoomSessions = () => {
   const [filterRoom, setFilterRoom] = useState<string>('');
   const [filterDate, setFilterDate] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Conflict detection - compute conflicts based on current draft state
+  const conflicts = useMemo(() => {
+    // Get all room sessions for the same session as the form
+    const sessionRoomSessions = roomSessions.filter(
+      (rs) => rs.session_id === formData.session_id && rs.id !== editingId
+    );
+
+    // Create a combined list: existing sessions + current draft
+    const allSlots: SlotAssignment[] = [
+      ...sessionRoomSessions.map((rs) => ({
+        startTime: rs.start_time,
+        endTime: rs.end_time,
+        teamIds: rs.teams?.map((t) => t.id) || [],
+        juryIds: rs.juries?.map((j) => j.id) || [],
+      })),
+    ];
+
+    // Add the current draft if it has data
+    if (formData.session_id && formData.start_time && formData.end_time) {
+      allSlots.push({
+        startTime: formData.start_time,
+        endTime: formData.end_time,
+        teamIds: formData.team_ids || [],
+        juryIds: formData.jury_ids || [],
+      });
+    }
+
+    const teamConflicts = detectTeamConflicts(allSlots);
+    const juryConflicts = detectJuryConflicts(allSlots);
+
+    return { teamConflicts, juryConflicts };
+  }, [roomSessions, formData, editingId]);
+
+  const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
 
   const fetchRoomSessions = async () => {
     try {
@@ -109,6 +151,11 @@ const RoomSessions = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (hasConflicts) {
+      toast.error('Cannot save room session with conflicts. Please resolve all conflicts first.');
+      return;
+    }
+
     try {
       if (editingId) {
         // Update existing room session
@@ -129,9 +176,23 @@ const RoomSessions = () => {
       }
       setIsModalOpen(false);
       fetchRoomSessions();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save room session';
-      toast.error(message);
+    } catch (err: unknown) {
+      // Handle 409 Conflict errors specially
+      if (err && typeof err === 'object' && 'status' in err && err.status === 409) {
+        const errorBody = 'body' in err ? err.body : null;
+        let errorMessage = 'Conflict detected: ';
+        
+        if (errorBody && typeof errorBody === 'object' && 'detail' in errorBody) {
+          errorMessage += String(errorBody.detail);
+        } else {
+          errorMessage += 'The room session contains conflicts.';
+        }
+        
+        toast.error(errorMessage, { autoClose: 8000 });
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to save room session';
+        toast.error(message);
+      }
     }
   };
 
@@ -311,6 +372,46 @@ const RoomSessions = () => {
             <strong>⚠️ Note:</strong> Adding teams/juries/room here will also update the parent Session's selected teams/juries/rooms for consistency.
           </div>
 
+          {/* Conflicts Panel */}
+          {hasConflicts && (
+            <div className="conflicts-panel">
+              <h3>🚫 Conflicts Detected</h3>
+              <p>The following conflicts must be resolved before saving:</p>
+              <div className="conflicts-content">
+                {conflicts.teamConflicts.length > 0 && (
+                  <div className="conflicts-section">
+                    <strong>Team Conflicts (each team can only be assigned once per session):</strong>
+                    <ul className="conflicts-list">
+                      {conflicts.teamConflicts.map((conflict) => {
+                        const team = teams.find((t) => t.id === conflict.teamId);
+                        return (
+                          <li key={conflict.teamId}>
+                            <strong>{team?.label || `Team ${conflict.teamId}`}</strong> is assigned to multiple slots in this session
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                {conflicts.juryConflicts.length > 0 && (
+                  <div className="conflicts-section">
+                    <strong>Jury Conflicts (juries cannot be in overlapping time slots):</strong>
+                    <ul className="conflicts-list">
+                      {conflicts.juryConflicts.map((conflict) => {
+                        const jury = juries.find((j) => j.id === conflict.juryId);
+                        return (
+                          <li key={conflict.juryId}>
+                            <strong>{jury?.label || `Jury ${conflict.juryId}`}</strong> has overlapping time slot assignments
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="room_id">Room</label>
             <select
@@ -399,22 +500,29 @@ const RoomSessions = () => {
             </div>
             <div className="checkbox-group">
               {teams.length > 0 ? (
-                teams.map((team) => (
-                  <label key={team.id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.team_ids?.includes(team.id) ?? false}
-                      onChange={(e) => {
-                        const currentTeamIds = formData.team_ids ?? [];
-                        const newIds = e.target.checked
-                          ? [...currentTeamIds, team.id]
-                          : currentTeamIds.filter((id) => id !== team.id);
-                        setFormData({ ...formData, team_ids: newIds });
-                      }}
-                    />
-                    {team.label}
-                  </label>
-                ))
+                teams.map((team) => {
+                  const hasConflict = isTeamConflicted(team.id, conflicts.teamConflicts);
+                  return (
+                    <label 
+                      key={team.id} 
+                      className={`checkbox-label ${hasConflict && formData.team_ids?.includes(team.id) ? 'checkbox-label-conflict' : ''}`}
+                      title={hasConflict && formData.team_ids?.includes(team.id) ? 'This team is already assigned to another slot in this session' : ''}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.team_ids?.includes(team.id) ?? false}
+                        onChange={(e) => {
+                          const currentTeamIds = formData.team_ids ?? [];
+                          const newIds = e.target.checked
+                            ? [...currentTeamIds, team.id]
+                            : currentTeamIds.filter((id) => id !== team.id);
+                          setFormData({ ...formData, team_ids: newIds });
+                        }}
+                      />
+                      {team.label}
+                    </label>
+                  );
+                })
               ) : (
                 <p className="no-data-text">No teams available</p>
               )}
@@ -449,22 +557,29 @@ const RoomSessions = () => {
             </div>
             <div className="checkbox-group">
               {juries.length > 0 ? (
-                juries.map((jury) => (
-                  <label key={jury.id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.jury_ids?.includes(jury.id) ?? false}
-                      onChange={(e) => {
-                        const currentJuryIds = formData.jury_ids ?? [];
-                        const newIds = e.target.checked
-                          ? [...currentJuryIds, jury.id]
-                          : currentJuryIds.filter((id) => id !== jury.id);
-                        setFormData({ ...formData, jury_ids: newIds });
-                      }}
-                    />
-                    {jury.label}
-                  </label>
-                ))
+                juries.map((jury) => {
+                  const hasConflict = isJuryConflicted(jury.id, conflicts.juryConflicts);
+                  return (
+                    <label 
+                      key={jury.id} 
+                      className={`checkbox-label ${hasConflict && formData.jury_ids?.includes(jury.id) ? 'checkbox-label-conflict' : ''}`}
+                      title={hasConflict && formData.jury_ids?.includes(jury.id) ? 'This jury has overlapping time slot assignments' : ''}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.jury_ids?.includes(jury.id) ?? false}
+                        onChange={(e) => {
+                          const currentJuryIds = formData.jury_ids ?? [];
+                          const newIds = e.target.checked
+                            ? [...currentJuryIds, jury.id]
+                            : currentJuryIds.filter((id) => id !== jury.id);
+                          setFormData({ ...formData, jury_ids: newIds });
+                        }}
+                      />
+                      {jury.label}
+                    </label>
+                  );
+                })
               ) : (
                 <p className="no-data-text">No juries available</p>
               )}
@@ -475,7 +590,12 @@ const RoomSessions = () => {
             <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button 
+              type="submit" 
+              className="btn btn-primary" 
+              disabled={hasConflicts}
+              title={hasConflicts ? 'Please resolve all conflicts before saving' : ''}
+            >
               {editingId ? 'Update' : 'Create'}
             </button>
           </div>
