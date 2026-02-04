@@ -2,26 +2,22 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type DraftSlot = {
+export type ExtractedSlotInfo = {
     /**
-     * Room label for this slot
+     * Room label from PDF
      */
     room_label: string;
     /**
-     * Slot start time
+     * Slot start time (HH:MM format)
      */
     start_time: string;
     /**
-     * Slot end time
+     * Slot end time (HH:MM format)
      */
     end_time: string;
     /**
-     * Team labels assigned to this slot
+     * Team labels from PDF
      */
     team_labels: Array<string>;
-    /**
-     * Jury labels assigned to this slot
-     */
-    jury_labels: Array<string>;
 };
 

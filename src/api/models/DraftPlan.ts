@@ -2,48 +2,35 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { DraftEntity } from './DraftEntity';
-import type { DraftSlot } from './DraftSlot';
+import type { DraftPlanSlot } from './DraftPlanSlot';
 export type DraftPlan = {
     /**
-     * Suggested label for the session extracted from PDF
+     * Optional label for the session
      */
-    session_label: string;
+    session_label?: string;
     /**
-     * Start date/time extracted from PDF
+     * Schedule date
      */
-    session_date: string;
+    date: string;
     /**
-     * Teams extracted from PDF (by label only, IDs to be resolved)
-     */
-    teams: Array<DraftEntity>;
-    /**
-     * Juries extracted from PDF (by label only, IDs to be resolved)
-     */
-    juries: Array<DraftEntity>;
-    /**
-     * Rooms extracted from PDF (by label only, IDs to be resolved)
-     */
-    rooms: Array<DraftEntity>;
-    /**
-     * Number of teams per room extracted from PDF
-     */
-    teams_per_room: number;
-    /**
-     * Number of juries per room extracted from PDF
-     */
-    juries_per_room: number;
-    /**
-     * Slot duration in minutes extracted from PDF
+     * Duration of each slot in minutes
      */
     slot_duration: number;
     /**
-     * Time between slots in minutes extracted from PDF
+     * Gap between slots in minutes
      */
     time_between_slots: number;
     /**
-     * Scheduling slots extracted from PDF
+     * Array of jury IDs available for assignment
      */
-    slots: Array<DraftSlot>;
+    jury_ids: Array<number>;
+    /**
+     * Number of juries to assign per room
+     */
+    juries_per_room: number;
+    /**
+     * Array of schedule slots with room, time, teams, and assigned juries
+     */
+    slots: Array<DraftPlanSlot>;
 };
 

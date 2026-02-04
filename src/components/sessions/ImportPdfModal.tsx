@@ -2,14 +2,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
-  SessionsService,
-  RoomsService,
-  TeamsService,
+  ImportService,
   JuriesService,
   type DraftPlan,
-  type Room,
-  type Team,
   type Jury,
+  type ImportError,
 } from '../../apiConfig';
 import Modal from '../shared/Modal';
 import LoadingSpinner from '../shared/LoadingSpinner';
@@ -34,9 +31,7 @@ interface ParseState {
   status: 'idle' | 'parsing' | 'parsed' | 'error';
   draftPlan: DraftPlan | null;
   error: string | null;
-  parseErrors: string[];
-  missingRooms: string[];
-  missingTeams: string[];
+  importError: ImportError | null;
 }
 
 const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
@@ -57,9 +52,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     status: 'idle',
     draftPlan: null,
     error: null,
-    parseErrors: [],
-    missingRooms: [],
-    missingTeams: [],
+    importError: null,
   });
 
   const [juries, setJuries] = useState<Jury[]>([]);
@@ -94,9 +87,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       status: 'idle',
       draftPlan: null,
       error: null,
-      parseErrors: [],
-      missingRooms: [],
-      missingTeams: [],
+      importError: null,
     });
   };
 
@@ -106,50 +97,69 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       return;
     }
 
+    // Validate required fields before parsing
+    if (!formData.sessionDate) {
+      toast.error('Session date is required before parsing');
+      return;
+    }
+    if (formData.juryPoolIds.length === 0) {
+      toast.error('Please select at least one jury before parsing');
+      return;
+    }
+
     try {
       setParseState({ 
         status: 'parsing', 
         draftPlan: null, 
         error: null, 
-        parseErrors: [], 
-        missingRooms: [], 
-        missingTeams: [] 
+        importError: null,
       });
 
-      const draftPlan = await SessionsService.parsePdfForSession({
+      const draftPlan = await ImportService.parseSessionDocument({
         formData: {
-          file: formData.file,
+          pdf: formData.file,
+          session_label: formData.sessionLabel || undefined,
+          date: formData.sessionDate,
+          slot_duration: formData.slotDuration,
+          time_between_slots: formData.timeBetweenSlots,
+          jury_ids: formData.juryPoolIds,
+          juries_per_room: formData.juriesPerRoom,
         },
       });
 
-      // Pre-fill form data with parsed values
+      // Pre-fill form data with parsed values if they were in the response
       setFormData({
         ...formData,
-        sessionLabel: formData.sessionLabel || draftPlan.session_label,
-        sessionDate: formData.sessionDate || draftPlan.session_date,
+        sessionLabel: draftPlan.session_label || formData.sessionLabel,
+        sessionDate: formData.sessionDate, // Already provided
         slotDuration: draftPlan.slot_duration,
         timeBetweenSlots: draftPlan.time_between_slots,
         juriesPerRoom: draftPlan.juries_per_room,
+        juryPoolIds: draftPlan.jury_ids,
       });
 
       setParseState({ 
         status: 'parsed', 
         draftPlan, 
         error: null, 
-        parseErrors: [], 
-        missingRooms: [], 
-        missingTeams: [] 
+        importError: null,
       });
       toast.success('PDF parsed successfully');
     } catch (err: unknown) {
       let errorMessage = 'Failed to parse PDF';
-      let parseErrors: string[] = [];
+      let importError: ImportError | null = null;
 
       if (err && typeof err === 'object' && 'body' in err) {
-        const errBody = err.body as { message?: string; errors?: string[] };
-        // ParseError response
-        errorMessage = errBody.message || errorMessage;
-        parseErrors = errBody.errors || [];
+        const errBody = err.body as ImportError | string;
+        
+        if (typeof errBody === 'object' && 'message' in errBody) {
+          // ImportError response with structured data
+          importError = errBody;
+          errorMessage = errBody.message;
+        } else if (typeof errBody === 'string') {
+          // Simple string error
+          errorMessage = errBody;
+        }
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -158,9 +168,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         status: 'error', 
         draftPlan: null, 
         error: errorMessage, 
-        parseErrors, 
-        missingRooms: [], 
-        missingTeams: [] 
+        importError,
       });
       toast.error(errorMessage);
     }
@@ -186,59 +194,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     try {
-      // Fetch all entities to map labels to IDs
-      const [rooms, teams, allJuries] = await Promise.all([
-        RoomsService.getAllRooms(),
-        TeamsService.getAllTeams(),
-        JuriesService.getAllJuries(),
-      ]);
-
-      // Check for missing entities before conversion
-      const missingRooms: string[] = [];
-      const missingTeams: string[] = [];
-      
-      const roomMap = new Map(rooms.map(r => [r.label.toLowerCase(), r.id]));
-      const teamMap = new Map(teams.map(t => [t.label.toLowerCase(), t.id]));
-      
-      // Check rooms
-      for (const draftRoom of parseState.draftPlan.rooms) {
-        if (!roomMap.has(draftRoom.label.toLowerCase())) {
-          missingRooms.push(draftRoom.label);
-        }
-      }
-      
-      // Check teams
-      for (const draftTeam of parseState.draftPlan.teams) {
-        if (!teamMap.has(draftTeam.label.toLowerCase())) {
-          missingTeams.push(draftTeam.label);
-        }
-      }
-      
-      // If there are missing entities, update state and show error
-      if (missingRooms.length > 0 || missingTeams.length > 0) {
-        setParseState({
-          ...parseState,
-          status: 'error',
-          error: 'Missing entities found in database',
-          missingRooms,
-          missingTeams,
-        });
-        
-        const entityTypes = [];
-        if (missingRooms.length > 0) entityTypes.push(`${missingRooms.length} room(s)`);
-        if (missingTeams.length > 0) entityTypes.push(`${missingTeams.length} team(s)`);
-        
-        toast.error(`Missing ${entityTypes.join(' and ')} - please create them first`);
-        return;
-      }
-
-      // Convert DraftPlan to WizardState
-      const wizardState = await convertDraftPlanToWizardState(
+      // Convert DraftPlan to WizardState (backend has already resolved all IDs)
+      const wizardState = convertDraftPlanToWizardState(
         parseState.draftPlan,
-        formData,
-        rooms,
-        teams,
-        allJuries
+        formData
       );
 
       // Navigate to SessionWizard with the pre-populated state
@@ -252,89 +211,37 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
   };
 
-  const convertDraftPlanToWizardState = async (
+  const convertDraftPlanToWizardState = (
     draftPlan: DraftPlan,
-    formData: FormData,
-    rooms: Room[],
-    teams: Team[],
-    allJuries: Jury[]
+    formData: FormData
   ) => {
-    // Map room labels to IDs
-    const roomMap = new Map(rooms.map(r => [r.label.toLowerCase(), r.id]));
-    const selectedRoomIds: number[] = [];
-    const roomLabelToId = new Map<string, number>();
+    // Extract unique room IDs from slots
+    const selectedRoomIds = Array.from(
+      new Set(draftPlan.slots.map(slot => slot.room_id))
+    );
 
-    for (const draftRoom of draftPlan.rooms) {
-      const roomId = roomMap.get(draftRoom.label.toLowerCase());
-      if (roomId) {
-        selectedRoomIds.push(roomId);
-        roomLabelToId.set(draftRoom.label, roomId);
-      } else {
-        throw new Error(`Room not found: ${draftRoom.label}`);
-      }
-    }
+    // Extract unique team IDs from slots
+    const selectedTeamIds = Array.from(
+      new Set(draftPlan.slots.flatMap(slot => slot.team_ids))
+    );
 
-    // Map team labels to IDs
-    const teamMap = new Map(teams.map(t => [t.label.toLowerCase(), t.id]));
-    const selectedTeamIds: number[] = [];
-    const teamLabelToId = new Map<string, number>();
+    // Use jury IDs from the draft plan (they were passed in the request)
+    const selectedJuryIds = draftPlan.jury_ids;
 
-    for (const draftTeam of draftPlan.teams) {
-      const teamId = teamMap.get(draftTeam.label.toLowerCase());
-      if (teamId) {
-        selectedTeamIds.push(teamId);
-        teamLabelToId.set(draftTeam.label, teamId);
-      } else {
-        throw new Error(`Team not found: ${draftTeam.label}`);
-      }
-    }
+    // Calculate teams per room (use first slot as reference, or default)
+    const teamsPerRoom = draftPlan.slots.length > 0 
+      ? draftPlan.slots[0].team_ids.length 
+      : 1;
 
-    // Use selected jury pool IDs from form
-    const selectedJuryIds = formData.juryPoolIds;
-
-    // Map jury labels to IDs for slots
-    const juryMap = new Map(allJuries.map(j => [j.label.toLowerCase(), j.id]));
-    const juryLabelToId = new Map<string, number>();
-
-    for (const draftJury of draftPlan.juries) {
-      const juryId = juryMap.get(draftJury.label.toLowerCase());
-      if (juryId) {
-        juryLabelToId.set(draftJury.label, juryId);
-      } else {
-        throw new Error(`Jury not found: ${draftJury.label}`);
-      }
-    }
-
-    // Convert slots
+    // Convert slots to the wizard format
     const scheduleSlots = draftPlan.slots.map((slot, index) => {
-      const roomId = roomLabelToId.get(slot.room_label);
-      if (!roomId) {
-        throw new Error(`Room not found for slot: ${slot.room_label}`);
-      }
-
-      const teamIds = slot.team_labels.map(label => {
-        const teamId = teamLabelToId.get(label);
-        if (!teamId) {
-          throw new Error(`Team not found for slot: ${label}`);
-        }
-        return teamId;
-      });
-
-      const juryIds = slot.jury_labels.map(label => {
-        const juryId = juryLabelToId.get(label);
-        if (!juryId) {
-          throw new Error(`Jury not found for slot: ${label}`);
-        }
-        return juryId;
-      });
-
       return {
-        roomId,
+        roomId: slot.room_id,
         slotIndex: index,
         startTime: slot.start_time,
         endTime: slot.end_time,
-        teamIds,
-        juryIds,
+        teamIds: slot.team_ids,
+        juryIds: slot.jury_ids,
       };
     });
 
@@ -343,7 +250,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       selectedRoomIds,
       selectedTeamIds,
       selectedJuryIds,
-      teamsPerRoom: draftPlan.teams_per_room,
+      teamsPerRoom,
       juriesPerRoom: formData.juriesPerRoom,
       startTime: formData.sessionDate,
       slotDuration: formData.slotDuration,
@@ -357,9 +264,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       status: 'idle',
       draftPlan: null,
       error: null,
-      parseErrors: [],
-      missingRooms: [],
-      missingTeams: [],
+      importError: null,
     });
   };
 
@@ -377,9 +282,96 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       <form className="import-pdf-form" onSubmit={(e) => e.preventDefault()}>
         {/* File Upload Section */}
         <div className="form-section">
-          <h3>1. Upload PDF</h3>
+          <h3>1. Provide Required Information</h3>
+          
+          {/* Session Label */}
           <div className="form-group">
-            <label htmlFor="pdfFile">PDF File</label>
+            <label htmlFor="sessionLabel">Session Label (Optional)</label>
+            <input
+              id="sessionLabel"
+              type="text"
+              value={formData.sessionLabel}
+              onChange={(e) => setFormData({ ...formData, sessionLabel: e.target.value })}
+              placeholder="e.g., Annual Competition 2024"
+            />
+          </div>
+
+          {/* Session Date - REQUIRED */}
+          <div className="form-group">
+            <label htmlFor="sessionDate">Session Date *</label>
+            <input
+              id="sessionDate"
+              type="datetime-local"
+              value={formData.sessionDate}
+              onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
+              required
+            />
+            <small>Required for parsing the PDF schedule</small>
+          </div>
+
+          {/* Jury Pool Selection - REQUIRED */}
+          <div className="form-group">
+            <label>Select Jury Pool *</label>
+            {loadingJuries ? (
+              <LoadingSpinner message="Loading juries..." />
+            ) : (
+              <div className="jury-pool-selection">
+                {juries.map((jury) => (
+                  <label key={jury.id} className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={formData.juryPoolIds.includes(jury.id)}
+                      onChange={() => handleJurySelection(jury.id)}
+                    />
+                    {jury.label}
+                  </label>
+                ))}
+              </div>
+            )}
+            <small>Required for automatic jury assignment during parsing</small>
+          </div>
+
+          {/* Scheduling Parameters */}
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="juriesPerRoom">Juries per Room *</label>
+              <input
+                id="juriesPerRoom"
+                type="number"
+                min="1"
+                value={formData.juriesPerRoom}
+                onChange={(e) => setFormData({ ...formData, juriesPerRoom: parseInt(e.target.value, 10) || 1 })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="slotDuration">Slot Duration (min) *</label>
+              <input
+                id="slotDuration"
+                type="number"
+                min="5"
+                value={formData.slotDuration}
+                onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value, 10) || 5 })}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="timeBetweenSlots">Gap Between Slots (min) *</label>
+              <input
+                id="timeBetweenSlots"
+                type="number"
+                min="0"
+                value={formData.timeBetweenSlots}
+                onChange={(e) => setFormData({ ...formData, timeBetweenSlots: parseInt(e.target.value, 10) || 0 })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>2. Upload and Parse PDF</h3>
+          <div className="form-group">
+            <label htmlFor="pdfFile">PDF File *</label>
             <input
               ref={fileInputRef}
               id="pdfFile"
@@ -415,10 +407,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             <div className="parse-success">
               <p>✓ PDF parsed successfully</p>
               <p className="parse-info">
-                Found {parseState.draftPlan?.teams.length || 0} teams, 
-                {' '}{parseState.draftPlan?.juries.length || 0} juries, 
-                {' '}{parseState.draftPlan?.rooms.length || 0} rooms, 
-                {' '}{parseState.draftPlan?.slots.length || 0} slots
+                Found {parseState.draftPlan?.slots.length || 0} slots
               </p>
             </div>
           )}
@@ -427,21 +416,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             <div className="parse-error">
               <p className="error-message">✗ {parseState.error}</p>
               
-              {/* General parse errors */}
-              {parseState.parseErrors.length > 0 && (
-                <ul className="error-list">
-                  {parseState.parseErrors.map((err, idx) => (
-                    <li key={idx}>{err}</li>
-                  ))}
-                </ul>
-              )}
-              
               {/* Missing Rooms */}
-              {parseState.missingRooms.length > 0 && (
+              {parseState.importError?.missing_rooms && parseState.importError.missing_rooms.length > 0 && (
                 <div className="missing-entities">
-                  <h4>Missing Rooms ({parseState.missingRooms.length}):</h4>
+                  <h4>Missing Rooms ({parseState.importError.missing_rooms.length}):</h4>
                   <ul className="missing-list">
-                    {parseState.missingRooms.map((room, idx) => (
+                    {parseState.importError.missing_rooms.map((room, idx) => (
                       <li key={idx}>{room}</li>
                     ))}
                   </ul>
@@ -459,11 +439,11 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
               )}
               
               {/* Missing Teams */}
-              {parseState.missingTeams.length > 0 && (
+              {parseState.importError?.missing_teams && parseState.importError.missing_teams.length > 0 && (
                 <div className="missing-entities">
-                  <h4>Missing Teams ({parseState.missingTeams.length}):</h4>
+                  <h4>Missing Teams ({parseState.importError.missing_teams.length}):</h4>
                   <ul className="missing-list">
-                    {parseState.missingTeams.map((team, idx) => (
+                    {parseState.importError.missing_teams.map((team, idx) => (
                       <li key={idx}>{team}</li>
                     ))}
                   </ul>
@@ -480,12 +460,39 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                 </div>
               )}
               
+              {/* Extracted Slots Context */}
+              {parseState.importError?.extracted_slots && parseState.importError.extracted_slots.length > 0 && (
+                <div className="extracted-context">
+                  <h4>Extracted Schedule Context:</h4>
+                  <div className="context-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Room</th>
+                          <th>Time</th>
+                          <th>Teams</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parseState.importError.extracted_slots.map((slot, idx) => (
+                          <tr key={idx}>
+                            <td>{slot.room_label}</td>
+                            <td>{slot.start_time} - {slot.end_time}</td>
+                            <td>{slot.team_labels.join(', ')}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+              
               <button
                 type="button"
                 className="btn btn-link"
                 onClick={handleRetry}
               >
-                {parseState.missingRooms.length > 0 || parseState.missingTeams.length > 0 
+                {parseState.importError?.missing_rooms || parseState.importError?.missing_teams
                   ? 'Retry Import' 
                   : 'Try Again'}
               </button>
@@ -493,89 +500,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
           )}
         </div>
 
-        {/* Form Fields Section */}
+        {/* Review Section - only shown after successful parse */}
         {parseState.status === 'parsed' && (
           <>
             <div className="form-section">
-              <h3>2. Review and Complete Missing Fields</h3>
-
-              <div className="form-group">
-                <label htmlFor="sessionLabel">Session Label *</label>
-                <input
-                  id="sessionLabel"
-                  type="text"
-                  value={formData.sessionLabel}
-                  onChange={(e) => setFormData({ ...formData, sessionLabel: e.target.value })}
-                  placeholder="e.g., Annual Competition 2024"
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="sessionDate">Session Date *</label>
-                <input
-                  id="sessionDate"
-                  type="datetime-local"
-                  value={formData.sessionDate}
-                  onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Select Jury Pool *</label>
-                {loadingJuries ? (
-                  <LoadingSpinner message="Loading juries..." />
-                ) : (
-                  <div className="jury-pool-selection">
-                    {juries.map((jury) => (
-                      <label key={jury.id} className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={formData.juryPoolIds.includes(jury.id)}
-                          onChange={() => handleJurySelection(jury.id)}
-                        />
-                        {jury.label}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="juriesPerRoom">Juries per Room</label>
-                  <input
-                    id="juriesPerRoom"
-                    type="number"
-                    min="1"
-                    value={formData.juriesPerRoom}
-                    onChange={(e) => setFormData({ ...formData, juriesPerRoom: parseInt(e.target.value, 10) || 1 })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="slotDuration">Slot Duration (min)</label>
-                  <input
-                    id="slotDuration"
-                    type="number"
-                    min="5"
-                    value={formData.slotDuration}
-                    onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value, 10) || 5 })}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="timeBetweenSlots">Gap Between Slots (min)</label>
-                  <input
-                    id="timeBetweenSlots"
-                    type="number"
-                    min="0"
-                    value={formData.timeBetweenSlots}
-                    onChange={(e) => setFormData({ ...formData, timeBetweenSlots: parseInt(e.target.value, 10) || 0 })}
-                  />
-                </div>
-              </div>
+              <h3>3. Review and Import</h3>
+              <p>PDF has been successfully parsed. Click "Import and Review" to continue to the session wizard.</p>
             </div>
 
             {/* Action Buttons */}
