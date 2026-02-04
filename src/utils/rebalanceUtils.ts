@@ -3,6 +3,8 @@
  * Reorganizes team/jury assignments to optimize schedule quality
  */
 
+import type { AnalyticsSummary } from '../apiConfig';
+
 export interface RebalanceSlot {
   roomId: number;
   slotIndex: number;
@@ -501,7 +503,7 @@ export async function magicRebalanceWithAnalytics(config: RebalanceConfig): Prom
  * Increases weights for metrics that show problems in current data
  */
 function adjustWeightsFromAnalytics(
-  summary: Awaited<ReturnType<typeof import('../apiConfig').AnalyticsService.getAnalyticsSummary>>,
+  summary: AnalyticsSummary,
   baseWeights: PenaltyWeights
 ): PenaltyWeights {
   const adjustedWeights = { ...baseWeights };

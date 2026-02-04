@@ -40,6 +40,16 @@ const RebalanceModal = ({
 
   const formatNumber = (num: number) => num.toFixed(METRIC_DECIMAL_PLACES);
 
+  // Helper function to get or create IDLabel
+  const getOrCreateIDLabel = (
+    map: Map<number, { id: number; label: string }>,
+    id: number,
+    prefix: string
+  ): IDLabel => {
+    const entity = map.get(id);
+    return entity ? { id: entity.id, label: entity.label } : { id, label: `${prefix} ${id}` };
+  };
+
   // Convert RebalanceSlot[] to RoomSessionExpanded[] for ScheduleOverview
   const convertSlotsToRoomSessions = (slots: RebalanceSlot[]): RoomSessionExpanded[] => {
     // Create lookup maps for O(1) access instead of O(n) find operations
@@ -49,19 +59,13 @@ const RebalanceModal = ({
 
     return slots.map((slot, index) => {
       const room = roomsMap.get(slot.roomId);
-      const slotTeams = slot.teamIds.map(id => {
-        const team = teamsMap.get(id);
-        return team ? { id: team.id, label: team.label } as IDLabel : { id, label: `Team ${id}` } as IDLabel;
-      });
-      const slotJuries = slot.juryIds.map(id => {
-        const jury = juriesMap.get(id);
-        return jury ? { id: jury.id, label: jury.label } as IDLabel : { id, label: `Jury ${id}` } as IDLabel;
-      });
+      const slotTeams = slot.teamIds.map(id => getOrCreateIDLabel(teamsMap, id, 'Team'));
+      const slotJuries = slot.juryIds.map(id => getOrCreateIDLabel(juriesMap, id, 'Jury'));
 
       return {
         id: index,
         room_id: slot.roomId,
-        session_id: 0, // Not needed for preview
+        session_id: 0, // Placeholder: not needed for preview display
         start_time: slot.startTime,
         end_time: slot.endTime,
         created_at: new Date().toISOString(),
