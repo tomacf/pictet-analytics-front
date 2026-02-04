@@ -62,10 +62,10 @@
 }
 
 .sidebar li.active a {
-  background-color: #fff0f0;
+  background-color: #ffe0e0;
   color: #cc2d1d;
-  font-weight: 500;
-  border-left: 3px solid #cc2d1d;
+  font-weight: 600;
+  border-left: 4px solid #cc2d1d;
 }
 
 /* Parent item styles */
@@ -123,10 +123,10 @@
 }
 
 .sidebar .sub-items li.active a {
-  background-color: #fff0f0;
+  background-color: #ffe0e0;
   color: #cc2d1d;
-  font-weight: 500;
-  border-left: 3px solid #cc2d1d;
+  font-weight: 600;
+  border-left: 4px solid #cc2d1d;
 }
 
 .content {
