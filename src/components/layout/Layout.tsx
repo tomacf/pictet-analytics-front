@@ -26,6 +26,8 @@ const Layout = () => {
               <button 
                 className="parent-toggle"
                 onClick={() => setIsConfigurationExpanded(!isConfigurationExpanded)}
+                aria-expanded={isConfigurationExpanded}
+                aria-label="Toggle Configuration menu"
               >
                 <span className={`arrow ${isConfigurationExpanded ? 'expanded' : ''}`}>▶</span>
                 Configuration
