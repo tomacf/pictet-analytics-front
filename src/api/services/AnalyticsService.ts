@@ -48,17 +48,27 @@ export class AnalyticsService {
      *
      * Supports optional filtering by session_id or date range.
      *
-     * @param sessionId Filter results by a specific session ID
-     * @param startDate Filter results by start date (ISO 8601 timestamp)
-     * @param endDate Filter results by end date (ISO 8601 timestamp)
      * @returns AnalyticsSummary Analytics summary retrieved successfully
      * @throws ApiError
      */
-    public static getAnalyticsSummary(
+    public static getAnalyticsSummary({
+        sessionId,
+        startDate,
+        endDate,
+    }: {
+        /**
+         * Filter results by a specific session ID
+         */
         sessionId?: number,
+        /**
+         * Filter results by start date (ISO 8601 timestamp)
+         */
         startDate?: string,
+        /**
+         * Filter results by end date (ISO 8601 timestamp)
+         */
         endDate?: string,
-    ): CancelablePromise<AnalyticsSummary> {
+    }): CancelablePromise<AnalyticsSummary> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/analytics/summary',

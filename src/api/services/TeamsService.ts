@@ -11,13 +11,14 @@ export class TeamsService {
     /**
      * Create a new team
      * Creates a new team with the provided name
-     * @param requestBody
      * @returns Team Team created successfully
      * @throws ApiError
      */
-    public static createTeam(
+    public static createTeam({
+        requestBody,
+    }: {
         requestBody: TeamInput,
-    ): CancelablePromise<Team> {
+    }): CancelablePromise<Team> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/teams',
@@ -47,13 +48,17 @@ export class TeamsService {
     /**
      * Get a team by ID
      * Retrieves a specific team by its ID
-     * @param id Team ID
      * @returns Team Team found
      * @throws ApiError
      */
-    public static getTeamById(
+    public static getTeamById({
+        id,
+    }: {
+        /**
+         * Team ID
+         */
         id: number,
-    ): CancelablePromise<Team> {
+    }): CancelablePromise<Team> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/teams/{id}',
@@ -69,15 +74,19 @@ export class TeamsService {
     /**
      * Update an existing team
      * Updates a team with the provided information. The ID is provided in the URL path, not in the request body.
-     * @param id Team ID
-     * @param requestBody
      * @returns Team Team updated successfully
      * @throws ApiError
      */
-    public static updateTeam(
+    public static updateTeam({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Team ID
+         */
         id: number,
         requestBody: TeamInput,
-    ): CancelablePromise<Team> {
+    }): CancelablePromise<Team> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/teams/{id}',
@@ -95,13 +104,17 @@ export class TeamsService {
     /**
      * Delete a team
      * Deletes a specific team by its ID
-     * @param id Team ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteTeam(
+    public static deleteTeam({
+        id,
+    }: {
+        /**
+         * Team ID
+         */
         id: number,
-    ): CancelablePromise<void> {
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/teams/{id}',

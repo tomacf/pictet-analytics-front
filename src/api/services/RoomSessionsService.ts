@@ -26,13 +26,14 @@ export class RoomSessionsService {
      * - Creates a basic room session (backward compatible)
      * - Returns the room session without expanded data
      *
-     * @param requestBody
      * @returns any Room session created successfully
      * @throws ApiError
      */
-    public static createRoomSession(
+    public static createRoomSession({
+        requestBody,
+    }: {
         requestBody: RoomSessionInput,
-    ): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
+    }): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/room-sessions',
@@ -58,13 +59,17 @@ export class RoomSessionsService {
      * - `teams`: Include teams associated with the room session
      * - `juries`: Include juries associated with the room session
      *
-     * @param expand Comma-separated list of related entities to expand (room, session, teams, juries)
      * @returns any List of room sessions
      * @throws ApiError
      */
-    public static getAllRoomSessions(
+    public static getAllRoomSessions({
+        expand,
+    }: {
+        /**
+         * Comma-separated list of related entities to expand (room, session, teams, juries)
+         */
         expand?: string,
-    ): CancelablePromise<Array<(RoomSession | RoomSessionExpanded)>> {
+    }): CancelablePromise<Array<(RoomSession | RoomSessionExpanded)>> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/room-sessions',
@@ -86,15 +91,22 @@ export class RoomSessionsService {
      * - `teams`: Include teams associated with the room session
      * - `juries`: Include juries associated with the room session
      *
-     * @param id Room session ID
-     * @param expand Comma-separated list of related entities to expand (room, session, teams, juries)
      * @returns any Room session found
      * @throws ApiError
      */
-    public static getRoomSessionById(
+    public static getRoomSessionById({
+        id,
+        expand,
+    }: {
+        /**
+         * Room session ID
+         */
         id: number,
+        /**
+         * Comma-separated list of related entities to expand (room, session, teams, juries)
+         */
         expand?: string,
-    ): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
+    }): CancelablePromise<(RoomSession | RoomSessionExpanded)> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/room-sessions/{id}',
@@ -116,13 +128,17 @@ export class RoomSessionsService {
      *
      * Deletes a specific room session by its ID
      *
-     * @param id Room session ID
      * @returns void
      * @throws ApiError
      */
-    public static deleteRoomSession(
+    public static deleteRoomSession({
+        id,
+    }: {
+        /**
+         * Room session ID
+         */
         id: number,
-    ): CancelablePromise<void> {
+    }): CancelablePromise<void> {
         return __request(OpenAPI, {
             method: 'DELETE',
             url: '/api/room-sessions/{id}',
@@ -147,15 +163,19 @@ export class RoomSessionsService {
      * - Automatically upserts into session_teams, session_juries, and session_rooms if the entities are not already linked to the parent session
      * - Returns the updated room session with expanded data (room, session, teams, juries)
      *
-     * @param id Room session ID
-     * @param requestBody
      * @returns RoomSessionExpanded Room session updated successfully
      * @throws ApiError
      */
-    public static updateRoomSession(
+    public static updateRoomSession({
+        id,
+        requestBody,
+    }: {
+        /**
+         * Room session ID
+         */
         id: number,
         requestBody: RoomSessionUpdateInput,
-    ): CancelablePromise<RoomSessionExpanded> {
+    }): CancelablePromise<RoomSessionExpanded> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/room-sessions/{id}',

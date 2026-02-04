@@ -104,7 +104,9 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       setParseState({ status: 'parsing', draftPlan: null, error: null, parseErrors: [] });
 
       const draftPlan = await SessionsService.parsePdfForSession({
-        file: formData.file,
+        formData: {
+          file: formData.file,
+        },
       });
 
       // Pre-fill form data with parsed values
@@ -119,14 +121,15 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
       setParseState({ status: 'parsed', draftPlan, error: null, parseErrors: [] });
       toast.success('PDF parsed successfully');
-    } catch (err: any) {
+    } catch (err: unknown) {
       let errorMessage = 'Failed to parse PDF';
       let parseErrors: string[] = [];
 
-      if (err.body && err.body.errors) {
+      if (err && typeof err === 'object' && 'body' in err) {
+        const errBody = err.body as { message?: string; errors?: string[] };
         // ParseError response
-        errorMessage = err.body.message || errorMessage;
-        parseErrors = err.body.errors || [];
+        errorMessage = errBody.message || errorMessage;
+        parseErrors = errBody.errors || [];
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -328,13 +331,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             onClick={handleParsePdf}
             disabled={!formData.file || parseState.status === 'parsing'}
           >
-            {parseState.status === 'parsing' ? (
-              <>
-                <LoadingSpinner size="small" /> Parsing PDF...
-              </>
-            ) : (
-              'Parse PDF'
-            )}
+            {parseState.status === 'parsing' ? 'Parsing PDF...' : 'Parse PDF'}
           </button>
 
           {/* Parse Status */}
@@ -403,7 +400,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
               <div className="form-group">
                 <label>Select Jury Pool *</label>
                 {loadingJuries ? (
-                  <LoadingSpinner size="small" />
+                  <LoadingSpinner message="Loading juries..." />
                 ) : (
                   <div className="jury-pool-selection">
                     {juries.map((jury) => (
