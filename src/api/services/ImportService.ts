@@ -23,13 +23,13 @@ export class ImportService {
      * **Required fields:**
      * - `pdf`: PDF file (multipart/form-data)
      * - `date` or `day`: Schedule date (YYYY-MM-DD)
-     * - `slot_duration`: Duration of each slot in minutes
-     * - `time_between_slots`: Gap between slots in minutes
      * - `jury_ids[]`: Array of jury IDs to assign
      * - `juries_per_room`: Number of juries per room
      *
      * **Optional fields:**
      * - `session_label`: Label for the session
+     * - `slot_duration`: Duration of each slot in minutes (parsed from PDF if not provided)
+     * - `time_between_slots`: Gap between slots in minutes (derived from PDF if not provided)
      *
      * **Error Handling:**
      * - If parsed room or team labels are not found in database, returns HTTP 400 with structured error including missing labels and extracted schedule context
@@ -58,13 +58,13 @@ export class ImportService {
              */
             day?: string;
             /**
-             * Duration of each slot in minutes
+             * Duration of each slot in minutes (optional - parsed from PDF if not provided)
              */
-            slot_duration: number;
+            slot_duration?: number;
             /**
-             * Gap between slots in minutes
+             * Gap between slots in minutes (optional - derived from PDF if not provided)
              */
-            time_between_slots: number;
+            time_between_slots?: number;
             /**
              * Array of jury IDs to assign to slots
              */

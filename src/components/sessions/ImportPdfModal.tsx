@@ -24,8 +24,6 @@ interface FormData {
   sessionDate: string;
   juryPoolIds: number[];
   juriesPerRoom: number;
-  slotDuration: number;
-  timeBetweenSlots: number;
 }
 
 interface ParseState {
@@ -38,6 +36,7 @@ interface ParseState {
 const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const reviewSectionRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<FormData>({
     file: null,
@@ -45,8 +44,6 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     sessionDate: new Date().toISOString().split('T')[0], // Default to current date
     juryPoolIds: [],
     juriesPerRoom: 1,
-    slotDuration: 30,
-    timeBetweenSlots: 5,
   });
 
   const [parseState, setParseState] = useState<ParseState>({
@@ -81,7 +78,11 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    setFormData({ ...formData, file });
+    
+    // Auto-fill session label with filename (without extension) if not already set
+    const sessionLabel = formData.sessionLabel || (file ? file.name.replace(/\.[^/.]+$/, '') : '');
+    
+    setFormData({ ...formData, file, sessionLabel });
     
     // Reset parse state when file changes
     setParseState({
@@ -121,8 +122,6 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
           pdf: formData.file,
           session_label: formData.sessionLabel || undefined,
           date: formData.sessionDate,
-          slot_duration: formData.slotDuration,
-          time_between_slots: formData.timeBetweenSlots,
           jury_ids: formData.juryPoolIds,
           juries_per_room: formData.juriesPerRoom,
         },
@@ -133,8 +132,6 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         ...formData,
         sessionLabel: draftPlan.session_label || formData.sessionLabel,
         sessionDate: formData.sessionDate, // Already provided
-        slotDuration: draftPlan.slot_duration,
-        timeBetweenSlots: draftPlan.time_between_slots,
         juriesPerRoom: draftPlan.juries_per_room,
         juryPoolIds: draftPlan.jury_ids,
       });
@@ -146,6 +143,11 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         importError: null,
       });
       toast.success('PDF parsed successfully');
+      
+      // Scroll to review section
+      setTimeout(() => {
+        reviewSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
     } catch (err: unknown) {
       let errorMessage = 'Failed to parse PDF';
       let importError: ImportError | null = null;
@@ -202,8 +204,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         requestBody: {
           label: formData.sessionLabel,
           start_time: sessionDate.toISOString(),
-          slot_duration: formData.slotDuration,
-          time_between_slots: formData.timeBetweenSlots,
+          slot_duration: parseState.draftPlan.slot_duration,
+          time_between_slots: parseState.draftPlan.time_between_slots,
         }
       });
       
@@ -271,8 +273,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       teamsPerRoom,
       juriesPerRoom: formData.juriesPerRoom,
       startTime: formData.sessionDate,
-      slotDuration: formData.slotDuration,
-      timeBetweenSlots: formData.timeBetweenSlots,
+      slotDuration: draftPlan.slot_duration,
+      timeBetweenSlots: draftPlan.time_between_slots,
       scheduleSlots,
     };
   };
@@ -359,28 +361,6 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                 min="1"
                 value={formData.juriesPerRoom}
                 onChange={(e) => setFormData({ ...formData, juriesPerRoom: parseInt(e.target.value, 10) || 1 })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="slotDuration">Slot Duration (min) *</label>
-              <input
-                id="slotDuration"
-                type="number"
-                min="5"
-                value={formData.slotDuration}
-                onChange={(e) => setFormData({ ...formData, slotDuration: parseInt(e.target.value, 10) || 5 })}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="timeBetweenSlots">Gap Between Slots (min) *</label>
-              <input
-                id="timeBetweenSlots"
-                type="number"
-                min="0"
-                value={formData.timeBetweenSlots}
-                onChange={(e) => setFormData({ ...formData, timeBetweenSlots: parseInt(e.target.value, 10) || 0 })}
               />
             </div>
           </div>
@@ -521,7 +501,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         {/* Review Section - only shown after successful parse */}
         {parseState.status === 'parsed' && (
           <>
-            <div className="form-section">
+            <div className="form-section" ref={reviewSectionRef}>
               <h3>3. Review and Import</h3>
               <p>PDF has been successfully parsed. Click "Import and Review" to continue to the session wizard.</p>
             </div>
