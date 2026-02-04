@@ -20,6 +20,7 @@ import {
   isJuryConflicted,
   type SlotAssignment,
 } from '../../utils/validationUtils';
+import { is409Error, format409Error } from '../../utils/errorUtils';
 import './SessionWizard.css';
 
 interface WizardState {
@@ -332,16 +333,8 @@ const SessionWizard = () => {
       }, 1000);
     } catch (err: unknown) {
       // Handle 409 Conflict errors specially
-      if (err && typeof err === 'object' && 'status' in err && err.status === 409) {
-        const errorBody = 'body' in err ? err.body : null;
-        let errorMessage = 'Conflict detected: ';
-        
-        if (errorBody && typeof errorBody === 'object' && 'detail' in errorBody) {
-          errorMessage += String(errorBody.detail);
-        } else {
-          errorMessage += 'The session plan contains conflicts.';
-        }
-        
+      if (is409Error(err)) {
+        const errorMessage = format409Error(err, 'The session plan contains conflicts.');
         toast.error(errorMessage, { autoClose: 8000 });
       } else {
         const message = err instanceof Error ? err.message : 'Failed to save session plan';

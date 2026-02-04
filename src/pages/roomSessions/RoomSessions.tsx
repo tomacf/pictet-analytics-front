@@ -12,6 +12,7 @@ import {
   isJuryConflicted,
   type SlotAssignment,
 } from '../../utils/validationUtils';
+import { is409Error, format409Error } from '../../utils/errorUtils';
 import '../teams/Teams.css';
 import './RoomSessions.css';
 
@@ -74,6 +75,19 @@ const RoomSessions = () => {
   }, [roomSessions, formData, editingId]);
 
   const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
+
+  // Helper to get checkbox styling for conflict highlighting
+  const getCheckboxClassName = (isSelected: boolean, hasConflict: boolean): string => {
+    return `checkbox-label ${hasConflict && isSelected ? 'checkbox-label-conflict' : ''}`;
+  };
+
+  // Helper to get checkbox title for conflict tooltip
+  const getCheckboxTitle = (entityType: 'team' | 'jury', isSelected: boolean, hasConflict: boolean): string => {
+    if (!hasConflict || !isSelected) return '';
+    return entityType === 'team' 
+      ? 'This team is already assigned to another slot in this session'
+      : 'This jury has overlapping time slot assignments';
+  };
 
   const fetchRoomSessions = async () => {
     try {
@@ -178,16 +192,8 @@ const RoomSessions = () => {
       fetchRoomSessions();
     } catch (err: unknown) {
       // Handle 409 Conflict errors specially
-      if (err && typeof err === 'object' && 'status' in err && err.status === 409) {
-        const errorBody = 'body' in err ? err.body : null;
-        let errorMessage = 'Conflict detected: ';
-        
-        if (errorBody && typeof errorBody === 'object' && 'detail' in errorBody) {
-          errorMessage += String(errorBody.detail);
-        } else {
-          errorMessage += 'The room session contains conflicts.';
-        }
-        
+      if (is409Error(err)) {
+        const errorMessage = format409Error(err, 'The room session contains conflicts.');
         toast.error(errorMessage, { autoClose: 8000 });
       } else {
         const message = err instanceof Error ? err.message : 'Failed to save room session';
@@ -502,15 +508,16 @@ const RoomSessions = () => {
               {teams.length > 0 ? (
                 teams.map((team) => {
                   const hasConflict = isTeamConflicted(team.id, conflicts.teamConflicts);
+                  const isSelected = formData.team_ids?.includes(team.id) ?? false;
                   return (
                     <label 
                       key={team.id} 
-                      className={`checkbox-label ${hasConflict && formData.team_ids?.includes(team.id) ? 'checkbox-label-conflict' : ''}`}
-                      title={hasConflict && formData.team_ids?.includes(team.id) ? 'This team is already assigned to another slot in this session' : ''}
+                      className={getCheckboxClassName(isSelected, hasConflict)}
+                      title={getCheckboxTitle('team', isSelected, hasConflict)}
                     >
                       <input
                         type="checkbox"
-                        checked={formData.team_ids?.includes(team.id) ?? false}
+                        checked={isSelected}
                         onChange={(e) => {
                           const currentTeamIds = formData.team_ids ?? [];
                           const newIds = e.target.checked
@@ -559,15 +566,16 @@ const RoomSessions = () => {
               {juries.length > 0 ? (
                 juries.map((jury) => {
                   const hasConflict = isJuryConflicted(jury.id, conflicts.juryConflicts);
+                  const isSelected = formData.jury_ids?.includes(jury.id) ?? false;
                   return (
                     <label 
                       key={jury.id} 
-                      className={`checkbox-label ${hasConflict && formData.jury_ids?.includes(jury.id) ? 'checkbox-label-conflict' : ''}`}
-                      title={hasConflict && formData.jury_ids?.includes(jury.id) ? 'This jury has overlapping time slot assignments' : ''}
+                      className={getCheckboxClassName(isSelected, hasConflict)}
+                      title={getCheckboxTitle('jury', isSelected, hasConflict)}
                     >
                       <input
                         type="checkbox"
-                        checked={formData.jury_ids?.includes(jury.id) ?? false}
+                        checked={isSelected}
                         onChange={(e) => {
                           const currentJuryIds = formData.jury_ids ?? [];
                           const newIds = e.target.checked
