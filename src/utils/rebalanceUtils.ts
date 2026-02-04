@@ -19,6 +19,7 @@ export interface RebalanceConfig {
   seed?: number;
   iterations?: number;
   weights?: PenaltyWeights;
+  sessionId?: number; // Optional session ID for fetching analytics
 }
 
 export interface PenaltyWeights {
@@ -454,4 +455,94 @@ export function magicRebalance(config: RebalanceConfig): RebalanceResult {
     afterMetrics,
     improvementPercentage,
   };
+}
+
+/**
+ * Enhanced rebalance function that can fetch analytics from API
+ * Uses real-world data to inform weight adjustments and better optimization
+ */
+export async function magicRebalanceWithAnalytics(config: RebalanceConfig): Promise<RebalanceResult> {
+  const { sessionId } = config;
+  
+  // If we have a session ID, try to fetch analytics to inform our weights
+  let adjustedWeights = config.weights || DEFAULT_WEIGHTS;
+  
+  if (sessionId) {
+    try {
+      // Dynamically import the analytics service to avoid circular dependencies
+      const { AnalyticsService } = await import('../apiConfig');
+      
+      // Fetch analytics summary for this session
+      const summary = await AnalyticsService.getAnalyticsSummary(sessionId);
+      
+      // Analyze the summary to adjust weights based on current issues
+      adjustedWeights = adjustWeightsFromAnalytics(summary, DEFAULT_WEIGHTS);
+      
+      console.log('Enhanced rebalance with analytics data:', {
+        teamVsTeamIssues: summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length,
+        teamJuryIssues: Object.keys(summary.team_jury_matrix).length,
+        waitingTimeIssues: summary.team_waiting_times.length,
+        roomDistributionIssues: summary.team_room_distributions.length,
+      });
+    } catch (error) {
+      // If API call fails, fall back to default weights
+      console.warn('Failed to fetch analytics, using default weights:', error);
+    }
+  }
+  
+  // Run the standard rebalance with adjusted weights
+  return magicRebalance({
+    ...config,
+    weights: adjustedWeights,
+  });
+}
+
+/**
+ * Analyze analytics summary to adjust penalty weights
+ * Increases weights for metrics that show problems in current data
+ */
+function adjustWeightsFromAnalytics(
+  summary: Awaited<ReturnType<typeof import('../apiConfig').AnalyticsService.getAnalyticsSummary>>,
+  baseWeights: PenaltyWeights
+): PenaltyWeights {
+  const adjustedWeights = { ...baseWeights };
+  
+  // Increase weight for repeated team meetings if we see many in the data
+  const repeatedMeetings = summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length;
+  if (repeatedMeetings > 3) {
+    adjustedWeights.repeatedTeamMeetings = baseWeights.repeatedTeamMeetings * 1.5;
+  }
+  
+  // Increase weight for team-jury interactions if there are many repeated pairings
+  const teamJuryInteractions = summary.team_jury_matrix.counts || [];
+  const repeatedPairings = teamJuryInteractions.filter(interaction => 
+    interaction.meet_count > 1
+  ).length;
+  if (repeatedPairings > 5) {
+    adjustedWeights.repeatedTeamJuryInteractions = baseWeights.repeatedTeamJuryInteractions * 1.5;
+  }
+  
+  // Increase weight for waiting time if there's high variance
+  const waitingTimes = summary.team_waiting_times.map(t => t.average_waiting_time_minutes);
+  if (waitingTimes.length > 0) {
+    const mean = waitingTimes.reduce((sum, t) => sum + t, 0) / waitingTimes.length;
+    const variance = waitingTimes.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / waitingTimes.length;
+    const stdDev = Math.sqrt(variance);
+    
+    if (stdDev > 15) { // More than 15 minutes standard deviation
+      adjustedWeights.waitingTimeDisparity = baseWeights.waitingTimeDisparity * 1.5;
+    }
+  }
+  
+  // Increase weight for room distribution if there's imbalance
+  const roomCounts = summary.team_room_distributions.map(d => d.room_counts.length);
+  if (roomCounts.length > 0) {
+    const maxRooms = Math.max(...roomCounts);
+    const minRooms = Math.min(...roomCounts);
+    if (maxRooms - minRooms > 2) {
+      adjustedWeights.unevenRoomAttendance = baseWeights.unevenRoomAttendance * 1.5;
+    }
+  }
+  
+  return adjustedWeights;
 }

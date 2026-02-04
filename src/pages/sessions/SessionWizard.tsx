@@ -25,7 +25,7 @@ import {
 } from '../../utils/validationUtils';
 import { is409Error, format409Error } from '../../utils/errorUtils';
 import {
-  magicRebalance,
+  magicRebalanceWithAnalytics,
   type RebalanceResult,
 } from '../../utils/rebalanceUtils';
 import './SessionWizard.css';
@@ -468,21 +468,21 @@ const SessionWizard = () => {
   };
 
   // Magic Rebalance handlers
-  const handleMagicRebalance = () => {
+  const handleMagicRebalance = async () => {
     if (wizardState.scheduleSlots.length === 0) {
       toast.error('No schedule to rebalance');
       return;
     }
 
     setIsRebalancing(true);
-    toast.info('Running Magic Rebalance...');
+    toast.info('Running Magic Rebalance with analytics...');
 
     // Use setTimeout to allow UI to update (show loading state) before starting
     // the CPU-intensive rebalance computation. 100ms is sufficient for React to
     // render the button state change and toast notification.
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
-        const result = magicRebalance({
+        const result = await magicRebalanceWithAnalytics({
           slots: wizardState.scheduleSlots.map(slot => ({
             roomId: slot.roomId,
             slotIndex: slot.slotIndex,
@@ -495,6 +495,7 @@ const SessionWizard = () => {
           selectedJuryIds: wizardState.selectedJuryIds,
           seed: Date.now(),
           iterations: 1000,
+          sessionId: wizardState.sessionId, // Pass session ID for analytics API
         });
 
         setRebalanceResult(result);
