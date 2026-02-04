@@ -17,7 +17,7 @@
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: #cc2d1d;
   color: white;
   padding: 0.625rem 1.25rem;
   border: none;
@@ -29,7 +29,7 @@
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: #a82417;
 }
 
 .btn-secondary {
@@ -76,8 +76,8 @@
 
 .form-input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #cc2d1d;
+  box-shadow: 0 0 0 3px rgba(204, 45, 29, 0.1);
 }
 
 .form-actions {

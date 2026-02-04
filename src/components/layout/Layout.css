@@ -5,7 +5,7 @@
 }
 
 .topbar {
-  background-color: #1e40af;
+  background-color: #020202;
   color: white;
   padding: 1rem 2rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -50,14 +50,14 @@
 
 .sidebar a:hover {
   background-color: #e2e8f0;
-  color: #1e40af;
+  color: #cc2d1d;
 }
 
 .sidebar li.active a {
-  background-color: #e0e7ff;
-  color: #1e40af;
+  background-color: #fff0f0;
+  color: #cc2d1d;
   font-weight: 500;
-  border-left: 3px solid #1e40af;
+  border-left: 3px solid #cc2d1d;
 }
 
 /* Parent item styles */
@@ -82,11 +82,11 @@
 
 .sidebar .parent-toggle:hover {
   background-color: #e2e8f0;
-  color: #1e40af;
+  color: #cc2d1d;
 }
 
 .sidebar .parent-item.active > .parent-toggle {
-  color: #1e40af;
+  color: #cc2d1d;
   font-weight: 500;
 }
 
@@ -115,10 +115,10 @@
 }
 
 .sidebar .sub-items li.active a {
-  background-color: #e0e7ff;
-  color: #1e40af;
+  background-color: #fff0f0;
+  color: #cc2d1d;
   font-weight: 500;
-  border-left: 3px solid #1e40af;
+  border-left: 3px solid #cc2d1d;
 }
 
 .content {

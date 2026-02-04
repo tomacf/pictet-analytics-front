@@ -43,8 +43,8 @@
 }
 
 .wizard-step.active .step-number {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
+  background-color: #cc2d1d;
+  border-color: #cc2d1d;
   color: white;
 }
 
@@ -130,7 +130,7 @@
 .btn-link {
   background: none;
   border: none;
-  color: #3b82f6;
+  color: #cc2d1d;
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
@@ -140,7 +140,7 @@
 }
 
 .btn-link:hover {
-  color: #2563eb;
+  color: #a82417;
   text-decoration: underline;
 }
 
@@ -151,11 +151,11 @@
 
 /* Schedule Grid */
 .schedule-info {
-  background-color: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
   padding: 1rem;
   border-radius: 6px;
-  color: #1e40af;
+  color: #334155;
   font-size: 0.875rem;
   margin-bottom: 1.5rem;
 }
@@ -223,7 +223,7 @@
 }
 
 .multi-select option:checked {
-  background-color: #3b82f6;
+  background-color: #cc2d1d;
   color: white;
 }
 
@@ -272,8 +272,8 @@
 }
 
 .preview-chip {
-  background-color: #e0e7ff;
-  color: #3730a3;
+  background-color: #fff0f0;
+  color: #cc2d1d;
   padding: 0.25rem 0.625rem;
   border-radius: 4px;
   font-size: 0.8125rem;
@@ -334,8 +334,8 @@
 
 /* Room Summary Section */
 .room-summary {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
   border-radius: 6px;
   padding: 1rem;
   margin-bottom: 1rem;
@@ -351,7 +351,7 @@
 }
 
 .room-summary-section strong {
-  color: #075985;
+  color: #334155;
   font-size: 0.875rem;
   font-weight: 600;
 }
