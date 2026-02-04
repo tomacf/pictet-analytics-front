@@ -12,8 +12,10 @@ const Teams = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [formData, setFormData] = useState<TeamInput>({ label: '' });
+  const [bulkInput, setBulkInput] = useState('');
 
   const fetchTeams = async () => {
     try {
@@ -80,6 +82,50 @@ const Teams = () => {
     }
   };
 
+  const handleBulkCreate = () => {
+    setBulkInput('');
+    setIsBulkModalOpen(true);
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const labels = bulkInput
+      .split(',')
+      .map(label => label.trim())
+      .filter(label => label.length > 0);
+
+    if (labels.length === 0) {
+      toast.warning('Please enter at least one team label');
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const label of labels) {
+      try {
+        await TeamsService.createTeam({ requestBody: { label } });
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        const message = err instanceof Error ? err.message : 'Failed to create team';
+        toast.error(`Failed to create "${label}": ${message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully created ${successCount} team(s)`);
+      fetchTeams();
+      setBulkInput('');
+    }
+
+    if (errorCount === 0) {
+      // Only close if all succeeded and user wants to close
+      // For now, keep it open for continuous adding
+    }
+  };
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'label', label: 'Label' },
@@ -102,9 +148,14 @@ const Teams = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Teams</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          Create Team
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleCreate} className="btn btn-primary">
+            Create Team
+          </button>
+          <button onClick={handleBulkCreate} className="btn btn-primary">
+            Bulk Create
+          </button>
+        </div>
       </div>
 
       <DataTable
@@ -138,6 +189,41 @@ const Teams = () => {
             </button>
             <button type="submit" className="btn btn-primary">
               {editingTeam ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="Bulk Create Teams"
+      >
+        <form onSubmit={handleBulkSubmit} className="form">
+          <div className="form-group">
+            <label htmlFor="bulkInput">
+              Team Labels (comma-separated)
+            </label>
+            <textarea
+              id="bulkInput"
+              value={bulkInput}
+              onChange={(e) => setBulkInput(e.target.value)}
+              placeholder="e.g., Team Alpha, Team Beta, Team Gamma"
+              rows={5}
+              className="form-input"
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+              Enter team labels separated by commas. The modal will stay open so you can add more.
+            </small>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={() => setIsBulkModalOpen(false)} className="btn btn-secondary">
+              Close
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Create Teams
             </button>
           </div>
         </form>

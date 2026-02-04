@@ -12,8 +12,10 @@ const Juries = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [editingJury, setEditingJury] = useState<Jury | null>(null);
   const [formData, setFormData] = useState<JuryInput>({ label: '' });
+  const [bulkInput, setBulkInput] = useState('');
 
   const fetchJuries = async () => {
     try {
@@ -80,6 +82,49 @@ const Juries = () => {
     }
   };
 
+  const handleBulkCreate = () => {
+    setBulkInput('');
+    setIsBulkModalOpen(true);
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const labels = bulkInput
+      .split(',')
+      .map(label => label.trim())
+      .filter(label => label.length > 0);
+
+    if (labels.length === 0) {
+      toast.warning('Please enter at least one jury label');
+      return;
+    }
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const label of labels) {
+      try {
+        await JuriesService.createJury({ requestBody: { label } });
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        const message = err instanceof Error ? err.message : 'Failed to create jury';
+        toast.error(`Failed to create "${label}": ${message}`);
+      }
+    }
+
+    if (successCount > 0) {
+      toast.success(`Successfully created ${successCount} jury/juries`);
+      fetchJuries();
+      setBulkInput('');
+    }
+
+    if (errorCount === 0) {
+      // Keep modal open for continuous adding
+    }
+  };
+
   const columns = [
     { key: 'id', label: 'ID' },
     { key: 'label', label: 'Label' },
@@ -102,9 +147,14 @@ const Juries = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Juries</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          Create Jury
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={handleCreate} className="btn btn-primary">
+            Create Jury
+          </button>
+          <button onClick={handleBulkCreate} className="btn btn-primary">
+            Bulk Create
+          </button>
+        </div>
       </div>
 
       <DataTable
@@ -138,6 +188,41 @@ const Juries = () => {
             </button>
             <button type="submit" className="btn btn-primary">
               {editingJury ? 'Update' : 'Create'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        title="Bulk Create Juries"
+      >
+        <form onSubmit={handleBulkSubmit} className="form">
+          <div className="form-group">
+            <label htmlFor="bulkInput">
+              Jury Labels (comma-separated)
+            </label>
+            <textarea
+              id="bulkInput"
+              value={bulkInput}
+              onChange={(e) => setBulkInput(e.target.value)}
+              placeholder="e.g., Jury 1, Jury 2, Jury 3"
+              rows={5}
+              className="form-input"
+              style={{ resize: 'vertical', fontFamily: 'inherit' }}
+            />
+            <small style={{ display: 'block', marginTop: '4px', color: '#666' }}>
+              Enter jury labels separated by commas. The modal will stay open so you can add more.
+            </small>
+          </div>
+
+          <div className="form-actions">
+            <button type="button" onClick={() => setIsBulkModalOpen(false)} className="btn btn-secondary">
+              Close
+            </button>
+            <button type="submit" className="btn btn-primary">
+              Create Juries
             </button>
           </div>
         </form>
