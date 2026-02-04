@@ -46,9 +46,8 @@ const Layout = () => {
           aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {isSidebarCollapsed ? '☰' : '‹'}
+          {isSidebarCollapsed ? <img src="/icon_open.png" className="topbar-collapse-icon" alt="Open Icon"/> : <img src="/icon_close.png" className="topbar-collapse-icon" alt="Close Icon"/>}
         </button>
-        <img src="/logo1.png" alt="Pictet Analytics Logo" className="topbar-logo" />
         <h1>Pictet Analytics Admin</h1>
       </div>
       <div className="main-container">

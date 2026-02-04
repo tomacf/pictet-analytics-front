@@ -1,16 +1,16 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import {useEffect, useRef, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {toast} from 'react-toastify';
 import {
   ImportService,
   JuriesService,
   SessionsService,
   type DraftPlan,
-  type Jury,
   type ImportError,
+  type Jury,
 } from '../../apiConfig';
-import Modal from '../shared/Modal';
 import LoadingSpinner from '../shared/LoadingSpinner';
+import Modal from '../shared/Modal';
 import './ImportPdfModal.css';
 
 interface ImportPdfModalProps {
@@ -78,12 +78,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    
+
     // Auto-fill session label with filename (without extension) if not already set or empty
     const sessionLabel = (formData.sessionLabel && formData.sessionLabel.trim()) || (file ? file.name.replace(/\.[^/.]+$/, '') : '');
-    
+
     setFormData({ ...formData, file, sessionLabel });
-    
+
     // Reset parse state when file changes
     setParseState({
       status: 'idle',
@@ -110,10 +110,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     try {
-      setParseState({ 
-        status: 'parsing', 
-        draftPlan: null, 
-        error: null, 
+      setParseState({
+        status: 'parsing',
+        draftPlan: null,
+        error: null,
         importError: null,
       });
 
@@ -134,14 +134,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         juryPoolIds: draftPlan.jury_ids,
       });
 
-      setParseState({ 
-        status: 'parsed', 
-        draftPlan, 
-        error: null, 
+      setParseState({
+        status: 'parsed',
+        draftPlan,
+        error: null,
         importError: null,
       });
       toast.success('PDF parsed successfully');
-      
+
       // Scroll to review section after a short delay to allow React to complete DOM updates
       // and render the review section before scrolling
       const SCROLL_DELAY_MS = 100;
@@ -154,7 +154,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
       if (err && typeof err === 'object' && 'body' in err) {
         const errBody = err.body as ImportError | string;
-        
+
         if (typeof errBody === 'object' && 'message' in errBody) {
           // ImportError response with structured data
           importError = errBody;
@@ -167,10 +167,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         errorMessage = err.message;
       }
 
-      setParseState({ 
-        status: 'error', 
-        draftPlan: null, 
-        error: errorMessage, 
+      setParseState({
+        status: 'error',
+        draftPlan: null,
+        error: errorMessage,
         importError,
       });
       toast.error(errorMessage);
@@ -206,7 +206,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         slot_duration: parseState.draftPlan?.slot_duration ?? 30,
         time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
       });
-      
+
       toast.success('Session created successfully');
 
       // Convert DraftPlan to WizardState (backend has already resolved all IDs)
@@ -218,7 +218,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
       // Navigate to SessionWizard with the pre-populated state (step 3 for review)
       navigate('/sessions/wizard', { state: { wizardState, step: 3 } });
-      
+
       // Close modal
       onClose();
     } catch (err) {
@@ -246,8 +246,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     const selectedJuryIds = draftPlan.jury_ids;
 
     // Calculate teams per room (use first slot as reference, or default)
-    const teamsPerRoom = draftPlan.slots.length > 0 
-      ? draftPlan.slots[0].team_ids.length 
+    const teamsPerRoom = draftPlan.slots.length > 0
+      ? draftPlan.slots[0].team_ids.length
       : 1;
 
     // Convert slots to the wizard format
@@ -291,7 +291,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     const newJuryPoolIds = isSelected
       ? formData.juryPoolIds.filter(id => id !== juryId)
       : [...formData.juryPoolIds, juryId];
-    
+
     setFormData({ ...formData, juryPoolIds: newJuryPoolIds });
   };
 
@@ -301,10 +301,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         {/* File Upload Section */}
         <div className="form-section">
           <h3>1. Provide Required Information</h3>
-          
+
           {/* Session Label */}
           <div className="form-group">
-            <label htmlFor="sessionLabel">Session Label (Optional)</label>
+            <label htmlFor="sessionLabel">Session Label (Default will be the filename)</label>
             <input
               id="sessionLabel"
               type="text"
@@ -411,7 +411,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
           {parseState.status === 'error' && (
             <div className="parse-error">
               <p className="error-message">✗ {parseState.error}</p>
-              
+
               {/* Missing Rooms */}
               {parseState.importError?.missing_rooms && parseState.importError.missing_rooms.length > 0 && (
                 <div className="missing-entities">
@@ -433,7 +433,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                   </button>
                 </div>
               )}
-              
+
               {/* Missing Teams */}
               {parseState.importError?.missing_teams && parseState.importError.missing_teams.length > 0 && (
                 <div className="missing-entities">
@@ -455,7 +455,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                   </button>
                 </div>
               )}
-              
+
               {/* Extracted Slots Context */}
               {parseState.importError?.extracted_slots && parseState.importError.extracted_slots.length > 0 && (
                 <div className="extracted-context">
@@ -482,14 +482,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
                   </div>
                 </div>
               )}
-              
+
               <button
                 type="button"
                 className="btn btn-link"
                 onClick={handleRetry}
               >
                 {parseState.importError?.missing_rooms || parseState.importError?.missing_teams
-                  ? 'Retry Import' 
+                  ? 'Retry Import'
                   : 'Try Again'}
               </button>
             </div>

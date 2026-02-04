@@ -1,33 +1,33 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {useLocation, useNavigate} from 'react-router-dom';
+import {toast} from 'react-toastify';
 import {
-  SessionsService,
-  RoomsService,
-  TeamsService,
   JuriesService,
-  type Room,
-  type Team,
+  RoomsService,
+  SessionsService,
+  TeamsService,
   type Jury,
+  type Room,
   type SessionPlan,
+  type Team,
 } from '../../apiConfig';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
-import ErrorDisplay from '../../components/shared/ErrorDisplay';
-import StatusPanel from '../../components/shared/StatusPanel';
-import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import RebalanceModal from '../../components/sessions/RebalanceModal';
-import {
-  detectTeamConflicts,
-  detectJuryConflicts,
-  isTeamConflicted,
-  isJuryConflicted,
-  type SlotAssignment,
-} from '../../utils/validationUtils';
-import { is409Error, format409Error } from '../../utils/errorUtils';
+import ScheduleOverview from '../../components/sessions/ScheduleOverview';
+import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import StatusPanel from '../../components/shared/StatusPanel';
+import {format409Error, is409Error} from '../../utils/errorUtils';
 import {
   magicRebalanceWithAnalytics,
   type RebalanceResult,
 } from '../../utils/rebalanceUtils';
+import {
+  detectJuryConflicts,
+  detectTeamConflicts,
+  isJuryConflicted,
+  isTeamConflicted,
+  type SlotAssignment,
+} from '../../utils/validationUtils';
 import './SessionWizard.css';
 
 interface WizardState {
@@ -281,11 +281,11 @@ const SessionWizard = () => {
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
     let teamIndex = 0;
-    
+
     // Track jury-to-room assignments for room affinity
     // Map: roomId -> array of jury IDs currently in that room
     const roomToJuries = new Map<number, number[]>();
-    
+
     // Track which juries are available (not yet assigned to any room)
     const availableJuries = new Set(selectedJuryIds);
 
@@ -294,7 +294,7 @@ const SessionWizard = () => {
         // Calculate time for this slot
         const slotStartTime = new Date(startTime);
         slotStartTime.setMinutes(slotStartTime.getMinutes() + slotIdx * (slotDuration + timeBetweenSlots));
-        
+
         const slotEndTime = new Date(slotStartTime);
         slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
 
@@ -309,7 +309,7 @@ const SessionWizard = () => {
 
         // Assign juries with room affinity
         const assignedJuries: number[] = [];
-        
+
         if (slotIdx === 0) {
           // First slot: assign juries in round-robin fashion
           for (let i = 0; i < juriesPerRoom && availableJuries.size > 0; i++) {
@@ -320,21 +320,21 @@ const SessionWizard = () => {
         } else {
           // Subsequent slots: prefer juries that were in this room in the previous slot
           const previousJuriesInRoom = roomToJuries.get(roomId) || [];
-          
+
           // First, try to reuse juries from the same room
           for (const juryId of previousJuriesInRoom) {
             if (assignedJuries.length < juriesPerRoom) {
               assignedJuries.push(juryId);
             }
           }
-          
+
           // If we need more juries, assign from available pool
           for (const juryId of availableJuries) {
             if (assignedJuries.length >= juriesPerRoom) break;
             assignedJuries.push(juryId);
             availableJuries.delete(juryId);
           }
-          
+
           // If still not enough and we have juries in other rooms, take from them
           if (assignedJuries.length < juriesPerRoom) {
             for (const [otherRoomId, otherJuries] of roomToJuries.entries()) {
@@ -354,7 +354,7 @@ const SessionWizard = () => {
             }
           }
         }
-        
+
         // Update room-to-jury mapping for the next slot
         roomToJuries.set(roomId, assignedJuries);
 
@@ -445,9 +445,9 @@ const SessionWizard = () => {
 
       // Call the API endpoint
       await SessionsService.saveSessionPlan(wizardState.sessionId, sessionPlan);
-      
+
       toast.success('Session plan saved successfully');
-      
+
       // Navigate to sessions list after a short delay to allow users to see the success message
       setTimeout(() => {
         navigate('/sessions');
@@ -568,10 +568,10 @@ const SessionWizard = () => {
   const addSlot = (roomId: number, startTime: string, endTime: string) => {
     // Find the highest slot index for this room
     const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
-    const maxSlotIndex = roomSlots.length > 0 
-      ? Math.max(...roomSlots.map((s) => s.slotIndex)) 
+    const maxSlotIndex = roomSlots.length > 0
+      ? Math.max(...roomSlots.map((s) => s.slotIndex))
       : -1;
-    
+
     const newSlot: ScheduleSlot = {
       roomId,
       slotIndex: maxSlotIndex + 1,
@@ -637,16 +637,16 @@ const SessionWizard = () => {
   // Helper function to render teams with conflict highlighting
   const renderTeamsPreview = (teamIds: number[]) => {
     if (teamIds.length === 0) return <span className="preview-empty">None selected</span>;
-    
+
     const itemsMap = new Map(teams.map((item) => [item.id, item.label]));
-    
+
     return (
       <div className="preview-chips">
         {teamIds.map((id) => {
           const hasConflict = isTeamConflicted(id, conflicts.teamConflicts);
           return (
-            <span 
-              key={id} 
+            <span
+              key={id}
               className={`preview-chip ${hasConflict ? 'preview-chip-conflict' : ''}`}
               title={hasConflict ? 'This team is assigned to multiple slots' : ''}
             >
@@ -661,16 +661,16 @@ const SessionWizard = () => {
   // Helper function to render juries with conflict highlighting
   const renderJuriesPreview = (juryIds: number[]) => {
     if (juryIds.length === 0) return <span className="preview-empty">None selected</span>;
-    
+
     const itemsMap = new Map(juries.map((item) => [item.id, item.label]));
-    
+
     return (
       <div className="preview-chips">
         {juryIds.map((id) => {
           const hasConflict = isJuryConflicted(id, conflicts.juryConflicts);
           return (
-            <span 
-              key={id} 
+            <span
+              key={id}
               className={`preview-chip ${hasConflict ? 'preview-chip-conflict' : ''}`}
               title={hasConflict ? 'This jury is assigned to overlapping time slots' : ''}
             >
@@ -685,10 +685,10 @@ const SessionWizard = () => {
   // Helper function to render preview summary
   const renderPreviewSummary = (ids: number[], items: SelectableItem[]) => {
     if (ids.length === 0) return <span className="preview-empty">None selected</span>;
-    
+
     // Create a map for O(1) lookups
     const itemsMap = new Map(items.map((item) => [item.id, item.label]));
-    
+
     return (
       <div className="preview-chips">
         {ids.map((id) => (
@@ -733,7 +733,7 @@ const SessionWizard = () => {
     return (
       <div className="schedule-overview">
         <h3>📋 Schedule Overview</h3>
-        <ScheduleOverview 
+        <ScheduleOverview
           roomSessions={roomSessions}
           rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
         />
@@ -745,9 +745,9 @@ const SessionWizard = () => {
   const handleScrollToSlot = (slotIndex: number) => {
     const slotElement = slotRefs.current.get(slotIndex);
     if (slotElement) {
-      slotElement.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'center' 
+      slotElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
       });
       // Highlight the slot briefly using CSS class
       slotElement.classList.add('slot-highlighted');
@@ -1055,7 +1055,7 @@ const SessionWizard = () => {
             {/* Tab Navigation */}
             <div className="tabs-container">
               <div className="tabs-header">
-                <button 
+                <button
                   className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
                   onClick={() => setActiveTab('overview')}
                 >
@@ -1064,17 +1064,17 @@ const SessionWizard = () => {
                 {wizardState.selectedRoomIds.map((roomId) => {
                   const room = rooms.find((r) => r.id === roomId);
                   return (
-                    <button 
+                    <button
                       key={roomId}
                       className={`tab-button ${activeTab === roomId ? 'active' : ''}`}
                       onClick={() => setActiveTab(roomId)}
                     >
-                      🏛️ {room?.label || `Room ${roomId}`}
+                      {room?.label || `Room ${roomId}`}
                     </button>
                   );
                 })}
               </div>
-              
+
               <div className="tabs-content">
                 {/* Overview Tab */}
                 {activeTab === 'overview' && (
@@ -1086,7 +1086,7 @@ const SessionWizard = () => {
                 {/* Room Tabs */}
                 {wizardState.selectedRoomIds.map((roomId) => {
                   if (activeTab !== roomId) return null;
-                  
+
                   const room = rooms.find((r) => r.id === roomId);
                   const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
 
@@ -1094,7 +1094,7 @@ const SessionWizard = () => {
                     <div key={roomId} className="tab-panel">
                       <div className="room-schedule">
                   <h3>{room?.label || `Room ${roomId}`}</h3>
-                  
+
                   {/* Room-level summary */}
                   <div className="room-summary">
                     <div className="room-summary-section">
@@ -1115,8 +1115,8 @@ const SessionWizard = () => {
                     {roomSlots.map((slot, idx) => {
                       const slotGlobalIdx = wizardState.scheduleSlots.indexOf(slot);
                       return (
-                        <div 
-                          key={idx} 
+                        <div
+                          key={idx}
                           className="schedule-slot"
                           ref={(el) => {
                             if (el) {
@@ -1279,34 +1279,34 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-actions">
-            <button 
-              type="button" 
-              onClick={() => setCurrentStep(2)} 
+            <button
+              type="button"
+              onClick={() => setCurrentStep(2)}
               className="btn btn-secondary"
               disabled={saving || isRebalancing}
             >
               Back
             </button>
-            <button 
-              type="button" 
-              onClick={handleMagicRebalance} 
+            <button
+              type="button"
+              onClick={handleMagicRebalance}
               className="btn btn-magic"
               disabled={saving || isRebalancing || wizardState.scheduleSlots.length === 0}
               title="Automatically optimize team and jury assignments"
             >
               {isRebalancing ? '⏳ Rebalancing...' : '✨ Magic Rebalance'}
             </button>
-            <button 
-              type="button" 
-              onClick={handleExportJSON} 
+            <button
+              type="button"
+              onClick={handleExportJSON}
               className="btn btn-secondary"
               disabled={saving || isRebalancing}
             >
               Export JSON
             </button>
-            <button 
-              type="button" 
-              onClick={handleSavePlan} 
+            <button
+              type="button"
+              onClick={handleSavePlan}
               className="btn btn-primary"
               disabled={saving || hasConflicts || isRebalancing}
               title={hasConflicts ? 'Please resolve all conflicts before saving' : ''}
