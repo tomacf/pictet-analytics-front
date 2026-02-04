@@ -139,6 +139,19 @@ const SessionWizard = () => {
 
   const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
 
+  // Reset active tab when rooms change or when leaving/entering step 3
+  useEffect(() => {
+    if (currentStep === 3) {
+      // If the currently active tab is a room that's no longer selected, reset to overview
+      if (activeTab !== 'overview' && !wizardState.selectedRoomIds.includes(activeTab as number)) {
+        setActiveTab('overview');
+      }
+    } else {
+      // Reset to overview when not on step 3
+      setActiveTab('overview');
+    }
+  }, [currentStep, wizardState.selectedRoomIds, activeTab]);
+
   // Fetch resources on mount
   useEffect(() => {
     const fetchResources = async () => {
