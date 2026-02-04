@@ -228,7 +228,6 @@ const SessionWizard = () => {
     const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, slotDuration, timeBetweenSlots } = state;
 
     const totalTeams = selectedTeamIds.length;
-    const totalJuries = selectedJuryIds.length;
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
     let teamIndex = 0;
