@@ -52,26 +52,26 @@ const Layout = () => {
                 onClick={() => setIsConfigurationExpanded(!isConfigurationExpanded)}
                 aria-expanded={isConfigurationExpanded}
                 aria-label="Toggle Configuration menu"
-                title={isSidebarCollapsed ? "Configuration" : ""}
+                title="Configuration"
               >
                 <span className={`arrow ${isConfigurationExpanded ? 'expanded' : ''}`}>▶</span>
+                <span className="icon">⚙️</span>
                 <span className="menu-text">Configuration</span>
-                {isSidebarCollapsed && <span className="icon">⚙️</span>}
               </button>
               {isConfigurationExpanded && !isSidebarCollapsed && (
                 <ul className="sub-items">
                   <li className={isActive('/teams') ? 'active' : ''}>
-                    <Link to="/teams" title={isSidebarCollapsed ? "Teams" : ""}>
+                    <Link to="/teams" title="Teams">
                       <span className="menu-text">Teams</span>
                     </Link>
                   </li>
                   <li className={isActive('/rooms') ? 'active' : ''}>
-                    <Link to="/rooms" title={isSidebarCollapsed ? "Rooms" : ""}>
+                    <Link to="/rooms" title="Rooms">
                       <span className="menu-text">Rooms</span>
                     </Link>
                   </li>
                   <li className={isActive('/juries') ? 'active' : ''}>
-                    <Link to="/juries" title={isSidebarCollapsed ? "Juries" : ""}>
+                    <Link to="/juries" title="Juries">
                       <span className="menu-text">Juries</span>
                     </Link>
                   </li>
@@ -79,7 +79,7 @@ const Layout = () => {
               )}
             </li>
             <li className={isActive('/sessions') ? 'active' : ''}>
-              <Link to="/sessions" title={isSidebarCollapsed ? "Sessions" : ""}>
+              <Link to="/sessions" title="Sessions">
                 <span className="icon">📅</span>
                 <span className="menu-text">Sessions</span>
               </Link>
