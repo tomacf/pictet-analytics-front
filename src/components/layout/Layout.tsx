@@ -17,6 +17,7 @@ const Layout = () => {
   return (
     <div className="layout">
       <div className="topbar">
+        <img src="/logo1.png" alt="Pictet Analytics Logo" className="topbar-logo" />
         <h1>Pictet Analytics Admin</h1>
       </div>
       <div className="main-container">
