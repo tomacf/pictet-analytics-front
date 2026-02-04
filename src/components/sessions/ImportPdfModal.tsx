@@ -118,13 +118,11 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       });
 
       const draftPlan = await ImportService.parseSessionDocument({
-        formData: {
-          pdf: formData.file,
-          session_label: formData.sessionLabel || undefined,
-          date: formData.sessionDate,
-          jury_ids: formData.juryPoolIds,
-          juries_per_room: formData.juriesPerRoom,
-        },
+        pdf: formData.file,
+        session_label: formData.sessionLabel || undefined,
+        date: formData.sessionDate,
+        jury_ids: formData.juryPoolIds,
+        juries_per_room: formData.juriesPerRoom,
       });
 
       // Pre-fill form data with parsed values if they were in the response
@@ -203,12 +201,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       // Convert date-only string (YYYY-MM-DD) to ISO string with time component
       const sessionDate = new Date(formData.sessionDate + 'T00:00:00');
       const session = await SessionsService.createSession({
-        requestBody: {
-          label: formData.sessionLabel,
-          start_time: sessionDate.toISOString(),
-          slot_duration: parseState.draftPlan?.slot_duration ?? 30,
-          time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
-        }
+        label: formData.sessionLabel,
+        start_time: sessionDate.toISOString(),
+        slot_duration: parseState.draftPlan?.slot_duration ?? 30,
+        time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
       });
       
       toast.success('Session created successfully');

@@ -34,7 +34,7 @@ const Sessions = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await SessionsService.getAllSessions({ expand: 'teams,juries,rooms,summary' });
+      const data = await SessionsService.getAllSessions('teams,juries,rooms,summary');
       setSessions(data as SessionExpanded[]);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch sessions';
@@ -102,7 +102,7 @@ const Sessions = () => {
     }
 
     try {
-      await SessionsService.deleteSession({ id: session.id });
+      await SessionsService.deleteSession(session.id);
       toast.success('Session deleted successfully');
       fetchSessions();
     } catch (err) {
@@ -116,10 +116,10 @@ const Sessions = () => {
 
     try {
       if (editingSession) {
-        await SessionsService.updateSession({ id: editingSession.id, requestBody: formData });
+        await SessionsService.updateSession(editingSession.id, formData);
         toast.success('Session updated successfully');
       } else {
-        await SessionsService.createSession({ requestBody: formData });
+        await SessionsService.createSession(formData);
         toast.success('Session created successfully');
       }
       setIsModalOpen(false);

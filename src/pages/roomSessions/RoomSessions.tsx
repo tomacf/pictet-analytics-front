@@ -94,9 +94,9 @@ const RoomSessions = () => {
       setLoading(true);
       setError(null);
       const [roomSessionsData, roomsData, sessionsData, teamsData, juriesData] = await Promise.all([
-        RoomSessionsService.getAllRoomSessions({ expand: 'session,room,teams,juries' }),
+        RoomSessionsService.getAllRoomSessions('session,room,teams,juries'),
         RoomsService.getAllRooms(),
-        SessionsService.getAllSessions({}),
+        SessionsService.getAllSessions(),
         TeamsService.getAllTeams(),
         JuriesService.getAllJuries(),
       ]);
@@ -154,7 +154,7 @@ const RoomSessions = () => {
     }
 
     try {
-      await RoomSessionsService.deleteRoomSession({ id: roomSession.id });
+      await RoomSessionsService.deleteRoomSession(roomSession.id);
       toast.success('Room session deleted successfully');
       fetchRoomSessions();
     } catch (err) {
@@ -182,11 +182,11 @@ const RoomSessions = () => {
           team_ids: formData.team_ids,
           jury_ids: formData.jury_ids,
         };
-        await RoomSessionsService.updateRoomSession({ id: editingId, requestBody: updateData });
+        await RoomSessionsService.updateRoomSession(editingId, updateData);
         toast.success('Room session updated successfully');
       } else {
         // Create new room session
-        await RoomSessionsService.createRoomSession({ requestBody: formData });
+        await RoomSessionsService.createRoomSession(formData);
         toast.success('Room session created successfully');
       }
       setIsModalOpen(false);
