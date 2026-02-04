@@ -8,4 +8,7 @@
  * * `jury_time_overlap` - A jury cannot be assigned to overlapping time ranges
  *
  */
-export type SchedulingConflictType = 'team_duplicate' | 'jury_time_overlap';
+export enum SchedulingConflictType {
+    TEAM_DUPLICATE = 'team_duplicate',
+    JURY_TIME_OVERLAP = 'jury_time_overlap',
+}
