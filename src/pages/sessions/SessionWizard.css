@@ -570,3 +570,111 @@
 .top-banner-minimal strong {
   font-weight: 600;
 }
+
+/* Schedule Overview Section */
+.schedule-overview {
+  background-color: #f8fafc;
+  border: 2px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.schedule-overview h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 1rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #cbd5e1;
+}
+
+.overview-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.overview-table thead {
+  background-color: #cc2d1d;
+  color: white;
+}
+
+.overview-table th {
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-bottom: 2px solid #a82417;
+}
+
+.overview-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.overview-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.overview-table tbody tr:nth-child(even) {
+  background-color: #f8fafc;
+}
+
+.overview-table td {
+  padding: 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  color: #334155;
+  vertical-align: top;
+}
+
+.overview-table td.time-cell {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.overview-table td.room-cell {
+  font-weight: 500;
+}
+
+.overview-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.overview-chip {
+  background-color: #fff0f0;
+  color: #cc2d1d;
+  padding: 0.125rem 0.375rem;
+  border-radius: 3px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+
+.overview-empty {
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-style: italic;
+}
+
+/* Responsive table for overview */
+@media (max-width: 768px) {
+  .overview-table {
+    font-size: 0.75rem;
+  }
+  
+  .overview-table th,
+  .overview-table td {
+    padding: 0.5rem;
+  }
+  
+  .overview-chip {
+    font-size: 0.6875rem;
+    padding: 0.125rem 0.25rem;
+  }
+}
