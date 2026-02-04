@@ -19,7 +19,6 @@ export interface RebalanceConfig {
   seed?: number;
   iterations?: number;
   weights?: PenaltyWeights;
-  sessionId?: number; // Optional session ID for fetching analytics
 }
 
 export interface PenaltyWeights {
@@ -458,36 +457,36 @@ export function magicRebalance(config: RebalanceConfig): RebalanceResult {
 }
 
 /**
- * Enhanced rebalance function that can fetch analytics from API
- * Uses real-world data to inform weight adjustments and better optimization
+ * Enhanced rebalance function that fetches global analytics from API
+ * Uses real-world data from ALL sessions to inform weight adjustments and better optimization
  */
 export async function magicRebalanceWithAnalytics(config: RebalanceConfig): Promise<RebalanceResult> {
-  const { sessionId } = config;
-  
-  // If we have a session ID, try to fetch analytics to inform our weights
+  // Fetch global analytics to inform our weights (not limited to a specific session)
   let adjustedWeights = config.weights || DEFAULT_WEIGHTS;
   
-  if (sessionId) {
-    try {
-      // Dynamically import the analytics service to avoid circular dependencies
-      const { AnalyticsService } = await import('../apiConfig');
-      
-      // Fetch analytics summary for this session
-      const summary = await AnalyticsService.getAnalyticsSummary(sessionId);
-      
-      // Analyze the summary to adjust weights based on current issues
-      adjustedWeights = adjustWeightsFromAnalytics(summary, DEFAULT_WEIGHTS);
-      
-      console.log('Enhanced rebalance with analytics data:', {
-        teamVsTeamIssues: summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length,
-        teamJuryIssues: Object.keys(summary.team_jury_matrix).length,
-        waitingTimeIssues: summary.team_waiting_times.length,
-        roomDistributionIssues: summary.team_room_distributions.length,
-      });
-    } catch (error) {
-      // If API call fails, fall back to default weights
-      console.warn('Failed to fetch analytics, using default weights:', error);
-    }
+  try {
+    // Dynamically import the analytics service to avoid circular dependencies
+    const { AnalyticsService } = await import('../apiConfig');
+    
+    // Fetch analytics summary for ALL sessions (no session_id filter)
+    // This gives us a complete picture of historical patterns across all scheduling
+    console.log('Fetching global analytics to inform rebalancing...');
+    const summary = await AnalyticsService.getAnalyticsSummary();
+    
+    // Analyze the summary to adjust weights based on current issues across all data
+    adjustedWeights = adjustWeightsFromAnalytics(summary, DEFAULT_WEIGHTS);
+    
+    console.log('Enhanced rebalance with global analytics data:', {
+      teamVsTeamIssues: summary.team_vs_team_matrix.filter(m => m.meet_count > 1).length,
+      teamJuryRepeatedPairings: summary.team_jury_matrix.counts.filter(c => c.meet_count > 1).length,
+      teamsAnalyzed: summary.team_waiting_times.length,
+      roomDistributions: summary.team_room_distributions.length,
+      adjustedWeights,
+    });
+  } catch (error) {
+    // If API call fails (e.g., no saved sessions yet), fall back to default weights
+    console.warn('Failed to fetch global analytics, using default weights:', error);
+    console.log('This is normal for new installations or if no sessions have been saved yet.');
   }
   
   // Run the standard rebalance with adjusted weights

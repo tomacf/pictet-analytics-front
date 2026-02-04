@@ -475,7 +475,7 @@ const SessionWizard = () => {
     }
 
     setIsRebalancing(true);
-    toast.info('Running Magic Rebalance with analytics...');
+    toast.info('Running Magic Rebalance with global analytics...');
 
     // Use setTimeout to allow UI to update (show loading state) before starting
     // the CPU-intensive rebalance computation. 100ms is sufficient for React to
@@ -495,7 +495,7 @@ const SessionWizard = () => {
           selectedJuryIds: wizardState.selectedJuryIds,
           seed: Date.now(),
           iterations: 1000,
-          sessionId: wizardState.sessionId, // Pass session ID for analytics API
+          // No sessionId - fetch global analytics from all sessions
         });
 
         setRebalanceResult(result);
