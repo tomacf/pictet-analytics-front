@@ -1,11 +1,11 @@
+import {useEffect, useState} from 'react';
 import {Link, Outlet, useLocation} from 'react-router-dom';
-import {useState, useEffect} from 'react';
 import './Layout.css';
 
 const Layout = () => {
   const location = useLocation();
   const [isConfigurationExpanded, setIsConfigurationExpanded] = useState(true);
-  
+
   // Initialize sidebar collapsed state from localStorage
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     const saved = localStorage.getItem('sidebarCollapsed');
@@ -23,7 +23,7 @@ const Layout = () => {
 
   const isConfigurationActive = () => {
     // Parent item should never be active when sub-items are active
-    // This is intentional per the requirements: "when sub-items are active, 
+    // This is intentional per the requirements: "when sub-items are active,
     // the parent-item should not get the active state"
     // Since there's no dedicated /configuration route, this always returns false
     return false;
@@ -40,7 +40,7 @@ const Layout = () => {
   return (
     <div className="layout">
       <div className="topbar">
-        <button 
+        <button
           className="sidebar-toggle-btn"
           onClick={toggleSidebar}
           aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -55,7 +55,7 @@ const Layout = () => {
         <nav className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           <ul>
             <li className={`parent-item ${isConfigurationActive() ? 'active' : ''}`}>
-              <button 
+              <button
                 className="parent-toggle"
                 onClick={() => setIsConfigurationExpanded(!isConfigurationExpanded)}
                 aria-expanded={isConfigurationExpanded}
@@ -68,7 +68,7 @@ const Layout = () => {
               </button>
               {/* Show sub-items when expanded in normal mode, or always show in collapsed mode as a dropdown */}
               {(!isSidebarCollapsed && isConfigurationExpanded) || isSidebarCollapsed ? (
-                <ul className={`sub-items ${isSidebarCollapsed ? 'collapsed-dropdown' : ''}`}>
+                <ul className={`sub-items ${isSidebarCollapsed ? 'collapsed-dropdown' : ''} ${isConfigurationExpanded ? 'expanded' : ''}`}>
                   <li className={isActive('/teams') ? 'active' : ''}>
                     <Link to="/teams" title="Teams">
                       <span className="icon">👥</span>
