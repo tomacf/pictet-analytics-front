@@ -43,9 +43,9 @@
 }
 
 .chip-team {
-  background-color: #fff0f0;
-  color: #cc2d1d;
-  border: 1px solid #cc2d1d;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 .chip-jury {
@@ -102,7 +102,7 @@
 .btn-link {
   background: none;
   border: none;
-  color: #cc2d1d;
+  color: var(--color-primary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -111,7 +111,7 @@
 }
 
 .btn-link:hover {
-  color: #a82417;
+  color: var(--color-primary-dark);
   text-decoration: underline;
 }
 

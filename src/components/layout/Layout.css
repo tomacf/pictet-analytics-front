@@ -58,14 +58,14 @@
 
 .sidebar a:hover {
   background-color: #e2e8f0;
-  color: #cc2d1d;
+  color: var(--color-primary);
 }
 
 .sidebar li.active a {
-  background-color: #fff0f0;
-  color: #cc2d1d;
-  font-weight: 500;
-  border-left: 3px solid #cc2d1d;
+  background-color: var(--color-primary-lighter);
+  color: var(--color-primary);
+  font-weight: 600;
+  border-left: 4px solid var(--color-primary);
 }
 
 /* Parent item styles */
@@ -90,11 +90,11 @@
 
 .sidebar .parent-toggle:hover {
   background-color: #e2e8f0;
-  color: #cc2d1d;
+  color: var(--color-primary);
 }
 
 .sidebar .parent-item.active > .parent-toggle {
-  color: #cc2d1d;
+  color: var(--color-primary);
   font-weight: 500;
 }
 
@@ -123,10 +123,10 @@
 }
 
 .sidebar .sub-items li.active a {
-  background-color: #fff0f0;
-  color: #cc2d1d;
-  font-weight: 500;
-  border-left: 3px solid #cc2d1d;
+  background-color: var(--color-primary-lighter);
+  color: var(--color-primary);
+  font-weight: 600;
+  border-left: 4px solid var(--color-primary);
 }
 
 .content {
