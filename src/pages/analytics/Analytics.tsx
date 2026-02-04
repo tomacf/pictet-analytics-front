@@ -22,7 +22,7 @@ const Analytics = () => {
 
   const fetchSessions = async () => {
     try {
-      const sessionsData = await SessionsService.getAllSessions({});
+      const sessionsData = await SessionsService.getAllSessions();
       setSessions(sessionsData);
     } catch (err) {
       console.error('Failed to fetch sessions:', err);
@@ -33,11 +33,11 @@ const Analytics = () => {
     try {
       setLoading(true);
       setError(null);
-      const analyticsData = await AnalyticsService.getAnalyticsSummary({
-        sessionId: selectedSessionId,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
-      });
+      const analyticsData = await AnalyticsService.getAnalyticsSummary(
+        selectedSessionId,
+        startDate || undefined,
+        endDate || undefined,
+      );
       setData(analyticsData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch analytics data';

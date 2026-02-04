@@ -11,6 +11,8 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+type SortType = 'team-name' | 'jury-name' | 'team-count' | 'jury-count';
+
 type HighlightMode = 'none' | 'team-imbalance' | 'jury-imbalance';
 
 const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
@@ -44,8 +46,8 @@ const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
     });
 
     // Sort teams and juries based on sort config
-    let sortedTeams = [...data.teams];
-    let sortedJuries = [...data.juries];
+    const sortedTeams = [...data.teams];
+    const sortedJuries = [...data.juries];
 
     if (sortConfig) {
       if (sortConfig.type === 'team-name') {
@@ -85,7 +87,7 @@ const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
     };
   }, [data, sortConfig]);
 
-  const handleSort = (type: SortConfig['type']) => {
+  const handleSort = (type: SortType) => {
     setSortConfig((current) => {
       if (!current || current.type !== type) {
         return { type, direction: 'asc' };
@@ -107,7 +109,7 @@ const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  const getSortIcon = (type: SortConfig['type']) => {
+  const getSortIcon = (type: SortType) => {
     if (!sortConfig || sortConfig.type !== type) return '↕';
     return sortConfig.direction === 'asc' ? '↑' : '↓';
   };
