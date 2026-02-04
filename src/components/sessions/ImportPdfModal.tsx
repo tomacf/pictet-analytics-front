@@ -79,8 +79,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     
-    // Auto-fill session label with filename (without extension) if not already set
-    const sessionLabel = formData.sessionLabel || (file ? file.name.replace(/\.[^/.]+$/, '') : '');
+    // Auto-fill session label with filename (without extension) if not already set or empty
+    const sessionLabel = (formData.sessionLabel && formData.sessionLabel.trim()) || (file ? file.name.replace(/\.[^/.]+$/, '') : '');
     
     setFormData({ ...formData, file, sessionLabel });
     
@@ -144,10 +144,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       });
       toast.success('PDF parsed successfully');
       
-      // Scroll to review section
+      // Scroll to review section after a short delay to allow React to complete DOM updates
+      // and render the review section before scrolling
+      const SCROLL_DELAY_MS = 100;
       setTimeout(() => {
         reviewSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+      }, SCROLL_DELAY_MS);
     } catch (err: unknown) {
       let errorMessage = 'Failed to parse PDF';
       let importError: ImportError | null = null;
@@ -204,8 +206,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         requestBody: {
           label: formData.sessionLabel,
           start_time: sessionDate.toISOString(),
-          slot_duration: parseState.draftPlan.slot_duration,
-          time_between_slots: parseState.draftPlan.time_between_slots,
+          slot_duration: parseState.draftPlan?.slot_duration ?? 30,
+          time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
         }
       });
       
@@ -273,8 +275,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       teamsPerRoom,
       juriesPerRoom: formData.juriesPerRoom,
       startTime: formData.sessionDate,
-      slotDuration: draftPlan.slot_duration,
-      timeBetweenSlots: draftPlan.time_between_slots,
+      slotDuration: draftPlan.slot_duration ?? 30,
+      timeBetweenSlots: draftPlan.time_between_slots ?? 5,
       scheduleSlots,
     };
   };
