@@ -915,13 +915,19 @@ paths:
     put:
       tags:
         - Sessions
-      summary: Update an existing session
+      summary: Update an existing session with optional scope relations
       description: |
         Updates a session with the provided information. The ID is provided in the URL path, not in the request body.
-        
-        Can update session metadata (label, start_time, slot_duration, time_between_slots) and/or session scope (team_ids, jury_ids, room_ids).
-        When team_ids, jury_ids, or room_ids are provided, they replace the existing associations.
-        If removing items that are used by existing room sessions, the operation may fail with a 409 Conflict error.
+
+        **Scope Relations (Optional):**
+        You can optionally include `team_ids`, `jury_ids`, and `room_ids` arrays to manage session-level scope relations:
+        - When these arrays are provided, the session's scope relations are replaced transactionally
+        - Validates that all referenced IDs exist (returns 500 if not found)
+        - Prevents removing teams/juries/rooms that are used in room_sessions (returns 409 Conflict)
+        - Use `force: true` to override conflict protection and delete affected room_session relationships
+
+        **Backward Compatibility:**
+        If `team_ids`, `jury_ids`, and `room_ids` are omitted, the endpoint behaves like the old simple update (only updates core session fields).
       operationId: updateSession
       parameters:
         - name: id
@@ -936,10 +942,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SessionInput'
+              $ref: '#/components/schemas/SessionUpdateRequest'
             examples:
-              session:
-                summary: Updated session
+              basicUpdate:
+                summary: Basic update (backward compatible)
+                value:
+                  label: Morning Session Updated
+                  start_time: "2024-03-01T09:30:00Z"
+                  slot_duration: 90
+                  time_between_slots: 20
+              updateWithScope:
+                summary: Update with scope relations
                 value:
                   label: Morning Session Updated
                   start_time: "2024-03-01T09:30:00Z"
@@ -948,16 +961,29 @@ paths:
                   team_ids: [1, 2, 3]
                   jury_ids: [1, 2]
                   room_ids: [1, 2]
+              updateWithForce:
+                summary: Update with force to remove used entities
+                value:
+                  label: Morning Session Updated
+                  start_time: "2024-03-01T09:30:00Z"
+                  slot_duration: 90
+                  time_between_slots: 20
+                  team_ids: [1]
+                  jury_ids: []
+                  room_ids: [1]
+                  force: true
       responses:
         '200':
           description: Session updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Session'
+                oneOf:
+                  - $ref: '#/components/schemas/Session'
+                  - $ref: '#/components/schemas/SessionExpanded'
               examples:
-                session:
-                  summary: Updated session
+                basicUpdate:
+                  summary: Basic update response
                   value:
                     id: 1
                     label: Morning Session Updated
@@ -966,6 +992,29 @@ paths:
                     time_between_slots: 20
                     created_at: "2024-03-01T08:00:00Z"
                     updated_at: "2024-03-01T12:00:00Z"
+                expandedUpdate:
+                  summary: Update with scope relations response
+                  value:
+                    id: 1
+                    label: Morning Session Updated
+                    start_time: "2024-03-01T09:30:00Z"
+                    slot_duration: 90
+                    time_between_slots: 20
+                    created_at: "2024-03-01T08:00:00Z"
+                    updated_at: "2024-03-01T12:00:00Z"
+                    teams:
+                      - id: 1
+                        label: Team Alpha
+                      - id: 2
+                        label: Team Beta
+                    juries:
+                      - id: 1
+                        label: Dr. Smith
+                    rooms:
+                      - id: 1
+                        label: Room 101
+                      - id: 2
+                        label: Room 102
         '400':
           description: Invalid request body or ID parameter
           content:
@@ -973,17 +1022,14 @@ paths:
               schema:
                 type: string
         '409':
-          description: Conflict - Cannot remove teams, juries, or rooms that are in use by room sessions
+          description: Conflict - cannot remove teams/juries/rooms that are used in room sessions (use force=true to override)
           content:
             text/plain:
               schema:
                 type: string
-              examples:
-                conflict:
-                  summary: Conflict example
-                  value: "Cannot remove team 3: it is used by room sessions 5, 7, 9"
+              example: "cannot remove teams that are used in room sessions (use force=true to override)"
         '500':
-          description: Internal server error
+          description: Internal server error or validation error (e.g., non-existent team/jury/room IDs)
           content:
             text/plain:
               schema:
@@ -1078,6 +1124,15 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: |
+            Scheduling constraint violated. This occurs when:
+            - A team is assigned to multiple slots within the session
+            - A jury is assigned to overlapping time ranges within the session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingConflictError'
         '500':
           description: Internal server error (e.g., validation failed, IDs not found)
           content:
@@ -1194,6 +1249,15 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: |
+            Scheduling constraint violated. This occurs when:
+            - A team is already assigned to another room session within the same session
+            - A jury is already assigned to an overlapping time range within the same session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingConflictError'
         '500':
           description: Internal server error
           content:
@@ -1328,6 +1392,15 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: |
+            Scheduling constraint violated. This occurs when:
+            - A team is already assigned to another room session within the same session
+            - A jury is already assigned to an overlapping time range within the same session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingConflictError'
         '500':
           description: Internal server error
           content:
@@ -1478,6 +1551,30 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: |
+            Scheduling constraint violated. This occurs when:
+            - A team is already assigned to another room session within the same session
+            - A jury is already assigned to an overlapping time range within the same session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingConflictError'
+              example:
+                message: "scheduling constraints violated"
+                conflicts:
+                  - type: "team_duplicate"
+                    entity_id: 5
+                    conflicting_room_session_ids: [12, 15]
+                    time_ranges:
+                      - start_time: "2024-03-01T09:00:00Z"
+                        end_time: "2024-03-01T10:00:00Z"
+                  - type: "jury_time_overlap"
+                    entity_id: 3
+                    conflicting_room_session_ids: [14]
+                    time_ranges:
+                      - start_time: "2024-03-01T09:30:00Z"
+                        end_time: "2024-03-01T10:30:00Z"
         '500':
           description: Internal server error
           content:
@@ -1768,6 +1865,15 @@ paths:
             text/plain:
               schema:
                 type: string
+        '409':
+          description: |
+            Scheduling constraint violated. This occurs when:
+            - A team is already assigned to another room session within the same session
+            - A jury is already assigned to an overlapping time range within the same session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulingConflictError'
         '500':
           description: Internal server error
           content:
@@ -1874,6 +1980,64 @@ paths:
             text/plain:
               schema:
                 type: string
+
+  /api/analytics/summary:
+    get:
+      tags:
+        - Analytics
+      summary: Get analytics summary
+      description: |
+        Returns analytics summary with competition fairness metrics including:
+        - Team-vs-team matrix: count how many times each pair of teams met in the same room session
+        - Team waiting times: total and average waiting time between session start and first room session, with per-session breakdown
+        - Team room distributions: count of room sessions per room for each team
+
+        Supports optional filtering by session_id or date range.
+      operationId: getAnalyticsSummary
+      parameters:
+        - name: session_id
+          in: query
+          description: Filter results by a specific session ID
+          required: false
+          schema:
+            type: integer
+            example: 1
+        - name: start_date
+          in: query
+          description: Filter results by start date (ISO 8601 timestamp)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2024-03-01T00:00:00Z"
+        - name: end_date
+          in: query
+          description: Filter results by end date (ISO 8601 timestamp)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2024-03-31T23:59:59Z"
+      responses:
+        '200':
+          description: Analytics summary retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyticsSummary'
+        '400':
+          description: Invalid request parameters
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
 
 components:
   schemas:
@@ -2066,24 +2230,54 @@ components:
           type: integer
           description: Gap between slots in minutes
           example: 15
+
+    SessionUpdateRequest:
+      type: object
+      required:
+        - label
+        - start_time
+        - slot_duration
+        - time_between_slots
+      properties:
+        label:
+          type: string
+          description: Session label
+          example: Morning Session
+        start_time:
+          type: string
+          format: date-time
+          description: Session start time
+          example: "2024-03-01T09:00:00Z"
+        slot_duration:
+          type: integer
+          description: Duration of each slot in minutes
+          example: 60
+        time_between_slots:
+          type: integer
+          description: Gap between slots in minutes
+          example: 15
         team_ids:
           type: array
           items:
             type: integer
-          description: Optional array of team IDs to associate with the session
+          description: Optional array of team IDs to link to this session. If provided, the session's teams will be replaced with this list.
           example: [1, 2, 3]
         jury_ids:
           type: array
           items:
             type: integer
-          description: Optional array of jury IDs to associate with the session
+          description: Optional array of jury IDs to link to this session. If provided, the session's juries will be replaced with this list.
           example: [1, 2]
         room_ids:
           type: array
           items:
             type: integer
-          description: Optional array of room IDs to associate with the session
-          example: [1, 2]
+          description: Optional array of room IDs to link to this session. If provided, the session's rooms will be replaced with this list.
+          example: [1, 2, 3]
+        force:
+          type: boolean
+          description: If true, allows removing teams/juries/rooms that are used in room sessions by also deleting the affected room_session relationships. If false or omitted, returns 409 Conflict when trying to remove used entities.
+          example: false
 
     SessionExpanded:
       type: object
@@ -2155,11 +2349,6 @@ components:
               label: Room 101
             - id: 2
               label: Room 102
-        room_sessions:
-          type: array
-          description: All room sessions for this session with expanded data (present when expand=room_sessions is used)
-          items:
-            $ref: '#/components/schemas/RoomSessionExpanded'
         room_sessions_count:
           type: integer
           description: Total count of room sessions associated with this session (present when expand=summary is used)
@@ -2370,6 +2559,21 @@ components:
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
 
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: "Team Alpha"
+
     SessionPlan:
       type: object
       required:
@@ -2447,3 +2651,232 @@ components:
             type: integer
           description: IDs of juries assigned to this slot (must be subset of session jury_ids)
           example: [1]
+
+    SchedulingConflictType:
+      type: string
+      enum:
+        - team_duplicate
+        - jury_time_overlap
+      description: |
+        Type of scheduling constraint violation:
+        * `team_duplicate` - A team can appear at most once within a given session
+        * `jury_time_overlap` - A jury cannot be assigned to overlapping time ranges
+
+    TimeRange:
+      type: object
+      required:
+        - start_time
+        - end_time
+      properties:
+        start_time:
+          type: string
+          format: date-time
+          description: Start time of the time range
+          example: "2024-03-01T10:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: End time of the time range
+          example: "2024-03-01T11:00:00Z"
+
+    SchedulingConflict:
+      type: object
+      required:
+        - type
+        - entity_id
+        - conflicting_room_session_ids
+      properties:
+        type:
+          $ref: '#/components/schemas/SchedulingConflictType'
+        entity_id:
+          type: integer
+          description: ID of the entity (team or jury) that violates the constraint
+          example: 5
+        conflicting_room_session_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of room sessions that conflict with the proposed change
+          example: [12, 15]
+        time_ranges:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeRange'
+          description: Time ranges of the conflicting room sessions (only for time overlap conflicts)
+
+    SchedulingConflictError:
+      type: object
+      required:
+        - message
+        - conflicts
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "scheduling constraints violated"
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SchedulingConflict'
+          description: List of scheduling conflicts detected
+
+    AnalyticsSummary:
+      type: object
+      required:
+        - team_vs_team_matrix
+        - team_waiting_times
+        - team_room_distributions
+      properties:
+        team_vs_team_matrix:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamPairMeeting'
+          description: Matrix showing how many times each pair of teams met in the same room session
+        team_waiting_times:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamWaitingTime'
+          description: Waiting time statistics for each team
+        team_room_distributions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamRoomDistribution'
+          description: Room usage distribution for each team
+
+    TeamPairMeeting:
+      type: object
+      required:
+        - team1_id
+        - team1_label
+        - team2_id
+        - team2_label
+        - meet_count
+      properties:
+        team1_id:
+          type: integer
+          description: ID of the first team
+          example: 1
+        team1_label:
+          type: string
+          description: Label of the first team
+          example: "Team Alpha"
+        team2_id:
+          type: integer
+          description: ID of the second team
+          example: 2
+        team2_label:
+          type: string
+          description: Label of the second team
+          example: "Team Beta"
+        meet_count:
+          type: integer
+          description: Number of times these two teams met in the same room session
+          example: 3
+
+    TeamWaitingTime:
+      type: object
+      required:
+        - team_id
+        - team_label
+        - total_waiting_time_minutes
+        - average_waiting_time_minutes
+        - session_breakdown
+      properties:
+        team_id:
+          type: integer
+          description: Team ID
+          example: 1
+        team_label:
+          type: string
+          description: Team label
+          example: "Team Alpha"
+        total_waiting_time_minutes:
+          type: number
+          format: float
+          description: Total waiting time across all sessions in minutes
+          example: 45.5
+        average_waiting_time_minutes:
+          type: number
+          format: float
+          description: Average waiting time per session in minutes
+          example: 22.75
+        session_breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionWaitingTime'
+          description: Per-session breakdown of waiting times
+
+    SessionWaitingTime:
+      type: object
+      required:
+        - session_id
+        - session_label
+        - session_start_time
+        - first_room_start_time
+        - waiting_time_minutes
+      properties:
+        session_id:
+          type: integer
+          description: Session ID
+          example: 1
+        session_label:
+          type: string
+          description: Session label
+          example: "Morning Session"
+        session_start_time:
+          type: string
+          format: date-time
+          description: When the session started
+          example: "2024-03-01T09:00:00Z"
+        first_room_start_time:
+          type: string
+          format: date-time
+          description: When the team's first room session started
+          example: "2024-03-01T09:30:00Z"
+        waiting_time_minutes:
+          type: number
+          format: float
+          description: Waiting time in minutes
+          example: 30.0
+
+    TeamRoomDistribution:
+      type: object
+      required:
+        - team_id
+        - team_label
+        - room_counts
+      properties:
+        team_id:
+          type: integer
+          description: Team ID
+          example: 1
+        team_label:
+          type: string
+          description: Team label
+          example: "Team Alpha"
+        room_counts:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomCount'
+          description: Count of room sessions per room
+
+    RoomCount:
+      type: object
+      required:
+        - room_id
+        - room_label
+        - count
+      properties:
+        room_id:
+          type: integer
+          description: Room ID
+          example: 1
+        room_label:
+          type: string
+          description: Room label
+          example: "Room 101"
+        count:
+          type: integer
+          description: Number of room sessions this team had in this room
+          example: 5
+

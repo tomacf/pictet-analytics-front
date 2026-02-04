@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { SessionsService, type SessionExpanded, type SessionInput } from '../../apiConfig';
+import {useEffect, useState} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {toast} from 'react-toastify';
+import {SessionsService, type SessionExpanded, type SessionInput} from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
-import Modal from '../../components/shared/Modal';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
-import { formatEuropeanDateTime } from '../../utils/dateUtils';
-import './Sessions.css';
-import '../teams/Teams.css';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import Modal from '../../components/shared/Modal';
+import {formatEuropeanDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
+import '../teams/Teams.css';
+import './Sessions.css';
 
 const Sessions = () => {
   const navigate = useNavigate();
@@ -26,7 +26,7 @@ const Sessions = () => {
   });
 
   // Maximum number of visible chips before showing "+N more"
-  const MAX_VISIBLE_CHIPS = 4;
+  const MAX_VISIBLE_CHIPS = 3;
 
   const fetchSessions = async () => {
     try {
@@ -104,11 +104,11 @@ const Sessions = () => {
   };
 
   const columns = [
-    { 
-      key: 'label', 
+    {
+      key: 'label',
       label: 'Label',
       render: (session: SessionExpanded) => (
-        <button 
+        <button
           onClick={() => navigate(`/sessions/${session.id}`)}
           className="btn-link"
           style={{ fontSize: '1rem', fontWeight: '500' }}
@@ -122,10 +122,10 @@ const Sessions = () => {
       label: 'Time Window',
       render: (session: SessionExpanded) => {
         const start = formatEuropeanDateTime(session.start_time);
-        const end = session.last_room_session_end_time 
+        const end = session.last_room_session_end_time
           ? formatEuropeanDateTime(session.last_room_session_end_time)
           : null;
-        
+
         if (start && end) {
           return <span style={{ whiteSpace: 'nowrap' }}>{start} → {end}</span>;
         } else if (start) {
@@ -141,10 +141,10 @@ const Sessions = () => {
         if (!session.teams || session.teams.length === 0) {
           return <span className="no-data-text">—</span>;
         }
-        
+
         const visibleTeams = session.teams.slice(0, MAX_VISIBLE_CHIPS);
         const remainingCount = session.teams.length - MAX_VISIBLE_CHIPS;
-        
+
         return (
           <div className="chips-container-compact">
             {visibleTeams.map(team => (
@@ -166,10 +166,10 @@ const Sessions = () => {
         if (!session.juries || session.juries.length === 0) {
           return <span className="no-data-text">—</span>;
         }
-        
+
         const visibleJuries = session.juries.slice(0, MAX_VISIBLE_CHIPS);
         const remainingCount = session.juries.length - MAX_VISIBLE_CHIPS;
-        
+
         return (
           <div className="chips-container-compact">
             {visibleJuries.map(jury => (
