@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -13,6 +13,14 @@ import {
 } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import {
+  detectTeamConflicts,
+  detectJuryConflicts,
+  isTeamConflicted,
+  isJuryConflicted,
+  type SlotAssignment,
+} from '../../utils/validationUtils';
+import { is409Error, format409Error } from '../../utils/errorUtils';
 import './SessionWizard.css';
 
 interface WizardState {
@@ -76,6 +84,23 @@ const SessionWizard = () => {
 
   // State for adding new slots
   const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
+
+  // Conflict detection
+  const conflicts = useMemo(() => {
+    const slots: SlotAssignment[] = wizardState.scheduleSlots.map((slot) => ({
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      teamIds: slot.teamIds,
+      juryIds: slot.juryIds,
+    }));
+
+    const teamConflicts = detectTeamConflicts(slots);
+    const juryConflicts = detectJuryConflicts(slots);
+
+    return { teamConflicts, juryConflicts };
+  }, [wizardState.scheduleSlots]);
+
+  const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
 
   // Fetch resources on mount
   useEffect(() => {
@@ -273,6 +298,11 @@ const SessionWizard = () => {
       return;
     }
 
+    if (hasConflicts) {
+      toast.error('Cannot save plan with conflicts. Please resolve all conflicts first.');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -301,9 +331,15 @@ const SessionWizard = () => {
       setTimeout(() => {
         navigate('/sessions');
       }, 1000);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save session plan';
-      toast.error(message);
+    } catch (err: unknown) {
+      // Handle 409 Conflict errors specially
+      if (is409Error(err)) {
+        const errorMessage = format409Error(err, 'The session plan contains conflicts.');
+        toast.error(errorMessage, { autoClose: 8000 });
+      } else {
+        const message = err instanceof Error ? err.message : 'Failed to save session plan';
+        toast.error(message);
+      }
       // Keep draft state intact on error
     } finally {
       setSaving(false);
@@ -397,6 +433,54 @@ const SessionWizard = () => {
   const getUnassignedJuryIds = (): number[] => {
     const assignedIds = getAllAssignedJuryIds();
     return wizardState.selectedJuryIds.filter((id) => !assignedIds.has(id));
+  };
+
+  // Helper function to render teams with conflict highlighting
+  const renderTeamsPreview = (teamIds: number[]) => {
+    if (teamIds.length === 0) return <span className="preview-empty">None selected</span>;
+    
+    const itemsMap = new Map(teams.map((item) => [item.id, item.label]));
+    
+    return (
+      <div className="preview-chips">
+        {teamIds.map((id) => {
+          const hasConflict = isTeamConflicted(id, conflicts.teamConflicts);
+          return (
+            <span 
+              key={id} 
+              className={`preview-chip ${hasConflict ? 'preview-chip-conflict' : ''}`}
+              title={hasConflict ? 'This team is assigned to multiple slots' : ''}
+            >
+              {itemsMap.get(id) || `ID:${id}`}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Helper function to render juries with conflict highlighting
+  const renderJuriesPreview = (juryIds: number[]) => {
+    if (juryIds.length === 0) return <span className="preview-empty">None selected</span>;
+    
+    const itemsMap = new Map(juries.map((item) => [item.id, item.label]));
+    
+    return (
+      <div className="preview-chips">
+        {juryIds.map((id) => {
+          const hasConflict = isJuryConflicted(id, conflicts.juryConflicts);
+          return (
+            <span 
+              key={id} 
+              className={`preview-chip ${hasConflict ? 'preview-chip-conflict' : ''}`}
+              title={hasConflict ? 'This jury is assigned to overlapping time slots' : ''}
+            >
+              {itemsMap.get(id) || `ID:${id}`}
+            </span>
+          );
+        })}
+      </div>
+    );
   };
 
   // Helper function to render preview summary
@@ -725,6 +809,58 @@ const SessionWizard = () => {
             </div>
           )}
 
+          {/* Conflicts Panel */}
+          {hasConflicts && (
+            <div className="conflicts-panel">
+              <h3>🚫 Conflicts Detected</h3>
+              <p>The following conflicts must be resolved before saving:</p>
+              <div className="conflicts-content">
+                {conflicts.teamConflicts.length > 0 && (
+                  <div className="conflicts-section">
+                    <strong>Team Conflicts (each team can only be assigned once):</strong>
+                    <ul className="conflicts-list">
+                      {conflicts.teamConflicts.map((conflict) => {
+                        const team = teams.find((t) => t.id === conflict.teamId);
+                        const slotDescriptions = conflict.slotIndexes.map((idx) => {
+                          const slot = wizardState.scheduleSlots[idx];
+                          const room = rooms.find((r) => r.id === slot.roomId);
+                          return `${room?.label || `Room ${slot.roomId}`} - Slot ${slot.slotIndex + 1}`;
+                        });
+                        return (
+                          <li key={conflict.teamId}>
+                            <strong>{team?.label || `Team ${conflict.teamId}`}</strong> appears in: {slotDescriptions.join(', ')}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                {conflicts.juryConflicts.length > 0 && (
+                  <div className="conflicts-section">
+                    <strong>Jury Conflicts (juries cannot be in overlapping time slots):</strong>
+                    <ul className="conflicts-list">
+                      {conflicts.juryConflicts.map((conflict) => {
+                        const jury = juries.find((j) => j.id === conflict.juryId);
+                        const slotDescriptions = conflict.conflictingSlots.map((cs) => {
+                          const slot = wizardState.scheduleSlots[cs.slotIndex];
+                          const room = rooms.find((r) => r.id === slot.roomId);
+                          const startTime = new Date(cs.timeSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                          const endTime = new Date(cs.timeSlot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                          return `${room?.label || `Room ${slot.roomId}`} (${startTime}-${endTime})`;
+                        });
+                        return (
+                          <li key={conflict.juryId}>
+                            <strong>{jury?.label || `Jury ${conflict.juryId}`}</strong> has overlapping assignments in: {slotDescriptions.join(', ')}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="schedule-grid">
             {wizardState.selectedRoomIds.map((roomId) => {
               const room = rooms.find((r) => r.id === roomId);
@@ -777,7 +913,7 @@ const SessionWizard = () => {
                             <div className="form-group">
                               <label>Teams</label>
                               <div className="selection-preview">
-                                {renderPreviewSummary(slot.teamIds, teams)}
+                                {renderTeamsPreview(slot.teamIds)}
                               </div>
                               <select
                                 multiple
@@ -801,7 +937,7 @@ const SessionWizard = () => {
                             <div className="form-group">
                               <label>Juries</label>
                               <div className="selection-preview">
-                                {renderPreviewSummary(slot.juryIds, juries)}
+                                {renderJuriesPreview(slot.juryIds)}
                               </div>
                               <select
                                 multiple
@@ -926,7 +1062,8 @@ const SessionWizard = () => {
               type="button" 
               onClick={handleSavePlan} 
               className="btn btn-primary"
-              disabled={saving}
+              disabled={saving || hasConflicts}
+              title={hasConflicts ? 'Please resolve all conflicts before saving' : ''}
             >
               {saving ? 'Saving…' : 'Save Plan'}
             </button>
