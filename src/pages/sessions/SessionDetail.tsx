@@ -16,6 +16,7 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 import './SessionDetail.css';
@@ -32,6 +33,11 @@ interface SessionScopeFormData {
   team_ids: number[];
   jury_ids: number[];
   room_ids: number[];
+}
+
+// Extend SessionExpanded to include room_sessions
+interface SessionExpandedWithRoomSessions extends SessionExpanded {
+  room_sessions?: RoomSessionExpanded[];
 }
 
 // Helper function to convert ISO string to local datetime-local format
@@ -54,10 +60,13 @@ const localDatetimeInputToISO = (localDatetime: string): string => {
 const SessionDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [session, setSession] = useState<SessionExpanded | null>(null);
+  const [session, setSession] = useState<SessionExpandedWithRoomSessions | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Tab state for room sessions section
+  const [activeTab, setActiveTab] = useState<'overview' | 'list'>('overview');
   
   // Room Session Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,7 +100,7 @@ const SessionDetail = () => {
         id: parseInt(id),
         expand: 'teams,juries,rooms,room_sessions'
       });
-      setSession(data as SessionExpanded);
+      setSession(data as SessionExpandedWithRoomSessions);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch session details';
       setError(message);
@@ -396,21 +405,59 @@ const SessionDetail = () => {
         </div>
       </div>
 
-      {/* Room Sessions Section */}
+      {/* Room Sessions Section with Tabs */}
       <div className="session-details-section">
         <h2>Room Sessions ({session.room_sessions?.length || 0})</h2>
-        {session.room_sessions && session.room_sessions.length > 0 ? (
-          <DataTable
-            columns={roomSessionColumns}
-            data={session.room_sessions}
-            onEdit={handleEditRoomSession}
-            onDelete={handleDeleteRoomSession}
-          />
-        ) : (
-          <div className="empty-state">
-            <p>No room sessions yet. Create one to get started.</p>
+        
+        {/* Tab Navigation */}
+        <div className="tabs-container">
+          <div className="tabs-header">
+            <button 
+              className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+              onClick={() => setActiveTab('overview')}
+            >
+              📅 Schedule Overview
+            </button>
+            <button 
+              className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+              onClick={() => setActiveTab('list')}
+            >
+              📋 Room Sessions List
+            </button>
           </div>
-        )}
+          
+          <div className="tabs-content">
+            {activeTab === 'overview' ? (
+              <div className="tab-panel">
+                {session.room_sessions && session.room_sessions.length > 0 ? (
+                  <ScheduleOverview 
+                    roomSessions={session.room_sessions}
+                    rooms={session.rooms}
+                  />
+                ) : (
+                  <div className="empty-state">
+                    <p>No room sessions scheduled yet. Create one to get started.</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="tab-panel">
+                {session.room_sessions && session.room_sessions.length > 0 ? (
+                  <DataTable
+                    columns={roomSessionColumns}
+                    data={session.room_sessions}
+                    onEdit={handleEditRoomSession}
+                    onDelete={handleDeleteRoomSession}
+                  />
+                ) : (
+                  <div className="empty-state">
+                    <p>No room sessions yet. Create one to get started.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Modal for Create/Edit Room Session */}
