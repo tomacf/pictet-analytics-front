@@ -238,13 +238,13 @@ const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
                         }}
                         onMouseEnter={() => setHoveredCell({ teamId: team.id, juryId: jury.id })}
                         onMouseLeave={() => setHoveredCell(null)}
-                        title={`${team.label} ↔ ${jury.label}: ${count} sessions`}
+                        title={`${team.label} ↔ ${jury.label}: ${count} ${count === 1 ? 'session' : 'sessions'}`}
                       >
                         {count}
                       </td>
                     );
                   })}
-                  <td className="total-cell" title={`Total sessions for ${team.label}`}>
+                  <td className="total-cell" title={`${teamTotal} ${teamTotal === 1 ? 'session' : 'sessions'} for ${team.label}`}>
                     {teamTotal}
                   </td>
                 </tr>
@@ -255,7 +255,7 @@ const TeamJuryMatrix = ({ data }: TeamJuryMatrixProps) => {
               {juries.map((jury) => {
                 const juryTotal = juryTotals[jury.id.toString()] || 0;
                 return (
-                  <td key={jury.id} className="total-cell" title={`Total sessions for ${jury.label}`}>
+                  <td key={jury.id} className="total-cell" title={`${juryTotal} ${juryTotal === 1 ? 'session' : 'sessions'} for ${jury.label}`}>
                     {juryTotal}
                   </td>
                 );
