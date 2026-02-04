@@ -12,6 +12,8 @@ interface RebalanceModalProps {
   hasApplied: boolean;
 }
 
+const METRIC_DECIMAL_PLACES = 2; // Number of decimal places to show for metrics
+
 const RebalanceModal = ({
   isOpen,
   onClose,
@@ -24,7 +26,7 @@ const RebalanceModal = ({
 }: RebalanceModalProps) => {
   if (!isOpen) return null;
 
-  const formatNumber = (num: number) => num.toFixed(2);
+  const formatNumber = (num: number) => num.toFixed(METRIC_DECIMAL_PLACES);
 
   const renderMetricRow = (label: string, before: number, after: number, unit: string = '') => {
     const change = after - before;

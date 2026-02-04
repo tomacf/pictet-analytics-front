@@ -437,7 +437,9 @@ const SessionWizard = () => {
     setIsRebalancing(true);
     toast.info('Running Magic Rebalance...');
 
-    // Use setTimeout to allow UI to update
+    // Use setTimeout to allow UI to update (show loading state) before starting
+    // the CPU-intensive rebalance computation. 100ms is sufficient for React to
+    // render the button state change and toast notification.
     setTimeout(() => {
       try {
         const result = magicRebalance({
