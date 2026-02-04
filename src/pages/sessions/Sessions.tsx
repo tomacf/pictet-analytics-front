@@ -25,6 +25,9 @@ const Sessions = () => {
     time_between_slots: 0,
   });
 
+  // Maximum number of visible chips before showing "+N more"
+  const MAX_VISIBLE_CHIPS = 4;
+
   const fetchSessions = async () => {
     try {
       setLoading(true);
@@ -139,9 +142,8 @@ const Sessions = () => {
           return <span className="no-data-text">—</span>;
         }
         
-        const MAX_VISIBLE = 4;
-        const visibleTeams = session.teams.slice(0, MAX_VISIBLE);
-        const remainingCount = session.teams.length - MAX_VISIBLE;
+        const visibleTeams = session.teams.slice(0, MAX_VISIBLE_CHIPS);
+        const remainingCount = session.teams.length - MAX_VISIBLE_CHIPS;
         
         return (
           <div className="chips-container-compact">
@@ -165,9 +167,8 @@ const Sessions = () => {
           return <span className="no-data-text">—</span>;
         }
         
-        const MAX_VISIBLE = 4;
-        const visibleJuries = session.juries.slice(0, MAX_VISIBLE);
-        const remainingCount = session.juries.length - MAX_VISIBLE;
+        const visibleJuries = session.juries.slice(0, MAX_VISIBLE_CHIPS);
+        const remainingCount = session.juries.length - MAX_VISIBLE_CHIPS;
         
         return (
           <div className="chips-container-compact">

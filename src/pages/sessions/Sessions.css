@@ -23,9 +23,9 @@
 }
 
 .chip-team {
-  background-color: #fff0f0;
-  color: #cc2d1d;
-  border: 1px solid #cc2d1d;
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 .chip-jury {
