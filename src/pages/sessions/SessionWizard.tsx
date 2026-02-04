@@ -83,7 +83,7 @@ const SessionWizard = () => {
       selectedJuryIds: [],
       teamsPerRoom: 1,
       juriesPerRoom: 1,
-      startTime: '',
+      startTime: new Date().toISOString().slice(0, 16), // Default to current datetime
       slotDuration: 30,
       timeBetweenSlots: 5,
       scheduleSlots: [],

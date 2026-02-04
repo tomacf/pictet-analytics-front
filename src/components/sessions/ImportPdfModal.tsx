@@ -41,7 +41,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     file: null,
     sessionLabel: '',
-    sessionDate: '',
+    sessionDate: new Date().toISOString().split('T')[0], // Default to current date
     juryPoolIds: [],
     juriesPerRoom: 1,
     slotDuration: 30,
@@ -301,7 +301,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             <label htmlFor="sessionDate">Session Date *</label>
             <input
               id="sessionDate"
-              type="datetime-local"
+              type="date"
               value={formData.sessionDate}
               onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
               required
