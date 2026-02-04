@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import {
   ImportService,
   JuriesService,
+  SessionsService,
   type DraftPlan,
   type Jury,
   type ImportError,
@@ -41,7 +42,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     file: null,
     sessionLabel: '',
-    sessionDate: '',
+    sessionDate: new Date().toISOString().split('T')[0], // Default to current date
     juryPoolIds: [],
     juriesPerRoom: 1,
     slotDuration: 30,
@@ -194,13 +195,28 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     try {
+      // Create the session first (we need a session ID for the preview)
+      // Convert date-only string (YYYY-MM-DD) to ISO string with time component
+      const sessionDate = new Date(formData.sessionDate + 'T00:00:00');
+      const session = await SessionsService.createSession({
+        requestBody: {
+          label: formData.sessionLabel,
+          start_time: sessionDate.toISOString(),
+          slot_duration: formData.slotDuration,
+          time_between_slots: formData.timeBetweenSlots,
+        }
+      });
+      
+      toast.success('Session created successfully');
+
       // Convert DraftPlan to WizardState (backend has already resolved all IDs)
       const wizardState = convertDraftPlanToWizardState(
         parseState.draftPlan,
-        formData
+        formData,
+        session.id // Pass the created session ID
       );
 
-      // Navigate to SessionWizard with the pre-populated state
+      // Navigate to SessionWizard with the pre-populated state (step 3 for review)
       navigate('/sessions/wizard', { state: { wizardState, step: 3 } });
       
       // Close modal
@@ -213,7 +229,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
   const convertDraftPlanToWizardState = (
     draftPlan: DraftPlan,
-    formData: FormData
+    formData: FormData,
+    sessionId: number
   ) => {
     // Extract unique room IDs from slots
     const selectedRoomIds = Array.from(
@@ -246,6 +263,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     });
 
     return {
+      sessionId, // Include the session ID
       sessionLabel: formData.sessionLabel,
       selectedRoomIds,
       selectedTeamIds,
@@ -301,7 +319,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             <label htmlFor="sessionDate">Session Date *</label>
             <input
               id="sessionDate"
-              type="datetime-local"
+              type="date"
               value={formData.sessionDate}
               onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
               required

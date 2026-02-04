@@ -120,11 +120,12 @@ const RoomSessions = () => {
 
   const handleCreate = () => {
     setEditingId(null);
+    const now = new Date().toISOString().slice(0, 16);
     setFormData({
       room_id: 0,
       session_id: 0,
-      start_time: '',
-      end_time: '',
+      start_time: now, // Default to current datetime
+      end_time: now, // Default to current datetime
       team_ids: [],
       jury_ids: [],
     });

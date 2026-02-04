@@ -36,7 +36,7 @@ const Rooms = () => {
 
   const handleCreate = () => {
     setEditingRoom(null);
-    setFormData({ label: '', max_size: 0 });
+    setFormData({ label: '', max_size: 30 });
     setIsModalOpen(true);
   };
 
