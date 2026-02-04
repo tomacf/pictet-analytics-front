@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { DraftPlan } from '../models/DraftPlan';
 import type { RoomSessionExpanded } from '../models/RoomSessionExpanded';
 import type { Session } from '../models/Session';
 import type { SessionExpanded } from '../models/SessionExpanded';
@@ -215,6 +216,37 @@ export class SessionsService {
                 - A jury is assigned to overlapping time ranges within the session
                 `,
                 500: `Internal server error (e.g., validation failed, IDs not found)`,
+            },
+        });
+    }
+    /**
+     * Parse a PDF file to extract session plan data
+     * Parses an uploaded PDF file to extract scheduling information and returns a draft session plan.
+     * The response includes parsed teams, juries, rooms, time slots, and scheduling parameters.
+     * This endpoint performs OCR/parsing but does not persist any data.
+     *
+     * @returns DraftPlan PDF parsed successfully
+     * @throws ApiError
+     */
+    public static parsePdfForSession({
+        formData,
+    }: {
+        formData: {
+            /**
+             * PDF file to parse
+             */
+            file: Blob;
+        },
+    }): CancelablePromise<DraftPlan> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/parse-pdf',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                400: `Invalid request - missing file or unsupported format`,
+                422: `PDF parsing failed - unable to extract valid scheduling data`,
+                500: `Internal server error during PDF processing`,
             },
         });
     }

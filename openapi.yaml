@@ -1140,6 +1140,87 @@ paths:
               schema:
                 type: string
 
+  /api/sessions/parse-pdf:
+    post:
+      tags:
+        - Sessions
+      summary: Parse a PDF file to extract session plan data
+      description: |
+        Parses an uploaded PDF file to extract scheduling information and returns a draft session plan.
+        The response includes parsed teams, juries, rooms, time slots, and scheduling parameters.
+        This endpoint performs OCR/parsing but does not persist any data.
+      operationId: parsePdfForSession
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file to parse
+      responses:
+        '200':
+          description: PDF parsed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPlan'
+              examples:
+                draftPlan:
+                  summary: Example draft plan from PDF
+                  value:
+                    session_label: "Annual Competition 2024"
+                    session_date: "2024-03-01T09:00:00Z"
+                    teams:
+                      - label: "Team Alpha"
+                      - label: "Team Beta"
+                      - label: "Team Gamma"
+                    juries:
+                      - label: "Dr. Smith"
+                      - label: "Prof. Johnson"
+                    rooms:
+                      - label: "Room A"
+                      - label: "Room B"
+                    teams_per_room: 2
+                    juries_per_room: 1
+                    slot_duration: 30
+                    time_between_slots: 5
+                    slots:
+                      - room_label: "Room A"
+                        start_time: "2024-03-01T09:00:00Z"
+                        end_time: "2024-03-01T09:30:00Z"
+                        team_labels: ["Team Alpha", "Team Beta"]
+                        jury_labels: ["Dr. Smith"]
+                      - room_label: "Room B"
+                        start_time: "2024-03-01T09:00:00Z"
+                        end_time: "2024-03-01T09:30:00Z"
+                        team_labels: ["Team Gamma"]
+                        jury_labels: ["Prof. Johnson"]
+        '400':
+          description: Invalid request - missing file or unsupported format
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Invalid or missing PDF file"
+        '422':
+          description: PDF parsing failed - unable to extract valid scheduling data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParseError'
+        '500':
+          description: Internal server error during PDF processing
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /api/sessions/{id}/room-sessions:
     post:
       tags:
@@ -2864,4 +2945,128 @@ components:
           type: integer
           description: Number of room sessions this team had in this room
           example: 5
+
+    DraftPlan:
+      type: object
+      required:
+        - session_label
+        - session_date
+        - teams
+        - juries
+        - rooms
+        - teams_per_room
+        - juries_per_room
+        - slot_duration
+        - time_between_slots
+        - slots
+      properties:
+        session_label:
+          type: string
+          description: Suggested label for the session extracted from PDF
+          example: "Annual Competition 2024"
+        session_date:
+          type: string
+          format: date-time
+          description: Start date/time extracted from PDF
+          example: "2024-03-01T09:00:00Z"
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftEntity'
+          description: Teams extracted from PDF (by label only, IDs to be resolved)
+        juries:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftEntity'
+          description: Juries extracted from PDF (by label only, IDs to be resolved)
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftEntity'
+          description: Rooms extracted from PDF (by label only, IDs to be resolved)
+        teams_per_room:
+          type: integer
+          description: Number of teams per room extracted from PDF
+          example: 2
+        juries_per_room:
+          type: integer
+          description: Number of juries per room extracted from PDF
+          example: 1
+        slot_duration:
+          type: integer
+          description: Slot duration in minutes extracted from PDF
+          example: 30
+        time_between_slots:
+          type: integer
+          description: Time between slots in minutes extracted from PDF
+          example: 5
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/DraftSlot'
+          description: Scheduling slots extracted from PDF
+
+    DraftEntity:
+      type: object
+      required:
+        - label
+      properties:
+        label:
+          type: string
+          description: Label of the entity (team, jury, or room)
+          example: "Team Alpha"
+
+    DraftSlot:
+      type: object
+      required:
+        - room_label
+        - start_time
+        - end_time
+        - team_labels
+        - jury_labels
+      properties:
+        room_label:
+          type: string
+          description: Room label for this slot
+          example: "Room A"
+        start_time:
+          type: string
+          format: date-time
+          description: Slot start time
+          example: "2024-03-01T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Slot end time
+          example: "2024-03-01T09:30:00Z"
+        team_labels:
+          type: array
+          items:
+            type: string
+          description: Team labels assigned to this slot
+          example: ["Team Alpha", "Team Beta"]
+        jury_labels:
+          type: array
+          items:
+            type: string
+          description: Jury labels assigned to this slot
+          example: ["Dr. Smith"]
+
+    ParseError:
+      type: object
+      required:
+        - message
+        - errors
+      properties:
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Failed to parse PDF"
+        errors:
+          type: array
+          items:
+            type: string
+          description: List of specific parsing errors
+          example: ["Unable to extract team information", "Invalid date format detected"]
+
 

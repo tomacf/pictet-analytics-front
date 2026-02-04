@@ -8,9 +8,13 @@ export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { AnalyticsSummary } from './models/AnalyticsSummary';
+export type { DraftEntity } from './models/DraftEntity';
+export type { DraftPlan } from './models/DraftPlan';
+export type { DraftSlot } from './models/DraftSlot';
 export type { IDLabel } from './models/IDLabel';
 export type { Jury } from './models/Jury';
 export type { JuryInput } from './models/JuryInput';
+export type { ParseError } from './models/ParseError';
 export type { Room } from './models/Room';
 export type { RoomCount } from './models/RoomCount';
 export type { RoomInput } from './models/RoomInput';
