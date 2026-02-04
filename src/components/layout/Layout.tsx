@@ -25,6 +25,10 @@ const Layout = () => {
     return isActive('/teams') || isActive('/rooms') || isActive('/juries');
   };
 
+  const isAnalyticsActive = () => {
+    return isActive('/analytics');
+  };
+
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
@@ -82,6 +86,12 @@ const Layout = () => {
               <Link to="/sessions" title="Sessions">
                 <span className="icon">📅</span>
                 <span className="menu-text">Sessions</span>
+              </Link>
+            </li>
+            <li className={isAnalyticsActive() ? 'active' : ''}>
+              <Link to="/analytics" title="Analytics">
+                <span className="icon">📊</span>
+                <span className="menu-text">Analytics</span>
               </Link>
             </li>
           </ul>
