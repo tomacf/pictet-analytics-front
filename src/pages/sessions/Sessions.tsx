@@ -6,6 +6,7 @@ import DataTable from '../../components/shared/DataTable';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
+import ImportPdfModal from '../../components/sessions/ImportPdfModal';
 import {formatEuropeanDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
 import '../teams/Teams.css';
@@ -17,6 +18,7 @@ const Sessions = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionExpanded | null>(null);
   const [formData, setFormData] = useState<SessionInput>({
     label: '',
@@ -201,6 +203,9 @@ const Sessions = () => {
       <div className="page-header">
         <h1>Sessions</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
+            Import from PDF
+          </button>
           <button onClick={() => navigate('/sessions/wizard')} className="btn btn-primary">
             Scheduling Wizard
           </button>
@@ -215,6 +220,11 @@ const Sessions = () => {
         data={sessions}
         onEdit={handleEdit}
         onDelete={handleDelete}
+      />
+
+      <ImportPdfModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
       />
 
       <Modal

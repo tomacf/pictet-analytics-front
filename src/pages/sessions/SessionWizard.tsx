@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
   SessionsService,
@@ -59,6 +59,7 @@ interface SelectableItem {
 
 const SessionWizard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -69,19 +70,33 @@ const SessionWizard = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [juries, setJuries] = useState<Jury[]>([]);
 
-  // Wizard state
-  const [wizardState, setWizardState] = useState<WizardState>({
-    sessionLabel: '',
-    selectedRoomIds: [],
-    selectedTeamIds: [],
-    selectedJuryIds: [],
-    teamsPerRoom: 1,
-    juriesPerRoom: 1,
-    startTime: '',
-    slotDuration: 30,
-    timeBetweenSlots: 5,
-    scheduleSlots: [],
+  // Wizard state - may be initialized from navigation state
+  const [wizardState, setWizardState] = useState<WizardState>(() => {
+    const navState = location.state as { wizardState?: WizardState; step?: number } | undefined;
+    if (navState?.wizardState) {
+      return navState.wizardState;
+    }
+    return {
+      sessionLabel: '',
+      selectedRoomIds: [],
+      selectedTeamIds: [],
+      selectedJuryIds: [],
+      teamsPerRoom: 1,
+      juriesPerRoom: 1,
+      startTime: '',
+      slotDuration: 30,
+      timeBetweenSlots: 5,
+      scheduleSlots: [],
+    };
   });
+
+  // Initialize step from navigation state
+  useEffect(() => {
+    const navState = location.state as { wizardState?: WizardState; step?: number } | undefined;
+    if (navState?.step) {
+      setCurrentStep(navState.step);
+    }
+  }, [location.state]);
 
   // State for adding new slots
   const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
