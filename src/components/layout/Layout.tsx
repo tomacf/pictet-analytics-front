@@ -22,7 +22,9 @@ const Layout = () => {
   };
 
   const isConfigurationActive = () => {
-    return isActive('/teams') || isActive('/rooms') || isActive('/juries');
+    // Parent should only be active if we're on /configuration path itself
+    // Not when we're on sub-items like /teams, /rooms, /juries
+    return location.pathname === '/configuration';
   };
 
   const isAnalyticsActive = () => {
@@ -62,20 +64,23 @@ const Layout = () => {
                 <span className="icon">⚙️</span>
                 <span className="menu-text">Configuration</span>
               </button>
-              {isConfigurationExpanded && !isSidebarCollapsed && (
-                <ul className="sub-items">
+              {(isConfigurationExpanded || isSidebarCollapsed) && (
+                <ul className={`sub-items ${isSidebarCollapsed ? 'collapsed-dropdown' : ''}`}>
                   <li className={isActive('/teams') ? 'active' : ''}>
                     <Link to="/teams" title="Teams">
+                      <span className="icon">👥</span>
                       <span className="menu-text">Teams</span>
                     </Link>
                   </li>
                   <li className={isActive('/rooms') ? 'active' : ''}>
                     <Link to="/rooms" title="Rooms">
+                      <span className="icon">🏠</span>
                       <span className="menu-text">Rooms</span>
                     </Link>
                   </li>
                   <li className={isActive('/juries') ? 'active' : ''}>
                     <Link to="/juries" title="Juries">
+                      <span className="icon">⚖️</span>
                       <span className="menu-text">Juries</span>
                     </Link>
                   </li>
