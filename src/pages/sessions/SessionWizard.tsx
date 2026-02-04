@@ -159,10 +159,12 @@ const SessionWizard = () => {
       setLoading(true);
       try {
         const session = await SessionsService.createSession({
-          label: wizardState.sessionLabel,
-          start_time: new Date().toISOString(), // Temporary, will be updated
-          slot_duration: 30,
-          time_between_slots: 5,
+          requestBody: {
+            label: wizardState.sessionLabel,
+            start_time: new Date().toISOString(), // Temporary, will be updated
+            slot_duration: 30,
+            time_between_slots: 5,
+          }
         });
         setWizardState({ ...wizardState, sessionId: session.id });
         toast.success('Session created successfully');
@@ -330,7 +332,7 @@ const SessionWizard = () => {
       };
 
       // Call the API endpoint
-      await SessionsService.saveSessionPlan(wizardState.sessionId, sessionPlan);
+      await SessionsService.saveSessionPlan({ id: wizardState.sessionId, requestBody: sessionPlan });
       
       toast.success('Session plan saved successfully');
       

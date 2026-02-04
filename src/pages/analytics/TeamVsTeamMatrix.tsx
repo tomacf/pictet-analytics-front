@@ -35,7 +35,7 @@ const TeamVsTeamMatrix = ({ data }: TeamVsTeamMatrixProps) => {
       matrixData[meeting.team2_label][meeting.team1_label] = meeting.meet_count;
     });
 
-    let teamsList = Array.from(teamSet);
+    const teamsList = Array.from(teamSet);
     let maxCount = 0;
 
     // Calculate max meet count for color scaling

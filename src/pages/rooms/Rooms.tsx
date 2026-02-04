@@ -52,7 +52,7 @@ const Rooms = () => {
     }
 
     try {
-      await RoomsService.deleteRoom(room.id);
+      await RoomsService.deleteRoom({ id: room.id });
       toast.success('Room deleted successfully');
       fetchRooms();
     } catch (err) {
@@ -66,10 +66,10 @@ const Rooms = () => {
 
     try {
       if (editingRoom) {
-        await RoomsService.updateRoom(editingRoom.id, formData);
+        await RoomsService.updateRoom({ id: editingRoom.id, requestBody: formData });
         toast.success('Room updated successfully');
       } else {
-        await RoomsService.createRoom(formData);
+        await RoomsService.createRoom({ requestBody: formData });
         toast.success('Room created successfully');
       }
       setIsModalOpen(false);

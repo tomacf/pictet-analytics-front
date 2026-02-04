@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { IDLabel } from './IDLabel';
+import type { RoomSessionExpanded } from './RoomSessionExpanded';
 export type SessionExpanded = {
     /**
      * Session ID
@@ -44,6 +45,10 @@ export type SessionExpanded = {
      * Associated rooms (present when expand=rooms is used)
      */
     rooms?: Array<IDLabel>;
+    /**
+     * Associated room sessions (present when expand=room_sessions is used)
+     */
+    room_sessions?: Array<RoomSessionExpanded>;
     /**
      * Total count of room sessions associated with this session (present when expand=summary is used)
      */
