@@ -40,6 +40,8 @@ tags:
     description: Placeholder scheduling operations
   - name: Analytics
     description: Placeholder analytics operations
+  - name: Import
+    description: PDF import operations for session schedules
 
 paths:
   /health:
@@ -1140,87 +1142,6 @@ paths:
               schema:
                 type: string
 
-  /api/sessions/parse-pdf:
-    post:
-      tags:
-        - Sessions
-      summary: Parse a PDF file to extract session plan data
-      description: |
-        Parses an uploaded PDF file to extract scheduling information and returns a draft session plan.
-        The response includes parsed teams, juries, rooms, time slots, and scheduling parameters.
-        This endpoint performs OCR/parsing but does not persist any data.
-      operationId: parsePdfForSession
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: PDF file to parse
-      responses:
-        '200':
-          description: PDF parsed successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DraftPlan'
-              examples:
-                draftPlan:
-                  summary: Example draft plan from PDF
-                  value:
-                    session_label: "Annual Competition 2024"
-                    session_date: "2024-03-01T09:00:00Z"
-                    teams:
-                      - label: "Team Alpha"
-                      - label: "Team Beta"
-                      - label: "Team Gamma"
-                    juries:
-                      - label: "Dr. Smith"
-                      - label: "Prof. Johnson"
-                    rooms:
-                      - label: "Room A"
-                      - label: "Room B"
-                    teams_per_room: 2
-                    juries_per_room: 1
-                    slot_duration: 30
-                    time_between_slots: 5
-                    slots:
-                      - room_label: "Room A"
-                        start_time: "2024-03-01T09:00:00Z"
-                        end_time: "2024-03-01T09:30:00Z"
-                        team_labels: ["Team Alpha", "Team Beta"]
-                        jury_labels: ["Dr. Smith"]
-                      - room_label: "Room B"
-                        start_time: "2024-03-01T09:00:00Z"
-                        end_time: "2024-03-01T09:30:00Z"
-                        team_labels: ["Team Gamma"]
-                        jury_labels: ["Prof. Johnson"]
-        '400':
-          description: Invalid request - missing file or unsupported format
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: "Invalid or missing PDF file"
-        '422':
-          description: PDF parsing failed - unable to extract valid scheduling data
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ParseError'
-        '500':
-          description: Internal server error during PDF processing
-          content:
-            text/plain:
-              schema:
-                type: string
-
   /api/sessions/{id}/room-sessions:
     post:
       tags:
@@ -2119,6 +2040,156 @@ paths:
               schema:
                 type: string
 
+  /api/import/session-document/parse:
+    post:
+      tags:
+        - Import
+      summary: Parse PDF session schedule
+      description: |
+        Parses a PDF file containing a session schedule table and returns a draft plan.
+        The PDF should contain a table with rooms, times, and team codes.
+
+        **Features:**
+        - Deterministic text extraction (no OCR unless needed)
+        - Extracts room schedule table (rooms, times, team codes)
+        - Resolves room labels to room_id from database (case-insensitive)
+        - Resolves team labels to team_ids from database (case-insensitive)
+        - Auto-assigns juries round-robin with no overlap
+        - Returns draft plan without writing to database
+
+        **Required fields:**
+        - `pdf`: PDF file (multipart/form-data)
+        - `date` or `day`: Schedule date (YYYY-MM-DD)
+        - `slot_duration`: Duration of each slot in minutes
+        - `time_between_slots`: Gap between slots in minutes
+        - `jury_ids[]`: Array of jury IDs to assign
+        - `juries_per_room`: Number of juries per room
+
+        **Optional fields:**
+        - `session_label`: Label for the session
+
+        **Error Handling:**
+        - If parsed room or team labels are not found in database, returns HTTP 400 with structured error including missing labels and extracted schedule context
+      operationId: parseSessionDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pdf
+                - date
+                - slot_duration
+                - time_between_slots
+                - jury_ids
+                - juries_per_room
+              properties:
+                pdf:
+                  type: string
+                  format: binary
+                  description: PDF file containing the session schedule
+                session_label:
+                  type: string
+                  description: Optional label for the session
+                  example: "Spring 2024 Presentations"
+                date:
+                  type: string
+                  format: date
+                  description: Schedule date (YYYY-MM-DD)
+                  example: "2024-03-15"
+                day:
+                  type: string
+                  format: date
+                  description: Alternative to 'date' field (YYYY-MM-DD)
+                  example: "2024-03-15"
+                slot_duration:
+                  type: integer
+                  description: Duration of each slot in minutes
+                  example: 30
+                time_between_slots:
+                  type: integer
+                  description: Gap between slots in minutes
+                  example: 5
+                jury_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of jury IDs to assign to slots
+                  example: [1, 2, 3, 4, 5]
+                juries_per_room:
+                  type: integer
+                  description: Number of juries to assign per room
+                  example: 2
+      responses:
+        '200':
+          description: PDF parsed successfully, returns draft plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DraftPlan'
+              example:
+                session_label: "Spring 2024 Presentations"
+                date: "2024-03-15T00:00:00Z"
+                slot_duration: 30
+                time_between_slots: 5
+                jury_ids: [1, 2, 3, 4, 5]
+                juries_per_room: 2
+                slots:
+                  - room_id: 1
+                    room_label: "Room A"
+                    start_time: "2024-03-15T09:00:00Z"
+                    end_time: "2024-03-15T09:30:00Z"
+                    team_ids: [1, 2]
+                    team_labels: ["T01", "T02"]
+                    jury_ids: [1, 2]
+                  - room_id: 2
+                    room_label: "Room B"
+                    start_time: "2024-03-15T09:00:00Z"
+                    end_time: "2024-03-15T09:30:00Z"
+                    team_ids: [3]
+                    team_labels: ["T03"]
+                    jury_ids: [3, 4]
+        '400':
+          description: Invalid request (missing required fields, invalid PDF, or missing rooms/teams in database)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ImportError'
+                  - type: string
+              examples:
+                missing_entities:
+                  summary: Missing rooms or teams in database
+                  value:
+                    message: "Missing rooms or teams in database"
+                    missing_rooms: ["Room C"]
+                    missing_teams: ["T99", "T100"]
+                    extracted_slots:
+                      - room_label: "Room A"
+                        start_time: "09:00"
+                        end_time: "09:30"
+                        team_labels: ["T01", "T02"]
+                      - room_label: "Room C"
+                        start_time: "09:00"
+                        end_time: "09:30"
+                        team_labels: ["T99"]
+                invalid_field:
+                  summary: Missing or invalid field
+                  value: "date or day field is required"
+        '422':
+          description: PDF could not be parsed (no schedule data found)
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
 
 components:
   schemas:
@@ -2640,6 +2711,21 @@ components:
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
 
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: "Team Alpha"
+
     SessionPlan:
       type: object
       required:
@@ -2946,127 +3032,148 @@ components:
           description: Number of room sessions this team had in this room
           example: 5
 
+
     DraftPlan:
       type: object
       required:
-        - session_label
-        - session_date
-        - teams
-        - juries
-        - rooms
-        - teams_per_room
-        - juries_per_room
+        - date
         - slot_duration
         - time_between_slots
+        - jury_ids
+        - juries_per_room
         - slots
       properties:
         session_label:
           type: string
-          description: Suggested label for the session extracted from PDF
-          example: "Annual Competition 2024"
-        session_date:
+          description: Optional label for the session
+          example: "Spring 2024 Presentations"
+        date:
           type: string
           format: date-time
-          description: Start date/time extracted from PDF
-          example: "2024-03-01T09:00:00Z"
-        teams:
-          type: array
-          items:
-            $ref: '#/components/schemas/DraftEntity'
-          description: Teams extracted from PDF (by label only, IDs to be resolved)
-        juries:
-          type: array
-          items:
-            $ref: '#/components/schemas/DraftEntity'
-          description: Juries extracted from PDF (by label only, IDs to be resolved)
-        rooms:
-          type: array
-          items:
-            $ref: '#/components/schemas/DraftEntity'
-          description: Rooms extracted from PDF (by label only, IDs to be resolved)
-        teams_per_room:
-          type: integer
-          description: Number of teams per room extracted from PDF
-          example: 2
-        juries_per_room:
-          type: integer
-          description: Number of juries per room extracted from PDF
-          example: 1
+          description: Schedule date
+          example: "2024-03-15T00:00:00Z"
         slot_duration:
           type: integer
-          description: Slot duration in minutes extracted from PDF
+          description: Duration of each slot in minutes
           example: 30
         time_between_slots:
           type: integer
-          description: Time between slots in minutes extracted from PDF
+          description: Gap between slots in minutes
           example: 5
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: Array of jury IDs available for assignment
+          example: [1, 2, 3, 4, 5]
+        juries_per_room:
+          type: integer
+          description: Number of juries to assign per room
+          example: 2
         slots:
           type: array
           items:
-            $ref: '#/components/schemas/DraftSlot'
-          description: Scheduling slots extracted from PDF
+            $ref: '#/components/schemas/DraftPlanSlot'
+          description: Array of schedule slots with room, time, teams, and assigned juries
 
-    DraftEntity:
+    DraftPlanSlot:
       type: object
       required:
-        - label
+        - room_id
+        - room_label
+        - start_time
+        - end_time
+        - team_ids
+        - team_labels
+        - jury_ids
       properties:
-        label:
+        room_id:
+          type: integer
+          description: Room ID (resolved from database)
+          example: 1
+        room_label:
           type: string
-          description: Label of the entity (team, jury, or room)
-          example: "Team Alpha"
+          description: Room label/name (parsed from PDF)
+          example: "Room A"
+        start_time:
+          type: string
+          format: date-time
+          description: Slot start time
+          example: "2024-03-15T09:00:00Z"
+        end_time:
+          type: string
+          format: date-time
+          description: Slot end time
+          example: "2024-03-15T09:30:00Z"
+        team_ids:
+          type: array
+          items:
+            type: integer
+          description: Array of team IDs (resolved from database)
+          example: [1, 2]
+        team_labels:
+          type: array
+          items:
+            type: string
+          description: Array of team labels/codes (parsed from PDF)
+          example: ["T01", "T02"]
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: Array of jury IDs assigned to this slot (auto-assigned round-robin)
+          example: [1, 2]
 
-    DraftSlot:
+    ImportError:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Error message
+          example: "Missing rooms or teams in database"
+        missing_rooms:
+          type: array
+          items:
+            type: string
+          description: Array of room labels that were not found in the database
+          example: ["Room C", "Room D"]
+        missing_teams:
+          type: array
+          items:
+            type: string
+          description: Array of team labels that were not found in the database
+          example: ["T99", "T100"]
+        extracted_slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtractedSlotInfo'
+          description: Context about what was extracted from the PDF
+
+    ExtractedSlotInfo:
       type: object
       required:
         - room_label
         - start_time
         - end_time
         - team_labels
-        - jury_labels
       properties:
         room_label:
           type: string
-          description: Room label for this slot
+          description: Room label from PDF
           example: "Room A"
         start_time:
           type: string
-          format: date-time
-          description: Slot start time
-          example: "2024-03-01T09:00:00Z"
+          description: Slot start time (HH:MM format)
+          example: "09:00"
         end_time:
           type: string
-          format: date-time
-          description: Slot end time
-          example: "2024-03-01T09:30:00Z"
+          description: Slot end time (HH:MM format)
+          example: "09:30"
         team_labels:
           type: array
           items:
             type: string
-          description: Team labels assigned to this slot
-          example: ["Team Alpha", "Team Beta"]
-        jury_labels:
-          type: array
-          items:
-            type: string
-          description: Jury labels assigned to this slot
-          example: ["Dr. Smith"]
-
-    ParseError:
-      type: object
-      required:
-        - message
-        - errors
-      properties:
-        message:
-          type: string
-          description: Human-readable error message
-          example: "Failed to parse PDF"
-        errors:
-          type: array
-          items:
-            type: string
-          description: List of specific parsing errors
-          example: ["Unable to extract team information", "Invalid date format detected"]
-
-
+          description: Team labels from PDF
+          example: ["T01", "T02"]
