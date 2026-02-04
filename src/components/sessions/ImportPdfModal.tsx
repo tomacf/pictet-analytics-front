@@ -196,10 +196,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
     try {
       // Create the session first (we need a session ID for the preview)
+      // Convert date-only string (YYYY-MM-DD) to ISO string with time component
+      const sessionDate = new Date(formData.sessionDate + 'T00:00:00');
       const session = await SessionsService.createSession({
         requestBody: {
           label: formData.sessionLabel,
-          start_time: new Date(formData.sessionDate).toISOString(),
+          start_time: sessionDate.toISOString(),
           slot_duration: formData.slotDuration,
           time_between_slots: formData.timeBetweenSlots,
         }

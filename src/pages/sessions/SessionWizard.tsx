@@ -319,9 +319,6 @@ const SessionWizard = () => {
           });
         }
       }
-      
-      // After each slot round, reset available juries for rooms that need changes
-      // This allows juries to be reused in the next slot
     }
 
     return slots;
