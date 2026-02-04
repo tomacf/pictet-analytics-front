@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import {
@@ -13,6 +13,7 @@ import {
 } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import StatusPanel from '../../components/shared/StatusPanel';
 import {
   detectTeamConflicts,
   detectJuryConflicts,
@@ -84,6 +85,12 @@ const SessionWizard = () => {
 
   // State for adding new slots
   const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
+
+  // Status panel state - default open on desktop, closed on mobile
+  const [statusPanelOpen, setStatusPanelOpen] = useState(true);
+
+  // Refs for scrolling to slots
+  const slotRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Conflict detection
   const conflicts = useMemo(() => {
@@ -501,6 +508,27 @@ const SessionWizard = () => {
     );
   };
 
+  // Scroll to slot when clicking on conflict
+  const handleScrollToSlot = (slotIndex: number) => {
+    const slotElement = slotRefs.current.get(slotIndex);
+    if (slotElement) {
+      slotElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center' 
+      });
+      // Highlight the slot briefly using CSS class
+      slotElement.classList.add('slot-highlighted');
+      setTimeout(() => {
+        slotElement.classList.remove('slot-highlighted');
+      }, 2000);
+    }
+    // Close mobile panel after clicking (using constant breakpoint)
+    const MOBILE_BREAKPOINT = 1024;
+    if (window.innerWidth <= MOBILE_BREAKPOINT) {
+      setStatusPanelOpen(false);
+    }
+  };
+
   if (loading && rooms.length === 0) return <LoadingSpinner />;
   if (error) return <ErrorDisplay message={error} onRetry={() => window.location.reload()} />;
 
@@ -777,89 +805,19 @@ const SessionWizard = () => {
 
       {/* Step 3: Review & Edit Schedule */}
       {currentStep === 3 && (
-        <div className="wizard-content">
-          <h2>Step 3: Review & Edit Schedule</h2>
-          <p className="schedule-info">
-            Generated {wizardState.scheduleSlots.length} time slots across {wizardState.selectedRoomIds.length} room(s)
-          </p>
+        <div className="wizard-content-with-status">
+          <div className="wizard-content-main">
+            <h2>Step 3: Review & Edit Schedule</h2>
+            <p className="schedule-info">
+              Generated {wizardState.scheduleSlots.length} time slots across {wizardState.selectedRoomIds.length} room(s)
+            </p>
 
-          {/* Unassigned Teams and Juries Warning Section */}
-          {(getUnassignedTeamIds().length > 0 || getUnassignedJuryIds().length > 0) && (
-            <div className="unassigned-warning">
-              <h3>⚠️ Unassigned Items</h3>
-              <p>The following teams and juries were selected for the session but are not assigned to any slot:</p>
-              <div className="unassigned-content">
-                {getUnassignedTeamIds().length > 0 && (
-                  <div className="unassigned-section">
-                    <strong>Teams:</strong>
-                    <div className="selection-preview">
-                      {renderPreviewSummary(getUnassignedTeamIds(), teams)}
-                    </div>
-                  </div>
-                )}
-                {getUnassignedJuryIds().length > 0 && (
-                  <div className="unassigned-section">
-                    <strong>Juries:</strong>
-                    <div className="selection-preview">
-                      {renderPreviewSummary(getUnassignedJuryIds(), juries)}
-                    </div>
-                  </div>
-                )}
+            {/* Minimal banner for critical issues - only shows if there are conflicts */}
+            {hasConflicts && (
+              <div className="top-banner-minimal">
+                🚫 <strong>Conflicts detected.</strong> Check the status panel on the right for details.
               </div>
-            </div>
-          )}
-
-          {/* Conflicts Panel */}
-          {hasConflicts && (
-            <div className="conflicts-panel">
-              <h3>🚫 Conflicts Detected</h3>
-              <p>The following conflicts must be resolved before saving:</p>
-              <div className="conflicts-content">
-                {conflicts.teamConflicts.length > 0 && (
-                  <div className="conflicts-section">
-                    <strong>Team Conflicts (each team can only be assigned once):</strong>
-                    <ul className="conflicts-list">
-                      {conflicts.teamConflicts.map((conflict) => {
-                        const team = teams.find((t) => t.id === conflict.teamId);
-                        const slotDescriptions = conflict.slotIndexes.map((idx) => {
-                          const slot = wizardState.scheduleSlots[idx];
-                          const room = rooms.find((r) => r.id === slot.roomId);
-                          return `${room?.label || `Room ${slot.roomId}`} - Slot ${slot.slotIndex + 1}`;
-                        });
-                        return (
-                          <li key={conflict.teamId}>
-                            <strong>{team?.label || `Team ${conflict.teamId}`}</strong> appears in: {slotDescriptions.join(', ')}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-                {conflicts.juryConflicts.length > 0 && (
-                  <div className="conflicts-section">
-                    <strong>Jury Conflicts (juries cannot be in overlapping time slots):</strong>
-                    <ul className="conflicts-list">
-                      {conflicts.juryConflicts.map((conflict) => {
-                        const jury = juries.find((j) => j.id === conflict.juryId);
-                        const slotDescriptions = conflict.conflictingSlots.map((cs) => {
-                          const slot = wizardState.scheduleSlots[cs.slotIndex];
-                          const room = rooms.find((r) => r.id === slot.roomId);
-                          const startTime = new Date(cs.timeSlot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          const endTime = new Date(cs.timeSlot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                          return `${room?.label || `Room ${slot.roomId}`} (${startTime}-${endTime})`;
-                        });
-                        return (
-                          <li key={conflict.juryId}>
-                            <strong>{jury?.label || `Jury ${conflict.juryId}`}</strong> has overlapping assignments in: {slotDescriptions.join(', ')}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+            )}
 
           <div className="schedule-grid">
             {wizardState.selectedRoomIds.map((roomId) => {
@@ -890,7 +848,17 @@ const SessionWizard = () => {
                     {roomSlots.map((slot, idx) => {
                       const slotGlobalIdx = wizardState.scheduleSlots.indexOf(slot);
                       return (
-                        <div key={idx} className="schedule-slot">
+                        <div 
+                          key={idx} 
+                          className="schedule-slot"
+                          ref={(el) => {
+                            if (el) {
+                              slotRefs.current.set(slotGlobalIdx, el);
+                            } else {
+                              slotRefs.current.delete(slotGlobalIdx);
+                            }
+                          }}
+                        >
                           <div className="slot-header">
                             <div className="slot-header-left">
                               <strong>Slot {slot.slotIndex + 1}</strong>
@@ -1073,6 +1041,28 @@ const SessionWizard = () => {
               <LoadingSpinner message="Saving session plan…" />
             </div>
           )}
+          </div>
+
+          {/* Status Panel */}
+          <StatusPanel
+            unassignedTeams={getUnassignedTeamIds().map(id => {
+              const team = teams.find(t => t.id === id);
+              return { id, label: team?.label || `Team ${id}` };
+            })}
+            unassignedJuries={getUnassignedJuryIds().map(id => {
+              const jury = juries.find(j => j.id === id);
+              return { id, label: jury?.label || `Jury ${id}` };
+            })}
+            teamConflicts={conflicts.teamConflicts}
+            juryConflicts={conflicts.juryConflicts}
+            teams={teams.map(t => ({ id: t.id, label: t.label }))}
+            juries={juries.map(j => ({ id: j.id, label: j.label }))}
+            rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
+            slots={wizardState.scheduleSlots}
+            onConflictClick={handleScrollToSlot}
+            isOpen={statusPanelOpen}
+            onToggle={() => setStatusPanelOpen(!statusPanelOpen)}
+          />
         </div>
       )}
     </div>

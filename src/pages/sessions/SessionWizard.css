@@ -64,6 +64,20 @@
   margin: 2rem auto;
 }
 
+/* Wizard Content with Status Panel */
+.wizard-content-with-status {
+  display: flex;
+  gap: 0;
+  margin: 2rem 0;
+  position: relative;
+}
+
+.wizard-content-main {
+  flex: 1;
+  max-width: calc(100% - 350px);
+  padding: 0 2rem;
+}
+
 .wizard-content h2 {
   font-size: 1.5rem;
   font-weight: 600;
@@ -199,6 +213,12 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Slot highlight effect when navigating from conflicts */
+.slot-highlighted {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
+  transition: box-shadow 0.3s ease;
+}
+
 .slot-time {
   font-size: 0.875rem;
   color: #64748b;
@@ -228,6 +248,17 @@
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .wizard-content-with-status {
+    flex-direction: column;
+  }
+
+  .wizard-content-main {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
 @media (max-width: 768px) {
   .wizard-steps {
     gap: 1rem;
@@ -253,6 +284,10 @@
 
   .slot-content {
     grid-template-columns: 1fr;
+  }
+
+  .wizard-content-main {
+    padding: 0 0.5rem;
   }
 }
 
@@ -516,4 +551,22 @@
   50% {
     box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
   }
+}
+
+/* Minimal Top Banner */
+.top-banner-minimal {
+  background-color: #fee2e2;
+  border: 2px solid #dc2626;
+  border-radius: 8px;
+  padding: 0.875rem 1.25rem;
+  margin-bottom: 1.5rem;
+  color: #991b1b;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-banner-minimal strong {
+  font-weight: 600;
 }
