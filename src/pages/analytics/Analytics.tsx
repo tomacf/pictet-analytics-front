@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import { AnalyticsService, type AnalyticsSummary, SessionsService, type Session } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
@@ -28,7 +28,7 @@ const Analytics = () => {
     }
   };
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -45,7 +45,7 @@ const Analytics = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedSessionId, startDate, endDate]);
 
   useEffect(() => {
     fetchSessions();
@@ -53,7 +53,7 @@ const Analytics = () => {
 
   useEffect(() => {
     fetchAnalytics();
-  }, [selectedSessionId, startDate, endDate]);
+  }, [fetchAnalytics]);
 
   const handleClearFilters = () => {
     setSelectedSessionId(undefined);

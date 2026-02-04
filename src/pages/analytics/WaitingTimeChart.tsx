@@ -17,6 +17,13 @@ interface WaitingTimeChartProps {
   data: TeamWaitingTime[];
 }
 
+interface ChartDataEntry {
+  name: string;
+  average: number;
+  total: number;
+  teamData: TeamWaitingTime;
+}
+
 const WaitingTimeChart = ({ data }: WaitingTimeChartProps) => {
   const [selectedTeam, setSelectedTeam] = useState<TeamWaitingTime | null>(null);
 
@@ -25,18 +32,22 @@ const WaitingTimeChart = ({ data }: WaitingTimeChartProps) => {
     (a, b) => b.average_waiting_time_minutes - a.average_waiting_time_minutes
   );
 
-  const chartData = sortedData.map((team) => ({
+  const chartData: ChartDataEntry[] = sortedData.map((team) => ({
     name: team.team_label,
     average: parseFloat(team.average_waiting_time_minutes.toFixed(2)),
     total: parseFloat(team.total_waiting_time_minutes.toFixed(2)),
     teamData: team,
   }));
 
-  const handleBarClick = (entry: any) => {
-    if (selectedTeam?.team_id === entry.teamData.team_id) {
-      setSelectedTeam(null);
-    } else {
-      setSelectedTeam(entry.teamData);
+  const handleBarClick = (entry: ChartDataEntry | unknown) => {
+    // Type guard to check if entry has the expected structure
+    if (entry && typeof entry === 'object' && 'teamData' in entry) {
+      const data = entry as ChartDataEntry;
+      if (selectedTeam?.team_id === data.teamData.team_id) {
+        setSelectedTeam(null);
+      } else {
+        setSelectedTeam(data.teamData);
+      }
     }
   };
 
@@ -93,7 +104,7 @@ const WaitingTimeChart = ({ data }: WaitingTimeChartProps) => {
             <Bar
               dataKey="average"
               fill="#cc2d1d"
-              onClick={handleBarClick}
+              onClick={(data) => handleBarClick(data)}
               cursor="pointer"
               radius={[4, 4, 0, 0]}
             >

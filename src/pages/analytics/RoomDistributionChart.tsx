@@ -16,6 +16,11 @@ interface RoomDistributionChartProps {
   data: TeamRoomDistribution[];
 }
 
+interface ChartDataEntry {
+  name: string;
+  [roomLabel: string]: string | number;
+}
+
 type ViewMode = 'stacked' | 'table' | 'heatmap';
 
 const RoomDistributionChart = ({ data }: RoomDistributionChartProps) => {
@@ -29,8 +34,8 @@ const RoomDistributionChart = ({ data }: RoomDistributionChartProps) => {
   ).sort();
 
   // Prepare data for stacked bar chart
-  const chartData = data.map((team) => {
-    const teamData: any = { name: team.team_label };
+  const chartData: ChartDataEntry[] = data.map((team) => {
+    const teamData: ChartDataEntry = { name: team.team_label };
     team.room_counts.forEach((rc) => {
       teamData[rc.room_label] = rc.count;
     });
