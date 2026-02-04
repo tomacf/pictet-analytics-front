@@ -14,6 +14,22 @@
   gap: 1rem;
 }
 
+.sidebar-toggle-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  line-height: 1;
+  transition: all 0.2s;
+  border-radius: 4px;
+}
+
+.sidebar-toggle-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
 .topbar-logo {
   height: 40px;
   width: auto;
@@ -36,6 +52,28 @@
   background-color: #f8fafc;
   border-right: 1px solid #e2e8f0;
   overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 60px;
+}
+
+.sidebar.collapsed .menu-text {
+  display: none;
+}
+
+.sidebar.collapsed .arrow {
+  display: none;
+}
+
+.sidebar.collapsed .icon {
+  display: inline-block;
+}
+
+.sidebar .icon {
+  display: none;
+  font-size: 1.2rem;
 }
 
 .sidebar ul {
@@ -54,6 +92,14 @@
   color: #334155;
   text-decoration: none;
   transition: all 0.2s;
+}
+
+.sidebar.collapsed a {
+  padding: 1rem;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sidebar a:hover {
@@ -86,6 +132,11 @@
   text-align: left;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.sidebar.collapsed .parent-toggle {
+  padding: 1rem;
+  justify-content: center;
 }
 
 .sidebar .parent-toggle:hover {

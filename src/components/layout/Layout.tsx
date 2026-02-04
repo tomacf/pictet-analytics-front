@@ -1,10 +1,21 @@
 import {Link, Outlet, useLocation} from 'react-router-dom';
-import {useState} from 'react';
+import {useState, useEffect} from 'react';
 import './Layout.css';
 
 const Layout = () => {
   const location = useLocation();
   const [isConfigurationExpanded, setIsConfigurationExpanded] = useState(true);
+  
+  // Initialize sidebar collapsed state from localStorage
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+
+  // Persist sidebar collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
@@ -14,14 +25,26 @@ const Layout = () => {
     return isActive('/teams') || isActive('/rooms') || isActive('/juries');
   };
 
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   return (
     <div className="layout">
       <div className="topbar">
+        <button 
+          className="sidebar-toggle-btn"
+          onClick={toggleSidebar}
+          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isSidebarCollapsed ? '☰' : '‹'}
+        </button>
         <img src="/logo1.png" alt="Pictet Analytics Logo" className="topbar-logo" />
         <h1>Pictet Analytics Admin</h1>
       </div>
       <div className="main-container">
-        <nav className="sidebar">
+        <nav className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           <ul>
             <li className={`parent-item ${isConfigurationActive() ? 'active' : ''}`}>
               <button 
@@ -29,26 +52,37 @@ const Layout = () => {
                 onClick={() => setIsConfigurationExpanded(!isConfigurationExpanded)}
                 aria-expanded={isConfigurationExpanded}
                 aria-label="Toggle Configuration menu"
+                title="Configuration"
               >
                 <span className={`arrow ${isConfigurationExpanded ? 'expanded' : ''}`}>▶</span>
-                Configuration
+                <span className="icon">⚙️</span>
+                <span className="menu-text">Configuration</span>
               </button>
-              {isConfigurationExpanded && (
+              {isConfigurationExpanded && !isSidebarCollapsed && (
                 <ul className="sub-items">
                   <li className={isActive('/teams') ? 'active' : ''}>
-                    <Link to="/teams">Teams</Link>
+                    <Link to="/teams" title="Teams">
+                      <span className="menu-text">Teams</span>
+                    </Link>
                   </li>
                   <li className={isActive('/rooms') ? 'active' : ''}>
-                    <Link to="/rooms">Rooms</Link>
+                    <Link to="/rooms" title="Rooms">
+                      <span className="menu-text">Rooms</span>
+                    </Link>
                   </li>
                   <li className={isActive('/juries') ? 'active' : ''}>
-                    <Link to="/juries">Juries</Link>
+                    <Link to="/juries" title="Juries">
+                      <span className="menu-text">Juries</span>
+                    </Link>
                   </li>
                 </ul>
               )}
             </li>
             <li className={isActive('/sessions') ? 'active' : ''}>
-              <Link to="/sessions">Sessions</Link>
+              <Link to="/sessions" title="Sessions">
+                <span className="icon">📅</span>
+                <span className="menu-text">Sessions</span>
+              </Link>
             </li>
           </ul>
         </nav>
