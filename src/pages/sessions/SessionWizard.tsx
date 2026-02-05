@@ -1358,14 +1358,13 @@ const SessionWizard = () => {
               // Compute button state for Magic Rebalance/Undo
               const hasSnapshot = preRebalanceSlots !== null;
               const hasSchedule = wizardState.scheduleSlots.length > 0;
-              const isUndoMode = hasSnapshot;
               // Undo mode: only disabled if saving/rebalancing
               // Magic Rebalance mode: disabled if saving/rebalancing OR no schedule
-              const isMagicRebalanceDisabled = saving || isRebalancing || (isUndoMode ? false : !hasSchedule);
+              const isMagicRebalanceDisabled = saving || isRebalancing || (!hasSnapshot && !hasSchedule);
               const buttonLabel = isRebalancing 
                 ? '⏳ Rebalancing...' 
-                : (isUndoMode ? '↶ Undo Rebalance' : '✨ Magic Rebalance');
-              const buttonTitle = isUndoMode 
+                : (hasSnapshot ? '↶ Undo Rebalance' : '✨ Magic Rebalance');
+              const buttonTitle = hasSnapshot 
                 ? "Restore the previous schedule before rebalancing" 
                 : "Automatically optimize team and jury assignments";
 
@@ -1374,7 +1373,7 @@ const SessionWizard = () => {
                   type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    if (isUndoMode) {
+                    if (hasSnapshot) {
                       handleUndoRebalance();
                     } else {
                       handleMagicRebalance();
