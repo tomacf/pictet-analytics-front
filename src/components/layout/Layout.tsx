@@ -1,5 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Link, Outlet, useLocation} from 'react-router-dom';
+import { User } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './Layout.css';
 
@@ -56,7 +57,7 @@ const Layout = () => {
         <div className="topbar-right">
           {user && (
             <Link to="/profile" className="user-menu" title="Profile">
-              <span className="user-icon">👤</span>
+              <User className="user-icon" size={20} />
               <span>{user.email}</span>
             </Link>
           )}

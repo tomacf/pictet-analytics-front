@@ -246,5 +246,12 @@
 }
 
 .user-icon {
-  font-size: 1.25rem;
+  width: 20px;
+  height: 20px;
+  color: white;
+  transition: color 0.2s;
+}
+
+.user-menu:hover .user-icon {
+  color: var(--color-primary-lighter);
 }
