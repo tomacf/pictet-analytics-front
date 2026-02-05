@@ -41,6 +41,8 @@ export const isoToLocalDateTime = (isoString: string): string => {
   if (!isoString) return '';
   
   try {
+    // Use toDate from date-fns-tz for robust ISO string parsing
+    // This handles various ISO formats and timezone indicators better than new Date()
     const date = toDate(isoString);
     
     // Check if the date is valid
@@ -64,6 +66,7 @@ export const isoToLocalDateTime = (isoString: string): string => {
  */
 export const formatEuropeanDateTime = (date: string | Date): string => {
   try {
+    // Use toDate for consistent ISO string parsing, especially for strings with timezone info
     const dateObj = typeof date === 'string' ? toDate(date) : date;
     
     // Check if the date is valid
