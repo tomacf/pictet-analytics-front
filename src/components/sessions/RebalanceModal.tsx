@@ -1,7 +1,7 @@
-import type { RoomSessionExpanded, IDLabel, RebalanceScores, SessionPlanSlot } from '../../apiConfig';
+import type {IDLabel, RebalanceScores, RoomSessionExpanded, SessionPlanSlot} from '../../apiConfig';
 import Modal from '../shared/Modal';
-import ScheduleOverview from './ScheduleOverview';
 import './RebalanceModal.css';
+import ScheduleOverview from './ScheduleOverview';
 
 interface RebalanceModalProps {
   isOpen: boolean;
@@ -57,7 +57,18 @@ const RebalanceModal = ({
     const teamsMap = new Map(teams.map(t => [t.id, t]));
     const juriesMap = new Map(juries.map(j => [j.id, j]));
 
-    return slots.map((slot, index) => {
+    // Filter out slots with invalid data
+    const validSlots = slots.filter(slot =>
+      slot &&
+      slot.room_id != null &&
+      slot.start_time &&
+      slot.end_time &&
+      slot.team_ids &&
+      slot.jury_ids &&
+      slot.team_ids.length > 0 &&
+      slot.jury_ids.length > 0
+    );
+    return validSlots.map((slot, index) => {
       const room = roomsMap.get(slot.room_id);
       const slotTeams = slot.team_ids.map(id => getOrCreateIDLabel(teamsMap, id, 'Team'));
       const slotJuries = slot.jury_ids.map(id => getOrCreateIDLabel(juriesMap, id, 'Jury'));
@@ -102,7 +113,7 @@ const RebalanceModal = ({
     );
   };
 
-  const subtitle = improved 
+  const subtitle = improved
     ? `Schedule improved! Total penalty reduced from ${formatNumber(beforeScores.total_penalty)} to ${formatNumber(afterScores.total_penalty)}`
     : 'No significant improvement detected';
 
@@ -124,9 +135,9 @@ const RebalanceModal = ({
   );
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose} 
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
       title="✨ Magic Rebalance Results"
       subtitle={subtitle}
       footer={modalFooter}

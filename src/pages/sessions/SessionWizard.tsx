@@ -19,8 +19,8 @@ import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import StatusPanel from '../../components/shared/StatusPanel';
+import {isoToLocalDateTime, localDateTimeToISO} from '../../utils/dateUtils';
 import {format409Error, is409Error} from '../../utils/errorUtils';
-import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import {
   detectJuryConflicts,
   detectTeamConflicts,
@@ -764,7 +764,6 @@ const SessionWizard = () => {
 
     return (
       <div className="schedule-overview">
-        <h3>📋 Schedule Overview</h3>
         <ScheduleOverview
           roomSessions={roomSessions}
           rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
@@ -1161,7 +1160,6 @@ const SessionWizard = () => {
                   return (
                     <div key={roomId} className="tab-panel">
                       <div className="room-schedule">
-                  <h3>{room?.label || `Room ${roomId}`}</h3>
 
                   {/* Room-level summary */}
                   <div className="room-summary">
@@ -1360,11 +1358,11 @@ const SessionWizard = () => {
               // Undo mode: only disabled if saving/rebalancing
               // Magic Rebalance mode: disabled if saving/rebalancing OR no schedule
               const isMagicRebalanceDisabled = saving || isRebalancing || (!hasSnapshot && !hasSchedule);
-              const buttonLabel = isRebalancing 
-                ? '⏳ Rebalancing...' 
+              const buttonLabel = isRebalancing
+                ? '⏳ Rebalancing...'
                 : (hasSnapshot ? '↶ Undo Rebalance' : '✨ Magic Rebalance');
-              const buttonTitle = hasSnapshot 
-                ? "Restore the previous schedule before rebalancing" 
+              const buttonTitle = hasSnapshot
+                ? "Restore the previous schedule before rebalancing"
                 : "Automatically optimize team and jury assignments";
 
               return (

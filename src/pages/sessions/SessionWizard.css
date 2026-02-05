@@ -181,10 +181,6 @@
 }
 
 .room-schedule {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 1.5rem;
-  background-color: #f8fafc;
 }
 
 .room-schedule h3 {
@@ -573,9 +569,6 @@
 /* Schedule Overview Section */
 .schedule-overview {
   background-color: #f8fafc;
-  border: 2px solid #cbd5e1;
-  border-radius: 8px;
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
