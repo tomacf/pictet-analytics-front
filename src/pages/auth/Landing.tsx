@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect } from 'react';
 import { Calendar, Shield, CheckCircle } from 'lucide-react';
+import { LOGO_PATH, APP_NAME } from '../../utils/constants';
 import './Auth.css';
 
 const Landing = () => {
@@ -56,8 +57,8 @@ const Landing = () => {
       {/* Top Navigation Bar */}
       <nav className="landing-topbar">
         <div className="landing-logo">
-          <img src="/logo.png" alt="Competition Platform Logo" />
-          <span className="landing-logo-text">Competition Platform</span>
+          <img src={LOGO_PATH} alt={`${APP_NAME} Logo`} />
+          <span className="landing-logo-text">{APP_NAME}</span>
         </div>
         <button
           className="btn-signin-outline"

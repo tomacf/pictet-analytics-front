@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { LOGO_PATH, APP_NAME } from '../../utils/constants';
 import './Auth.css';
 
 const SignIn = () => {
@@ -37,7 +38,7 @@ const SignIn = () => {
     <div className="auth-container">
       <div className="auth-card">
         <div className="auth-logo">
-          <img src="/logo.png" alt="Competition Platform Logo" />
+          <img src={LOGO_PATH} alt={`${APP_NAME} Logo`} />
         </div>
 
         <div className="auth-header">
