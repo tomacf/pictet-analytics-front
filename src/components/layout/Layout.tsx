@@ -1,9 +1,11 @@
 import {useEffect, useState} from 'react';
 import {Link, Outlet, useLocation} from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import './Layout.css';
 
 const Layout = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const [isConfigurationExpanded, setIsConfigurationExpanded] = useState(true);
 
   // Initialize sidebar collapsed state from localStorage
@@ -40,15 +42,25 @@ const Layout = () => {
   return (
     <div className="layout">
       <div className="topbar">
-        <button
-          className="sidebar-toggle-btn"
-          onClick={toggleSidebar}
-          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isSidebarCollapsed ? <img src="/icon_open.png" className="topbar-collapse-icon" alt="Open Icon"/> : <img src="/icon_close.png" className="topbar-collapse-icon" alt="Close Icon"/>}
-        </button>
-        <h1>Pictet Analytics Admin</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button
+            className="sidebar-toggle-btn"
+            onClick={toggleSidebar}
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? <img src="/icon_open.png" className="topbar-collapse-icon" alt="Open Icon"/> : <img src="/icon_close.png" className="topbar-collapse-icon" alt="Close Icon"/>}
+          </button>
+          <h1>Pictet Analytics Admin</h1>
+        </div>
+        <div className="topbar-right">
+          {user && (
+            <Link to="/profile" className="user-menu" title="Profile">
+              <span className="user-icon">👤</span>
+              <span>{user.email}</span>
+            </Link>
+          )}
+        </div>
       </div>
       <div className="main-container">
         <nav className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
