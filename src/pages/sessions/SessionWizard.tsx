@@ -306,7 +306,7 @@ const SessionWizard = () => {
 
     const totalTeams = sortedTeamIds.length;
     const totalJuries = sortedJuryIds.length;
-    
+
     // Calculate how many slots we need (treat teamsPerRoom as max capacity, not a requirement to fill)
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
@@ -323,11 +323,11 @@ const SessionWizard = () => {
     // Calculate how many juries we need per concurrent time slot
     const roomsInParallel = selectedRoomIds.length;
     const juriesNeededConcurrently = roomsInParallel * juriesPerRoom;
-    
+
     // Determine actual juries per room and which rooms to use if insufficient juries
     let actualJuriesPerRoom = juriesPerRoom;
     let activeRoomIds = selectedRoomIds;
-    
+
     if (juriesNeededConcurrently > totalJuries) {
       // Try to reduce juries per room first
       const maxPossibleJuriesPerRoom = Math.floor(totalJuries / roomsInParallel);
@@ -613,14 +613,15 @@ const SessionWizard = () => {
     // Save current state for undo
     setPreRebalanceSlots([...wizardState.scheduleSlots]);
 
+
     // Apply the rebalanced slots from response.plan
-    const updatedSlots = rebalanceResponse.plan.slots.map((slot, index) => ({
+    const updatedSlots = rebalanceResponse.plan.slots.filter(slot => slot.team_ids !== undefined && slot.team_ids !== null && slot.team_ids.length > 0).map((slot, index) => ({
       roomId: slot.room_id,
       slotIndex: index,
       startTime: slot.start_time,
       endTime: slot.end_time,
-      teamIds: [...slot.team_ids],
-      juryIds: [...slot.jury_ids],
+      teamIds: slot.team_ids ? [...slot.team_ids] : [],
+      juryIds: slot.jury_ids ? [...slot.jury_ids] : [],
     }));
 
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
