@@ -343,9 +343,17 @@ const SessionWizard = () => {
     let juryIndex = 0;
 
     for (const roomId of selectedRoomIds) {
-      // Use existing assignment if available, otherwise create new one
+      // Use existing assignment if it's valid for current settings, otherwise create new one
       const existingAssignment = state.roomJuryAssignments[roomId];
-      if (existingAssignment && existingAssignment.length > 0) {
+      // Check if existing assignment is valid:
+      // 1. Has the expected number of juries (juriesPerRoom), or fewer if not enough juries available
+      // 2. All assigned juries are still in the selected jury list
+      const isValidExistingAssignment = existingAssignment && 
+        existingAssignment.length > 0 &&
+        existingAssignment.length >= juriesPerRoom &&
+        existingAssignment.every(juryId => selectedJuryIds.includes(juryId));
+      
+      if (isValidExistingAssignment) {
         roomJuryAssignments[roomId] = [...existingAssignment];
       } else {
         // Assign juriesPerRoom juries to this room
