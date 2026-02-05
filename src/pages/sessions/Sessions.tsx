@@ -1,11 +1,13 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {toast} from 'react-toastify';
+import {FileUp, Wand2, Plus} from 'lucide-react';
 import {SessionsService, type SessionExpanded, type SessionInput} from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
+import IconButton from '../../components/shared/IconButton';
 import ImportPdfModal from '../../components/sessions/ImportPdfModal';
 import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
 import {formatEuropeanDateTime} from '../../utils/dateUtils';
@@ -235,14 +237,20 @@ const Sessions = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Sessions</h1>
-        <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
-            Import from PDF
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+          <IconButton
+            icon={FileUp}
+            label="Import from PDF"
+            onClick={() => setIsImportModalOpen(true)}
+            variant="secondary"
+            size="md"
+          />
+          <button onClick={() => navigate('/sessions/wizard')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Wand2 size={16} />
+            Wizard
           </button>
-          <button onClick={() => navigate('/sessions/wizard')} className="btn btn-primary">
-            Scheduling Wizard
-          </button>
-          <button onClick={handleCreate} className="btn btn-primary">
+          <button onClick={handleCreate} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Plus size={16} />
             Create Session
           </button>
         </div>
