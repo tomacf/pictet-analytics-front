@@ -234,49 +234,84 @@ const DuplicateSessionModal = ({
         room_ids: formData.room_ids,
       });
 
-      // Step 3: Build schedule slots from source room sessions with time shifting
-      const scheduleSlots = buildScheduleSlotsFromSource(
-        sourceRoomSessions,
-        formData.start_time,
-        formData.time_before_first_slot
-      );
-
-      // Step 3b: Build room-level jury assignments from the first slot of each room
-      // Since juries are assigned at room level, all slots in a room should have the same juries
-      const roomJuryAssignments: Record<number, number[]> = {};
-      for (const roomId of formData.room_ids) {
-        const roomSlot = scheduleSlots.find(slot => slot.roomId === roomId);
-        if (roomSlot && roomSlot.juryIds && roomSlot.juryIds.length > 0) {
-          roomJuryAssignments[roomId] = [...roomSlot.juryIds];
-        } else {
-          roomJuryAssignments[roomId] = [];
-        }
-      }
+      // Check if scheduling parameters have been modified from source session
+      // If so, we need to navigate to step 2 to regenerate the schedule with new parameters
+      // Note: teams_per_room and juries_per_room are not stored on the session model,
+      // so we compare against the default value of 1 (see lines 135-136 and SessionExpanded type)
+      const schedulingParamsChanged = 
+        formData.slot_duration !== sourceSession.slot_duration ||
+        formData.time_between_slots !== sourceSession.time_between_slots ||
+        formData.teams_per_room !== 1 ||
+        formData.juries_per_room !== 1;
 
       toast.success('Session duplicated successfully');
       onClose();
 
-      // Step 4: Navigate to Scheduling Wizard step 3 (Review & Edit) with reconstructed draft
-      navigate('/sessions/wizard', {
-        state: {
-          wizardState: {
-            sessionLabel: formData.label,
-            sessionId: newSession.id,
-            selectedRoomIds: formData.room_ids,
-            selectedTeamIds: formData.team_ids,
-            selectedJuryIds: formData.jury_ids,
-            teamsPerRoom: formData.teams_per_room,
-            juriesPerRoom: formData.juries_per_room,
-            startTime: formData.start_time,
-            slotDuration: formData.slot_duration,
-            timeBetweenSlots: formData.time_between_slots,
-            timeBeforeFirstSlot: formData.time_before_first_slot,
-            scheduleSlots: scheduleSlots, // Reconstructed draft from source session
-            roomJuryAssignments: roomJuryAssignments, // Room-level jury assignments
+      // If scheduling parameters changed and there are source room sessions,
+      // navigate to step 2 to regenerate the schedule with new parameters
+      if (schedulingParamsChanged && sourceRoomSessions.length > 0) {
+        navigate('/sessions/wizard', {
+          state: {
+            wizardState: {
+              sessionLabel: formData.label,
+              sessionId: newSession.id,
+              selectedRoomIds: formData.room_ids,
+              selectedTeamIds: formData.team_ids,
+              selectedJuryIds: formData.jury_ids,
+              teamsPerRoom: formData.teams_per_room,
+              juriesPerRoom: formData.juries_per_room,
+              startTime: formData.start_time,
+              slotDuration: formData.slot_duration,
+              timeBetweenSlots: formData.time_between_slots,
+              timeBeforeFirstSlot: formData.time_before_first_slot,
+              scheduleSlots: [], // Empty - will be regenerated in step 2
+              roomJuryAssignments: {}, // Empty - will be regenerated in step 2
+            },
+            step: 2, // Navigate to step 2 to regenerate schedule with new parameters
           },
-          step: 3, // Navigate directly to step 3 (Review & Edit)
-        },
-      });
+        });
+      } else {
+        // Step 3: Build schedule slots from source room sessions with time shifting
+        const scheduleSlots = buildScheduleSlotsFromSource(
+          sourceRoomSessions,
+          formData.start_time,
+          formData.time_before_first_slot
+        );
+
+        // Step 3b: Build room-level jury assignments from the first slot of each room
+        // Since juries are assigned at room level, all slots in a room should have the same juries
+        const roomJuryAssignments: Record<number, number[]> = {};
+        for (const roomId of formData.room_ids) {
+          const roomSlot = scheduleSlots.find(slot => slot.roomId === roomId);
+          if (roomSlot && roomSlot.juryIds && roomSlot.juryIds.length > 0) {
+            roomJuryAssignments[roomId] = [...roomSlot.juryIds];
+          } else {
+            roomJuryAssignments[roomId] = [];
+          }
+        }
+
+        // Navigate to Scheduling Wizard step 3 (Review & Edit) with reconstructed draft
+        navigate('/sessions/wizard', {
+          state: {
+            wizardState: {
+              sessionLabel: formData.label,
+              sessionId: newSession.id,
+              selectedRoomIds: formData.room_ids,
+              selectedTeamIds: formData.team_ids,
+              selectedJuryIds: formData.jury_ids,
+              teamsPerRoom: formData.teams_per_room,
+              juriesPerRoom: formData.juries_per_room,
+              startTime: formData.start_time,
+              slotDuration: formData.slot_duration,
+              timeBetweenSlots: formData.time_between_slots,
+              timeBeforeFirstSlot: formData.time_before_first_slot,
+              scheduleSlots: scheduleSlots, // Reconstructed draft from source session
+              roomJuryAssignments: roomJuryAssignments, // Room-level jury assignments
+            },
+            step: 3, // Navigate directly to step 3 (Review & Edit)
+          },
+        });
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to duplicate session';
       toast.error(message);
