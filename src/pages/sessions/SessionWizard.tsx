@@ -32,6 +32,7 @@ import './SessionWizard.css';
 interface WizardState {
   // Step 1: Session creation
   sessionLabel: string;
+  startTime: string;
   sessionId?: number;
 
   // Step 2: Scheduling parameters
@@ -40,7 +41,7 @@ interface WizardState {
   selectedJuryIds: number[];
   teamsPerRoom: number;
   juriesPerRoom: number;
-  startTime: string;
+  timeBeforeFirstSlot: number;
   slotDuration: number;
   timeBetweenSlots: number;
 
@@ -83,12 +84,13 @@ const SessionWizard = () => {
     }
     return {
       sessionLabel: '',
+      startTime: new Date().toISOString().slice(0, 16), // Default to current datetime
       selectedRoomIds: [],
       selectedTeamIds: [],
       selectedJuryIds: [],
       teamsPerRoom: 1,
       juriesPerRoom: 1,
-      startTime: new Date().toISOString().slice(0, 16), // Default to current datetime
+      timeBeforeFirstSlot: 60, // Default to 60 minutes
       slotDuration: 30,
       timeBetweenSlots: 5,
       scheduleSlots: [],
@@ -227,9 +229,9 @@ const SessionWizard = () => {
       try {
         const session = await SessionsService.createSession({
           label: wizardState.sessionLabel,
-          start_time: new Date().toISOString(), // Temporary, will be updated
-          slot_duration: 30,
-          time_between_slots: 5,
+          start_time: new Date(wizardState.startTime).toISOString(),
+          slot_duration: wizardState.slotDuration,
+          time_between_slots: wizardState.timeBetweenSlots,
         });
         setWizardState({ ...wizardState, sessionId: session.id });
         toast.success('Session created successfully');
@@ -275,7 +277,7 @@ const SessionWizard = () => {
   // Round-robin scheduling algorithm with jury room affinity
   const generateSchedule = (state: WizardState): ScheduleSlot[] => {
     const slots: ScheduleSlot[] = [];
-    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, slotDuration, timeBetweenSlots } = state;
+    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
 
     const totalTeams = selectedTeamIds.length;
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
@@ -291,9 +293,9 @@ const SessionWizard = () => {
 
     for (let slotIdx = 0; slotIdx < slotsPerRoom; slotIdx++) {
       for (const roomId of selectedRoomIds) {
-        // Calculate time for this slot
+        // Calculate time for this slot: session start time + time before first slot + slot offset
         const slotStartTime = new Date(startTime);
-        slotStartTime.setMinutes(slotStartTime.getMinutes() + slotIdx * (slotDuration + timeBetweenSlots));
+        slotStartTime.setMinutes(slotStartTime.getMinutes() + timeBeforeFirstSlot + slotIdx * (slotDuration + timeBetweenSlots));
 
         const slotEndTime = new Date(slotStartTime);
         slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
@@ -836,6 +838,22 @@ const SessionWizard = () => {
                 placeholder="e.g., Spring 2024 Evaluation"
               />
             </div>
+            <div className="form-group">
+              <label htmlFor="startTimeStep1">Start Time</label>
+              <input
+                type="datetime-local"
+                id="startTimeStep1"
+                value={wizardState.startTime ? new Date(wizardState.startTime).toISOString().slice(0, 16) : ''}
+                onChange={(e) => {
+                  const date = new Date(e.target.value);
+                  if (!isNaN(date.getTime())) {
+                    setWizardState({ ...wizardState, startTime: date.toISOString() });
+                  }
+                }}
+                required
+                className="form-input"
+              />
+            </div>
             <div className="form-actions">
               <button type="submit" className="btn btn-primary" disabled={loading}>
                 {loading ? 'Creating...' : 'Next'}
@@ -1014,13 +1032,33 @@ const SessionWizard = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="startTime">Start Time</label>
+              <label>Start Time</label>
+              <div className="form-readonly-text">
+                {wizardState.startTime ? new Date(wizardState.startTime).toLocaleString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false,
+                }) : 'Not set'}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="timeBeforeFirstSlot">Time before first slot (minutes)</label>
               <input
-                type="datetime-local"
-                id="startTime"
-                value={wizardState.startTime ? new Date(wizardState.startTime).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setWizardState({ ...wizardState, startTime: new Date(e.target.value).toISOString() })}
+                type="number"
+                id="timeBeforeFirstSlot"
+                value={wizardState.timeBeforeFirstSlot}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  if (!isNaN(value)) {
+                    setWizardState({ ...wizardState, timeBeforeFirstSlot: value });
+                  }
+                }}
                 required
+                min="0"
                 className="form-input"
               />
             </div>
