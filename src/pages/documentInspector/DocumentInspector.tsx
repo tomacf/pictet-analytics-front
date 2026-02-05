@@ -6,6 +6,14 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import './DocumentInspector.css';
 
+interface ValidationIssue {
+  code?: string;
+  severity?: string;
+  message?: string;
+  path?: string | null;
+  evidence?: Record<string, any>;
+}
+
 interface InspectionResult {
   extracted: {
     rooms?: string[];
@@ -22,18 +30,8 @@ interface InspectionResult {
     declaredEndTime?: string;
   };
   report: {
-    errors?: Array<{
-      code?: string;
-      severity?: string;
-      message?: string;
-      path?: string | null;
-      evidence?: Record<string, any>;
-    }>;
-    warnings?: Array<{
-      code?: string;
-      severity?: string;
-      message?: string;
-    }>;
+    errors?: ValidationIssue[];
+    warnings?: ValidationIssue[];
     stats?: {
       expectedTeamsCount?: number;
       foundTeamsCount?: number;
@@ -134,7 +132,7 @@ const DocumentInspector = () => {
     }
   };
 
-  const handleIssueClick = (issue: any) => {
+  const handleIssueClick = (issue: ValidationIssue) => {
     // Highlight related slot or room
     if (issue.evidence?.team) {
       setHighlightedSlot(`team-${issue.evidence.team}`);
@@ -449,12 +447,12 @@ const DocumentInspector = () => {
                   <div className="time-mapping">
                     <h4>Time Mapping</h4>
                     <div className="mapping-list">
-                      {Array.from(new Set(result.extracted.slots.map(s => s.startTime))).sort().map((startTime, idx) => {
+                      {Array.from(new Set(result.extracted.slots.map(s => s.startTime))).sort().map((startTime, index) => {
                         const matchingDist = result.normalizedPreview.distributions?.find(d => 
                           result.extracted.slots?.some(s => s.startTime === startTime && d.teams?.some(t => s.teams?.includes(t)))
                         );
                         return matchingDist ? (
-                          <div key={idx} className="mapping-item">
+                          <div key={index} className="mapping-item">
                             {matchingDist.distributionTime} → {startTime}
                           </div>
                         ) : null;
