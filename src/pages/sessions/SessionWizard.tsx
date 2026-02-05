@@ -517,9 +517,13 @@ const SessionWizard = () => {
       if (err instanceof ApiError) {
         const statusCode = err.status;
         const errorBody = err.body;
-        const errorMessage = typeof errorBody === 'string' 
-          ? errorBody 
-          : (errorBody?.message || errorBody?.error || `Error ${statusCode}`);
+        // Extract error message from response body
+        let errorMessage = `Error ${statusCode}`;
+        if (typeof errorBody === 'string') {
+          errorMessage = errorBody;
+        } else if (errorBody && typeof errorBody === 'object') {
+          errorMessage = errorBody.message || errorBody.error || errorMessage;
+        }
         
         toast.error(`Rebalance failed (${statusCode}): ${errorMessage}`, {
           autoClose: 5000,
