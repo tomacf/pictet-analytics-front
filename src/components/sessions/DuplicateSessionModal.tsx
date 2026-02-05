@@ -7,6 +7,7 @@ import {
   JuriesService,
   RoomsService,
   type SessionExpanded,
+  type RoomSessionExpanded,
   type Team,
   type Jury,
   type Room,
@@ -14,10 +15,25 @@ import {
 import Modal from '../shared/Modal';
 import './DuplicateSessionModal.css';
 
+// Schedule slot structure matching the wizard's format
+interface ScheduleSlot {
+  roomId: number;
+  slotIndex: number;
+  startTime: string;
+  endTime: string;
+  teamIds: number[];
+  juryIds: number[];
+}
+
+// Extended SessionExpanded type that may include room_sessions
+interface SessionExpandedWithRoomSessions extends SessionExpanded {
+  room_sessions?: RoomSessionExpanded[];
+}
+
 interface DuplicateSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  sourceSession: SessionExpanded | null;
+  sourceSession: SessionExpandedWithRoomSessions | null;
 }
 
 interface DuplicateFormData {
@@ -63,6 +79,10 @@ const DuplicateSessionModal = ({
   const [allJuries, setAllJuries] = useState<Jury[]>([]);
   const [allRooms, setAllRooms] = useState<Room[]>([]);
 
+  // Source session's room sessions for duplicating schedule structure
+  const [sourceRoomSessions, setSourceRoomSessions] = useState<RoomSessionExpanded[]>([]);
+  const [roomSessionsError, setRoomSessionsError] = useState<string | null>(null);
+
   // Form data
   const [formData, setFormData] = useState<DuplicateFormData>({
     label: '',
@@ -82,21 +102,36 @@ const DuplicateSessionModal = ({
     if (isOpen && sourceSession) {
       const loadResources = async () => {
         setLoadingResources(true);
+        setRoomSessionsError(null);
         try {
-          const [teamsData, juriesData, roomsData] = await Promise.all([
+          // Fetch all resources and source session's room_sessions in parallel
+          const [teamsData, juriesData, roomsData, sourceSessionWithRoomSessions] = await Promise.all([
             TeamsService.getAllTeams(),
             JuriesService.getAllJuries(),
             RoomsService.getAllRooms(),
+            // Fetch the source session with room_sessions expansion if not already included
+            // room_sessions expansion includes nested teams and juries per the API docs
+            sourceSession.room_sessions
+              ? Promise.resolve(sourceSession)
+              : SessionsService.getSessionById(sourceSession.id, 'teams,juries,rooms,room_sessions'),
           ]);
           setAllTeams(teamsData);
           setAllJuries(juriesData);
           setAllRooms(roomsData);
+
+          // Extract room_sessions from the fetched session with safe type checking
+          const sessionData = sourceSessionWithRoomSessions as SessionExpandedWithRoomSessions;
+          const roomSessions = Array.isArray(sessionData.room_sessions) ? sessionData.room_sessions : [];
+          setSourceRoomSessions(roomSessions);
         } catch (err) {
           console.warn('Failed to load resources:', err);
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load room sessions';
+          setRoomSessionsError(errorMessage);
           // Use empty arrays if API fails
           setAllTeams([]);
           setAllJuries([]);
           setAllRooms([]);
+          setSourceRoomSessions([]);
         } finally {
           setLoadingResources(false);
         }
@@ -120,6 +155,58 @@ const DuplicateSessionModal = ({
     }
   }, [isOpen, sourceSession]);
 
+  /**
+   * Builds schedule slots for the wizard from source room sessions.
+   * Shifts each slot's start/end time relative to the new session start time plus time_before_first_slot.
+   * Preserves slot order, duration, and gaps. Ensures determinism by sorting by (start_time, room_id).
+   */
+  const buildScheduleSlotsFromSource = (
+    roomSessions: RoomSessionExpanded[],
+    newStartTime: string,
+    timeBeforeFirstSlot: number
+  ): ScheduleSlot[] => {
+    if (roomSessions.length === 0) {
+      return [];
+    }
+
+    // Sort room sessions deterministically by start_time, then by room_id
+    const sortedRoomSessions = [...roomSessions].sort((a, b) => {
+      const startDiff = new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
+      if (startDiff !== 0) return startDiff;
+      return a.room_id - b.room_id;
+    });
+
+    // Find the earliest room session start time from the source session
+    const earliestSourceSlotTime = new Date(sortedRoomSessions[0].start_time).getTime();
+
+    // Calculate the new base time: new session start + time_before_first_slot
+    const newBaseTime = new Date(newStartTime).getTime() + timeBeforeFirstSlot * 60 * 1000;
+
+    // Build schedule slots with shifted times
+    const slots: ScheduleSlot[] = sortedRoomSessions.map((rs, index) => {
+      // Calculate the offset from the earliest source slot
+      const sourceSlotStart = new Date(rs.start_time).getTime();
+      const sourceSlotEnd = new Date(rs.end_time).getTime();
+      const offsetFromFirst = sourceSlotStart - earliestSourceSlotTime;
+      const duration = sourceSlotEnd - sourceSlotStart;
+
+      // Apply the offset to the new base time
+      const newSlotStart = new Date(newBaseTime + offsetFromFirst);
+      const newSlotEnd = new Date(newSlotStart.getTime() + duration);
+
+      return {
+        roomId: rs.room_id,
+        slotIndex: index,
+        startTime: newSlotStart.toISOString(),
+        endTime: newSlotEnd.toISOString(),
+        teamIds: rs.teams?.map((t) => t.id) || [],
+        juryIds: rs.juries?.map((j) => j.id) || [],
+      };
+    });
+
+    return slots;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -130,6 +217,11 @@ const DuplicateSessionModal = ({
 
     if (!formData.start_time) {
       toast.error('Please select a start time');
+      return;
+    }
+
+    if (!sourceSession) {
+      toast.error('Source session not available');
       return;
     }
 
@@ -155,10 +247,17 @@ const DuplicateSessionModal = ({
         room_ids: formData.room_ids,
       });
 
+      // Step 3: Build schedule slots from source room sessions with time shifting
+      const scheduleSlots = buildScheduleSlotsFromSource(
+        sourceRoomSessions,
+        formData.start_time,
+        formData.time_before_first_slot
+      );
+
       toast.success('Session duplicated successfully');
       onClose();
 
-      // Step 3: Navigate to Scheduling Wizard step 3 (Review & Edit) with preloaded state
+      // Step 4: Navigate to Scheduling Wizard step 3 (Review & Edit) with reconstructed draft
       navigate('/sessions/wizard', {
         state: {
           wizardState: {
@@ -172,7 +271,8 @@ const DuplicateSessionModal = ({
             startTime: isoToLocalDatetimeInput(formData.start_time),
             slotDuration: formData.slot_duration,
             timeBetweenSlots: formData.time_between_slots,
-            scheduleSlots: [], // Empty slots, user will generate or add manually
+            timeBeforeFirstSlot: formData.time_before_first_slot,
+            scheduleSlots: scheduleSlots, // Reconstructed draft from source session
           },
           step: 3, // Navigate directly to step 3 (Review & Edit)
         },
@@ -233,6 +333,30 @@ const DuplicateSessionModal = ({
                   disabled={loading}
                 />
               </div>
+
+              {/* Room sessions duplication info */}
+              {roomSessionsError ? (
+                <div className="duplicate-info duplicate-warning">
+                  <span>⚠️ Could not load source schedule: {roomSessionsError}</span>
+                  <span className="duplicate-info-detail">
+                    The session will be created without room session slots.
+                  </span>
+                </div>
+              ) : sourceRoomSessions.length > 0 ? (
+                <div className="duplicate-info duplicate-success">
+                  <span>✓ {sourceRoomSessions.length} room session slot(s) will be duplicated</span>
+                  <span className="duplicate-info-detail">
+                    Slot times will be shifted relative to the new start time.
+                  </span>
+                </div>
+              ) : (
+                <div className="duplicate-info">
+                  <span>ℹ️ No room session slots to duplicate</span>
+                  <span className="duplicate-info-detail">
+                    You can add slots manually in the Scheduling Wizard.
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="form-section">
