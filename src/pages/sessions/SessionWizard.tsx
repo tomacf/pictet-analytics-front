@@ -526,7 +526,7 @@ const SessionWizard = () => {
         } else if (errorBody && typeof errorBody === 'object') {
           errorMessage = errorBody.message || errorBody.error || errorMessage;
         }
-        
+
         toast.error(`Rebalance failed (${statusCode}): ${errorMessage}`, {
           autoClose: 5000,
         });
@@ -1356,7 +1356,10 @@ const SessionWizard = () => {
             </button>
             <button
               type="button"
-              onClick={handleMagicRebalance}
+              onClick={(e) => {
+              e.preventDefault();
+              handleMagicRebalance();
+              }}
               className="btn btn-magic"
               disabled={saving || isRebalancing || wizardState.scheduleSlots.length === 0}
               title="Automatically optimize team and jury assignments"
