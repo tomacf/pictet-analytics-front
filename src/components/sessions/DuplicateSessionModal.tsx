@@ -247,9 +247,9 @@ const DuplicateSessionModal = ({
       toast.success('Session duplicated successfully');
       onClose();
 
-      // If scheduling parameters changed and there are source room sessions,
-      // navigate to step 2 to regenerate the schedule with new parameters
-      if (schedulingParamsChanged && sourceRoomSessions.length > 0) {
+      // If scheduling parameters changed, navigate to step 2 to regenerate the schedule with new parameters
+      // This ensures that the configured teams_per_room and juries_per_room values are properly applied
+      if (schedulingParamsChanged) {
         navigate('/sessions/wizard', {
           state: {
             wizardState: {
