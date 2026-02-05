@@ -296,16 +296,64 @@
 
 .btn-link {
   background: none;
-  color: #007bff;
-  text-decoration: underline;
-  padding: 0.5rem;
   border: none;
+  color: #cc2d1d;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0;
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
 .btn-link:hover {
-  color: #0056b3;
+  color: #a82417;
+  text-decoration: underline;
+}
+
+/* Form Group Header with Controls (Select All / Clear) */
+.form-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.select-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.control-separator {
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
+/* Magic Rebalance Button Style */
+.btn-magic {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.btn-magic:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a67d8 0%, #6b4091 100%);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-magic:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Responsive adjustments */

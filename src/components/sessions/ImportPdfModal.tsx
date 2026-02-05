@@ -79,8 +79,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
 
-    // Auto-fill session label with filename (without extension) if not already set or empty
-    const sessionLabel = (formData.sessionLabel && formData.sessionLabel.trim()) || (file ? file.name.replace(/\.[^/.]+$/, '') : '');
+    // Auto-fill session label with filename (without extension) when a file is selected
+    const sessionLabel = file ? file.name.replace(/\.[^/.]+$/, '') : formData.sessionLabel;
 
     setFormData({ ...formData, file, sessionLabel });
 
@@ -298,13 +298,32 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Import from PDF">
       <form className="import-pdf-form" onSubmit={(e) => e.preventDefault()}>
-        {/* File Upload Section */}
+        {/* Step 1: Choose PDF File */}
         <div className="form-section">
-          <h3>1. Provide Required Information</h3>
-
-          {/* Session Label */}
+          <h3>1. Choose PDF File</h3>
           <div className="form-group">
-            <label htmlFor="sessionLabel">Session Label (Default will be the filename)</label>
+            <label htmlFor="pdfFile">PDF File *</label>
+            <input
+              ref={fileInputRef}
+              id="pdfFile"
+              type="file"
+              accept=".pdf"
+              onChange={handleFileChange}
+              disabled={parseState.status === 'parsing'}
+            />
+            {formData.file && (
+              <p className="file-info">Selected: {formData.file.name}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Step 2: Provide Required Information */}
+        <div className="form-section">
+          <h3>2. Provide Required Information</h3>
+
+          {/* Session Label - Auto-filled from filename */}
+          <div className="form-group">
+            <label htmlFor="sessionLabel">Session Label (Auto-filled from filename)</label>
             <input
               id="sessionLabel"
               type="text"
@@ -329,7 +348,31 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
           {/* Jury Pool Selection - REQUIRED */}
           <div className="form-group">
-            <label>Select Jury Pool *</label>
+            <div className="form-group-header">
+              <label>Select Jury Pool *</label>
+              <div className="select-controls">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    const allJuryIds = juries.map((jury) => jury.id);
+                    setFormData({ ...formData, juryPoolIds: allJuryIds });
+                  }}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => {
+                    setFormData({ ...formData, juryPoolIds: [] });
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
             {loadingJuries ? (
               <LoadingSpinner message="Loading juries..." />
             ) : (
@@ -362,32 +405,14 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
               />
             </div>
           </div>
-        </div>
-
-        <div className="form-section">
-          <h3>2. Upload and Parse PDF</h3>
-          <div className="form-group">
-            <label htmlFor="pdfFile">PDF File *</label>
-            <input
-              ref={fileInputRef}
-              id="pdfFile"
-              type="file"
-              accept=".pdf"
-              onChange={handleFileChange}
-              disabled={parseState.status === 'parsing'}
-            />
-            {formData.file && (
-              <p className="file-info">Selected: {formData.file.name}</p>
-            )}
-          </div>
 
           <button
             type="button"
-            className="btn btn-secondary"
+            className="btn-magic"
             onClick={handleParsePdf}
             disabled={!formData.file || parseState.status === 'parsing'}
           >
-            {parseState.status === 'parsing' ? 'Parsing PDF...' : 'Parse PDF'}
+            {parseState.status === 'parsing' ? 'Parsing PDF...' : 'Launch PDF Parsing'}
           </button>
 
           {/* Parse Progress */}
