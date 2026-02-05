@@ -13,6 +13,7 @@ import {
   type SlotAssignment,
 } from '../../utils/validationUtils';
 import { is409Error, format409Error } from '../../utils/errorUtils';
+import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 import './RoomSessions.css';
 
@@ -120,12 +121,12 @@ const RoomSessions = () => {
 
   const handleCreate = () => {
     setEditingId(null);
-    const now = new Date().toISOString().slice(0, 16);
+    const now = new Date().toISOString();
     setFormData({
       room_id: 0,
       session_id: 0,
-      start_time: now, // Default to current datetime
-      end_time: now, // Default to current datetime
+      start_time: now,
+      end_time: now,
       team_ids: [],
       jury_ids: [],
     });
@@ -460,8 +461,13 @@ const RoomSessions = () => {
             <input
               type="datetime-local"
               id="start_time"
-              value={formData.start_time ? new Date(formData.start_time).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, start_time: new Date(e.target.value).toISOString() })}
+              value={isoToLocalDateTime(formData.start_time)}
+              onChange={(e) => {
+                const isoString = localDateTimeToISO(e.target.value);
+                if (isoString) {
+                  setFormData({ ...formData, start_time: isoString });
+                }
+              }}
               required
               className="form-input"
             />
@@ -472,8 +478,13 @@ const RoomSessions = () => {
             <input
               type="datetime-local"
               id="end_time"
-              value={formData.end_time ? new Date(formData.end_time).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, end_time: new Date(e.target.value).toISOString() })}
+              value={isoToLocalDateTime(formData.end_time)}
+              onChange={(e) => {
+                const isoString = localDateTimeToISO(e.target.value);
+                if (isoString) {
+                  setFormData({ ...formData, end_time: isoString });
+                }
+              }}
               required
               className="form-input"
             />

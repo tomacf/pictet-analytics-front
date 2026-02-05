@@ -20,6 +20,7 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import StatusPanel from '../../components/shared/StatusPanel';
 import {format409Error, is409Error} from '../../utils/errorUtils';
+import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import {
   detectJuryConflicts,
   detectTeamConflicts,
@@ -84,7 +85,7 @@ const SessionWizard = () => {
     }
     return {
       sessionLabel: '',
-      startTime: new Date().toISOString().slice(0, 16), // Default to current datetime
+      startTime: new Date().toISOString(), // Store as ISO string
       selectedRoomIds: [],
       selectedTeamIds: [],
       selectedJuryIds: [],
@@ -229,7 +230,7 @@ const SessionWizard = () => {
       try {
         const session = await SessionsService.createSession({
           label: wizardState.sessionLabel,
-          start_time: new Date(wizardState.startTime).toISOString(),
+          start_time: wizardState.startTime,
           slot_duration: wizardState.slotDuration,
           time_between_slots: wizardState.timeBetweenSlots,
         });
@@ -843,11 +844,11 @@ const SessionWizard = () => {
               <input
                 type="datetime-local"
                 id="startTimeStep1"
-                value={wizardState.startTime ? new Date(wizardState.startTime).toISOString().slice(0, 16) : ''}
+                value={isoToLocalDateTime(wizardState.startTime)}
                 onChange={(e) => {
-                  const date = new Date(e.target.value);
-                  if (!isNaN(date.getTime())) {
-                    setWizardState({ ...wizardState, startTime: date.toISOString() });
+                  const isoString = localDateTimeToISO(e.target.value);
+                  if (isoString) {
+                    setWizardState({ ...wizardState, startTime: isoString });
                   }
                 }}
                 required
@@ -1275,19 +1276,18 @@ const SessionWizard = () => {
                         <input
                           type="datetime-local"
                           id={`start-time-${roomId}`}
-                          value={
-                            newSlotForms[roomId]?.startTime
-                              ? new Date(newSlotForms[roomId].startTime).toISOString().slice(0, 16)
-                              : ''
-                          }
+                          value={isoToLocalDateTime(newSlotForms[roomId]?.startTime || '')}
                           onChange={(e) => {
-                            setNewSlotForms({
-                              ...newSlotForms,
-                              [roomId]: {
-                                ...newSlotForms[roomId],
-                                startTime: new Date(e.target.value).toISOString(),
-                              },
-                            });
+                            const isoString = localDateTimeToISO(e.target.value);
+                            if (isoString) {
+                              setNewSlotForms({
+                                ...newSlotForms,
+                                [roomId]: {
+                                  ...newSlotForms[roomId],
+                                  startTime: isoString,
+                                },
+                              });
+                            }
                           }}
                           className="form-input"
                           disabled={saving}
@@ -1298,19 +1298,18 @@ const SessionWizard = () => {
                         <input
                           type="datetime-local"
                           id={`end-time-${roomId}`}
-                          value={
-                            newSlotForms[roomId]?.endTime
-                              ? new Date(newSlotForms[roomId].endTime).toISOString().slice(0, 16)
-                              : ''
-                          }
+                          value={isoToLocalDateTime(newSlotForms[roomId]?.endTime || '')}
                           onChange={(e) => {
-                            setNewSlotForms({
-                              ...newSlotForms,
-                              [roomId]: {
-                                ...newSlotForms[roomId],
-                                endTime: new Date(e.target.value).toISOString(),
-                              },
-                            });
+                            const isoString = localDateTimeToISO(e.target.value);
+                            if (isoString) {
+                              setNewSlotForms({
+                                ...newSlotForms,
+                                [roomId]: {
+                                  ...newSlotForms[roomId],
+                                  endTime: isoString,
+                                },
+                              });
+                            }
                           }}
                           className="form-input"
                           disabled={saving}

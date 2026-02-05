@@ -13,6 +13,7 @@ import {
   type Room,
 } from '../../apiConfig';
 import Modal from '../shared/Modal';
+import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import './DuplicateSessionModal.css';
 
 // Schedule slot structure matching the wizard's format
@@ -48,21 +49,6 @@ interface DuplicateFormData {
   jury_ids: number[];
   room_ids: number[];
 }
-
-// Helper function to convert ISO string to local datetime-local format
-const isoToLocalDatetimeInput = (isoString: string): string => {
-  if (!isoString) return '';
-  const date = new Date(isoString);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-};
-
-// Helper function to convert datetime-local input to ISO string
-const localDatetimeInputToISO = (localDatetime: string): string => {
-  if (!localDatetime) return '';
-  return new Date(localDatetime).toISOString();
-};
 
 const DuplicateSessionModal = ({
   isOpen,
@@ -268,7 +254,7 @@ const DuplicateSessionModal = ({
             selectedJuryIds: formData.jury_ids,
             teamsPerRoom: formData.teams_per_room,
             juriesPerRoom: formData.juries_per_room,
-            startTime: isoToLocalDatetimeInput(formData.start_time),
+            startTime: formData.start_time,
             slotDuration: formData.slot_duration,
             timeBetweenSlots: formData.time_between_slots,
             timeBeforeFirstSlot: formData.time_before_first_slot,
@@ -324,10 +310,13 @@ const DuplicateSessionModal = ({
                 <input
                   type="datetime-local"
                   id="duplicate-start-time"
-                  value={isoToLocalDatetimeInput(formData.start_time)}
-                  onChange={(e) =>
-                    setFormData({ ...formData, start_time: localDatetimeInputToISO(e.target.value) })
-                  }
+                  value={isoToLocalDateTime(formData.start_time)}
+                  onChange={(e) => {
+                    const isoString = localDateTimeToISO(e.target.value);
+                    if (isoString) {
+                      setFormData({ ...formData, start_time: isoString });
+                    }
+                  }}
                   required
                   className="form-input"
                   disabled={loading}

@@ -1,5 +1,5 @@
 import { format, parse } from 'date-fns';
-import { formatInTimeZone, toDate } from 'date-fns-tz';
+import { toDate } from 'date-fns-tz';
 
 /**
  * Converts a datetime-local input value (YYYY-MM-DDTHH:mm) to an ISO string
