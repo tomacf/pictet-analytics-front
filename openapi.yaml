@@ -2497,6 +2497,255 @@ paths:
               schema:
                 type: string
 
+  /api/document-inspector:
+    post:
+      tags:
+        - Import
+      summary: Inspect and validate PDF schedule document
+      description: |
+        **Document Inspector** validates a PDF schedule against expected teams and rules.
+        This is event-critical: correctness, determinism, and clear errors matter more than features.
+
+        **Features:**
+        - Parses PDF schedule (rooms, slots, distribution times)
+        - Validates team presence, uniqueness, and distribution ordering
+        - Returns deterministic, explainable validation report
+        - Provides normalized preview for diffing/trust UI
+
+        **Validation Rules:**
+        - **A) Team presence & uniqueness:** All expected teams must appear exactly once
+        - **B) Slot structure:** Slots must have consistent room counts
+        - **C) Distribution matching:** Distribution groups must match start time groups
+        - **D) Distribution ordering:** Earlier distribution → earlier or equal start time
+        - **E) Slot duration:** Gaps between slots must match declared duration
+
+        **Request Format:**
+        - `pdf`: PDF file (multipart/form-data)
+        - `request`: JSON with expectedTeams, optional strictMode, knownRooms, expectedRoomCount
+
+        **Response includes:**
+        - `extracted`: Raw data from PDF (rooms, slots, distributions, declared duration)
+        - `report`: Errors, warnings, and statistics
+        - `normalizedPreview`: Stable canonical representation for diffing
+
+        **Error Codes:**
+        - `TEAM_MISSING`: Expected team not found in schedule
+        - `TEAM_DUPLICATE`: Team appears more than once
+        - `TEAM_UNEXPECTED`: Team in PDF but not in expectedTeams
+        - `SLOT_ROW_MALFORMED`: Slot has inconsistent room count or no teams
+        - `DISTRIBUTION_ORDER_MISMATCH`: Distribution/start time ordering violated
+        - `DISTRIBUTION_GROUP_MISMATCH`: Distribution groups don't match start groups
+        - `TEAM_DISTRIBUTION_START_INVERSION`: Team received later but starts earlier
+        - `SLOT_DURATION_MISMATCH`: Slot gaps don't match declared duration
+        - `PARSE_FAILED`: Could not parse PDF structure
+      operationId: inspectDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - pdf
+                - request
+              properties:
+                pdf:
+                  type: string
+                  format: binary
+                  description: PDF file containing the schedule to validate
+                request:
+                  type: string
+                  description: JSON string with validation parameters
+                  example: |
+                    {
+                      "expectedTeams": ["A1", "A2", "B1", "B2"],
+                      "strictMode": true,
+                      "knownRooms": ["Salle1", "Salle2"],
+                      "expectedRoomCount": 2
+                    }
+      responses:
+        '200':
+          description: Document inspection completed
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - extracted
+                  - report
+                  - normalizedPreview
+                properties:
+                  extracted:
+                    type: object
+                    description: Raw data extracted from PDF
+                    properties:
+                      rooms:
+                        type: array
+                        items:
+                          type: string
+                        example: ["Salle1", "Salle2", "Salle3"]
+                      slots:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            startTime:
+                              type: string
+                              example: "15:30"
+                            roomLabel:
+                              type: string
+                              example: "Salle1"
+                            teams:
+                              type: array
+                              items:
+                                type: string
+                              example: ["A1", "A2", "A3"]
+                      distributions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            distributionTime:
+                              type: string
+                              example: "14:00"
+                            teams:
+                              type: array
+                              items:
+                                type: string
+                              example: ["A1", "A2", "A3"]
+                      declaredSlotDurationMinutes:
+                        type: integer
+                        example: 30
+                      declaredEndTime:
+                        type: string
+                        example: "18:10"
+                  report:
+                    type: object
+                    description: Validation report with errors and warnings
+                    properties:
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                              example: "TEAM_MISSING"
+                            severity:
+                              type: string
+                              example: "error"
+                            message:
+                              type: string
+                              example: "Expected team 'A5' not found in schedule"
+                            path:
+                              type: string
+                              nullable: true
+                            evidence:
+                              type: object
+                              additionalProperties: true
+                              example:
+                                team: "A5"
+                      warnings:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            code:
+                              type: string
+                            severity:
+                              type: string
+                            message:
+                              type: string
+                      stats:
+                        type: object
+                        properties:
+                          expectedTeamsCount:
+                            type: integer
+                            example: 24
+                          foundTeamsCount:
+                            type: integer
+                            example: 24
+                          missingCount:
+                            type: integer
+                            example: 0
+                          duplicateCount:
+                            type: integer
+                            example: 0
+                          unexpectedCount:
+                            type: integer
+                            example: 0
+                          slotCount:
+                            type: integer
+                            example: 8
+                          roomsCount:
+                            type: integer
+                            example: 3
+                  normalizedPreview:
+                    type: object
+                    description: Stable canonical representation for diffing
+                    properties:
+                      slots:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            startTime:
+                              type: string
+                            roomLabel:
+                              type: string
+                            teams:
+                              type: array
+                              items:
+                                type: string
+                              description: Sorted team list
+                      distributions:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            distributionTime:
+                              type: string
+                            teams:
+                              type: array
+                              items:
+                                type: string
+                              description: Sorted team list
+                      metadata:
+                        type: object
+                        properties:
+                          slotDurationMinutes:
+                            type: integer
+                          parsedAt:
+                            type: string
+                            format: date-time
+                          totalTeams:
+                            type: integer
+                          totalRooms:
+                            type: integer
+                          totalSlots:
+                            type: integer
+        '400':
+          description: Invalid request (missing PDF, invalid JSON, empty expectedTeams)
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                missing_pdf:
+                  value: "pdf file is required"
+                missing_request:
+                  value: "request field is required (JSON object with expectedTeams)"
+                invalid_json:
+                  value: "invalid request JSON: unexpected end of JSON input"
+                empty_teams:
+                  value: "expectedTeams is required and must be non-empty"
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
 
 components:
   schemas:
@@ -2935,18 +3184,18 @@ components:
           example: "2024-03-01T12:00:00Z"
         room_assignments:
           type: array
-          description: Room assignments with jury per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned jury.
+          description: Room assignments with juries per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned juries.
           items:
             $ref: '#/components/schemas/RoomAssignment'
           example:
             - room_id: 1
               room_label: Room 101
-              jury_id: 1
-              jury_label: Dr. John Smith
+              jury_ids: [1, 2]
+              jury_labels: ["Dr. John Smith", "Prof. Jane Doe"]
             - room_id: 2
               room_label: Room 102
-              jury_id: 2
-              jury_label: Prof. Jane Doe
+              jury_ids: [3]
+              jury_labels: ["Dr. Alice Brown"]
 
     RoomAssignment:
       type: object
@@ -2961,15 +3210,18 @@ components:
           type: string
           description: Room label
           example: Room 101
-        jury_id:
-          type: integer
-          nullable: true
-          description: ID of the jury assigned to this room for the session (null if no jury assigned)
-          example: 1
-        jury_label:
-          type: string
-          description: Label of the assigned jury (empty string if no jury assigned)
-          example: Dr. John Smith
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of the juries assigned to this room for the session (empty array if no juries assigned)
+          example: [1, 2]
+        jury_labels:
+          type: array
+          items:
+            type: string
+          description: Labels of the assigned juries (empty array if no juries assigned)
+          example: ["Dr. John Smith", "Prof. Jane Doe"]
         created_at:
           type: string
           format: date-time
@@ -3211,12 +3463,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoomJuryAssignment'
-          description: Room-jury assignments for the session. Each room can have multiple juries assigned based on juries_per_room configuration.
+          description: Room-jury assignments for the session. Each room can have multiple juries assigned.
           example:
             - room_id: 1
               jury_ids: [1, 2]
             - room_id: 2
-              jury_ids: [3, 4]
+              jury_ids: [3]
         slots:
           type: array
           items:
@@ -3237,7 +3489,7 @@ components:
           type: array
           items:
             type: integer
-          description: IDs of juries assigned to this room for the session. Supports multiple juries per room.
+          description: IDs of the juries assigned to this room for the session
           example: [1, 2]
 
     SessionPlanSlot:
