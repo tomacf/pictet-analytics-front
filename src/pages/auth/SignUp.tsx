@@ -3,11 +3,13 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { LOGO_PATH, APP_NAME } from '../../utils/constants';
 import './Auth.css';
 
 const SignUp = () => {
   const navigate = useNavigate();
   const { signup } = useAuth();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,7 +18,7 @@ const SignUp = () => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -47,12 +49,30 @@ const SignUp = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo">
+          <img src={LOGO_PATH} alt={`${APP_NAME} Logo`} />
+        </div>
+
         <div className="auth-header">
-          <h1>Create Account</h1>
-          <p>Sign up to get started with Pictet Analytics.</p>
+          <h1>Create account</h1>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="name">Name</label>
+            <input
+              id="name"
+              type="text"
+              className="form-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your full name"
+              disabled={loading}
+              required
+              autoComplete="name"
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="email">Email</label>
             <input
@@ -64,6 +84,7 @@ const SignUp = () => {
               placeholder="your@email.com"
               disabled={loading}
               required
+              autoComplete="email"
             />
           </div>
 
@@ -79,6 +100,7 @@ const SignUp = () => {
               disabled={loading}
               required
               minLength={6}
+              autoComplete="new-password"
             />
           </div>
 
@@ -94,6 +116,7 @@ const SignUp = () => {
               disabled={loading}
               required
               minLength={6}
+              autoComplete="new-password"
             />
           </div>
 
@@ -102,9 +125,13 @@ const SignUp = () => {
             className="btn-primary btn-full" 
             disabled={loading}
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading ? 'Creating account...' : 'Create account'}
           </button>
         </form>
+
+        <div className="auth-notice">
+          Access is restricted to authorized competition staff.
+        </div>
 
         <div className="auth-footer">
           <p>

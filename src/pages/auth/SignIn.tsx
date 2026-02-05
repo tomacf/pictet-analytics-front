@@ -3,6 +3,7 @@ import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
+import { LOGO_PATH, APP_NAME } from '../../utils/constants';
 import './Auth.css';
 
 const SignIn = () => {
@@ -36,9 +37,12 @@ const SignIn = () => {
   return (
     <div className="auth-container">
       <div className="auth-card">
+        <div className="auth-logo">
+          <img src={LOGO_PATH} alt={`${APP_NAME} Logo`} />
+        </div>
+
         <div className="auth-header">
-          <h1>Sign In</h1>
-          <p>Welcome back! Please sign in to continue.</p>
+          <h1>Sign in</h1>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
@@ -53,6 +57,7 @@ const SignIn = () => {
               placeholder="your@email.com"
               disabled={loading}
               required
+              autoComplete="email"
             />
           </div>
 
@@ -67,6 +72,7 @@ const SignIn = () => {
               placeholder="••••••••"
               disabled={loading}
               required
+              autoComplete="current-password"
             />
           </div>
 
@@ -75,7 +81,7 @@ const SignIn = () => {
             className="btn-primary btn-full" 
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
 
@@ -83,7 +89,7 @@ const SignIn = () => {
           <p>
             Don't have an account?{' '}
             <Link to="/signup" className="auth-link">
-              Create one
+              Create account
             </Link>
           </p>
         </div>
