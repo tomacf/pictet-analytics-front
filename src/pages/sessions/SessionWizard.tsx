@@ -51,8 +51,8 @@ interface WizardState {
   slotDuration: number;
   timeBetweenSlots: number;
 
-  // Room-level jury assignments: roomId → juryId (null means unassigned)
-  roomJuryAssignments: Record<number, number | null>;
+  // Room-level jury assignments: roomId → array of juryIds (supports multiple juries per room)
+  roomJuryAssignments: Record<number, number[]>;
 
   // Step 3: Draft schedule
   scheduleSlots: ScheduleSlot[];
@@ -190,8 +190,8 @@ const SessionWizard = () => {
   // Detect rooms missing juries (warning, not error) - room-level check
   const roomsMissingJuries = useMemo(() => {
     return wizardState.selectedRoomIds.filter(roomId => {
-      const juryId = wizardState.roomJuryAssignments[roomId];
-      return juryId === null || juryId === undefined;
+      const juryIds = wizardState.roomJuryAssignments[roomId];
+      return !juryIds || juryIds.length === 0;
     });
   }, [wizardState.selectedRoomIds, wizardState.roomJuryAssignments]);
 
@@ -311,10 +311,10 @@ const SessionWizard = () => {
   // Round-robin scheduling algorithm with room-level jury assignment
   const generateScheduleWithRoomAssignments = (state: WizardState): { 
     slots: ScheduleSlot[]; 
-    roomJuryAssignments: Record<number, number | null>;
+    roomJuryAssignments: Record<number, number[]>;
   } => {
     const slots: ScheduleSlot[] = [];
-    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
+    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
 
     // Sort teams by their labels (alphanumeric order)
     const sortedTeamIds = [...selectedTeamIds].sort((idA, idB) => {
@@ -337,21 +337,24 @@ const SessionWizard = () => {
     // Calculate how many slots we need
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
-    // Create room-level jury assignments: assign one jury per room
+    // Create room-level jury assignments: assign juriesPerRoom juries per room
     // Use existing assignments if available, otherwise create new ones
-    const roomJuryAssignments: Record<number, number | null> = { ...state.roomJuryAssignments };
+    const roomJuryAssignments: Record<number, number[]> = {};
     let juryIndex = 0;
 
     for (const roomId of selectedRoomIds) {
-      // Only assign if not already assigned
-      if (roomJuryAssignments[roomId] === undefined) {
-        if (juryIndex < sortedJuryIds.length) {
-          roomJuryAssignments[roomId] = sortedJuryIds[juryIndex];
+      // Use existing assignment if available, otherwise create new one
+      const existingAssignment = state.roomJuryAssignments[roomId];
+      if (existingAssignment && existingAssignment.length > 0) {
+        roomJuryAssignments[roomId] = [...existingAssignment];
+      } else {
+        // Assign juriesPerRoom juries to this room
+        const assignedJuries: number[] = [];
+        for (let i = 0; i < juriesPerRoom && juryIndex < sortedJuryIds.length; i++) {
+          assignedJuries.push(sortedJuryIds[juryIndex]);
           juryIndex++;
-        } else {
-          // Not enough juries for all rooms
-          roomJuryAssignments[roomId] = null;
         }
+        roomJuryAssignments[roomId] = assignedJuries;
       }
     }
 
@@ -383,9 +386,9 @@ const SessionWizard = () => {
           }
         }
 
-        // Get jury from room-level assignment
-        const roomJuryId = roomJuryAssignments[roomId];
-        const assignedJuries: number[] = roomJuryId ? [roomJuryId] : [];
+        // Get juries from room-level assignment
+        const roomJuryIds = roomJuryAssignments[roomId] || [];
+        const assignedJuries: number[] = [...roomJuryIds];
 
         // Create slot
         if (assignedTeams.length > 0 || assignedJuries.length > 0) {
@@ -459,10 +462,10 @@ const SessionWizard = () => {
 
       // Build room_jury_assignments from wizard state
       const roomJuryAssignments = Object.entries(wizardState.roomJuryAssignments)
-        .filter(([, juryId]) => juryId !== null && juryId !== undefined)
-        .map(([roomId, juryId]) => ({
+        .filter(([, juryIds]) => juryIds && juryIds.length > 0)
+        .map(([roomId, juryIds]) => ({
           room_id: parseInt(roomId),
-          jury_id: juryId as number,
+          jury_ids: juryIds,
         }));
 
       // Build the session plan according to the API schema
@@ -532,10 +535,10 @@ const SessionWizard = () => {
 
       // Build room_jury_assignments from wizard state
       const roomJuryAssignments = Object.entries(wizardState.roomJuryAssignments)
-        .filter(([, juryId]) => juryId !== null && juryId !== undefined)
-        .map(([roomId, juryId]) => ({
+        .filter(([, juryIds]) => juryIds && juryIds.length > 0)
+        .map(([roomId, juryIds]) => ({
           room_id: parseInt(roomId),
-          jury_id: juryId as number,
+          jury_ids: juryIds,
         }));
 
       const sessionPlan: SessionPlan = {
@@ -630,12 +633,12 @@ const SessionWizard = () => {
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
   };
 
-  // Update room-level jury assignment and propagate to all slots in that room
-  const updateRoomJury = (roomId: number, juryId: number | null) => {
+  // Update room-level jury assignments and propagate to all slots in that room
+  const updateRoomJuries = (roomId: number, juryIds: number[]) => {
     // Update the room-level assignment
     const newRoomJuryAssignments = {
       ...wizardState.roomJuryAssignments,
-      [roomId]: juryId,
+      [roomId]: juryIds,
     };
 
     // Propagate to all slots in this room
@@ -643,7 +646,7 @@ const SessionWizard = () => {
       if (slot.roomId === roomId) {
         return {
           ...slot,
-          juryIds: juryId ? [juryId] : [],
+          juryIds: [...juryIds],
         };
       }
       return slot;
@@ -670,15 +673,15 @@ const SessionWizard = () => {
       ? Math.max(...roomSlots.map((s) => s.slotIndex))
       : -1;
 
-    // Get jury from room-level assignment
-    const roomJuryId = wizardState.roomJuryAssignments[roomId];
+    // Get juries from room-level assignment
+    const roomJuryIds = wizardState.roomJuryAssignments[roomId] || [];
     const newSlot: ScheduleSlot = {
       roomId,
       slotIndex: maxSlotIndex + 1,
       startTime,
       endTime,
       teamIds: [],
-      juryIds: roomJuryId ? [roomJuryId] : [],
+      juryIds: [...roomJuryIds],
     };
 
     setWizardState({ ...wizardState, scheduleSlots: [...wizardState.scheduleSlots, newSlot] });
@@ -706,9 +709,9 @@ const SessionWizard = () => {
   // Helper function to get all assigned jury IDs from room-level assignments
   const getAllAssignedJuryIds = (): Set<number> => {
     const assignedIds = new Set<number>();
-    Object.values(wizardState.roomJuryAssignments).forEach((juryId) => {
-      if (juryId !== null && juryId !== undefined) {
-        assignedIds.add(juryId);
+    Object.values(wizardState.roomJuryAssignments).forEach((juryIds) => {
+      if (juryIds && juryIds.length > 0) {
+        juryIds.forEach((id) => assignedIds.add(id));
       }
     });
     return assignedIds;
@@ -822,13 +825,15 @@ const SessionWizard = () => {
       }),
     }));
 
-    // Build room jury info for header display
+    // Build room jury info for header display (supports multiple juries per room)
     const roomJuryInfo = wizardState.selectedRoomIds.map(roomId => {
-      const juryId = wizardState.roomJuryAssignments[roomId];
-      const jury = juryId ? juriesMap.get(juryId) : null;
+      const juryIds = wizardState.roomJuryAssignments[roomId] || [];
+      const juryLabels = juryIds
+        .map(juryId => juriesMap.get(juryId)?.label)
+        .filter((label): label is string => label !== undefined);
       return {
         roomId,
-        juryLabel: jury?.label || null,
+        juryLabels,
       };
     });
 
@@ -1226,7 +1231,7 @@ const SessionWizard = () => {
                   if (activeTab !== roomId) return null;
 
                   const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
-                  const roomJuryId = wizardState.roomJuryAssignments[roomId];
+                  const roomJuryIds = wizardState.roomJuryAssignments[roomId] || [];
                   const room = rooms.find((r) => r.id === roomId);
 
                   return (
@@ -1237,31 +1242,39 @@ const SessionWizard = () => {
                   <div className="room-jury-assignment-panel">
                     <h4>Room Jury Assignment</h4>
                     <p className="room-jury-info">
-                      Changing the jury here will update all slots in {room?.label || `Room ${roomId}`}
+                      Changing the juries here will update all slots in {room?.label || `Room ${roomId}`}
                     </p>
                     <div className="form-group">
-                      <label htmlFor={`room-jury-${roomId}`}>Assigned Jury</label>
-                      <select
-                        id={`room-jury-${roomId}`}
-                        value={roomJuryId ?? ''}
-                        onChange={(e) => {
-                          const selectedJuryId = e.target.value ? parseInt(e.target.value) : null;
-                          updateRoomJury(roomId, selectedJuryId);
-                        }}
-                        className="form-input"
-                        disabled={saving}
-                      >
-                        <option value="">-- Unassigned --</option>
-                        {juries
-                          .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
-                          .map((jury) => (
-                            <option key={jury.id} value={jury.id}>
-                              {jury.label}
-                            </option>
-                          ))}
-                      </select>
-                      {!roomJuryId && (
+                      <label htmlFor={`room-jury-${roomId}`}>Assigned Juries ({wizardState.juriesPerRoom} per room)</label>
+                      {(() => {
+                        const availableJuries = juries.filter((jury) => wizardState.selectedJuryIds.includes(jury.id));
+                        const selectSize = Math.min(5, availableJuries.length);
+                        return (
+                          <select
+                            id={`room-jury-${roomId}`}
+                            multiple
+                            value={roomJuryIds.map(String)}
+                            onChange={(e) => {
+                              const selectedJuryIds = Array.from(e.target.selectedOptions).map((opt) => parseInt(opt.value));
+                              updateRoomJuries(roomId, selectedJuryIds);
+                            }}
+                            className="form-input multi-select"
+                            disabled={saving}
+                            size={selectSize}
+                          >
+                            {availableJuries.map((jury) => (
+                              <option key={jury.id} value={jury.id}>
+                                {jury.label}
+                              </option>
+                            ))}
+                          </select>
+                        );
+                      })()}
+                      {roomJuryIds.length === 0 && (
                         <span className="warning-badge">⚠ No jury assigned</span>
+                      )}
+                      {roomJuryIds.length > 0 && roomJuryIds.length < wizardState.juriesPerRoom && (
+                        <span className="warning-badge">⚠ Only {roomJuryIds.length} of {wizardState.juriesPerRoom} juries assigned</span>
                       )}
                     </div>
                   </div>
@@ -1524,7 +1537,7 @@ const SessionWizard = () => {
             juryConflicts={conflicts.juryConflicts}
             roomJuryAssignments={wizardState.selectedRoomIds.map(roomId => ({
               roomId,
-              juryId: wizardState.roomJuryAssignments[roomId] ?? null,
+              juryIds: wizardState.roomJuryAssignments[roomId] || [],
             }))}
             roomsMissingJuries={roomsMissingJuries}
             teams={teams.map(t => ({ id: t.id, label: t.label }))}
