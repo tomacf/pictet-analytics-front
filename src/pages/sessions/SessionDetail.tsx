@@ -63,6 +63,7 @@ const SessionDetail = () => {
   const [session, setSession] = useState<SessionExpandedWithRoomSessions | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Tab state for room sessions section
@@ -257,6 +258,25 @@ const SessionDetail = () => {
     }
   };
 
+  // Download PDF Handler
+  const handleDownloadPdf = async () => {
+    if (!id) return;
+
+    try {
+      setDownloading(true);
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const pdfUrl = `${apiUrl}/api/sessions/${id}/export.pdf`;
+      
+      // Open PDF in new tab (this will trigger download or display based on browser settings)
+      window.open(pdfUrl, '_blank');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to download PDF';
+      toast.error(message);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const roomSessionColumns = [
     { key: 'id', label: 'ID' },
     {
@@ -323,9 +343,18 @@ const SessionDetail = () => {
           </button>
           <h1>{session.label}</h1>
         </div>
-        <button onClick={handleCreateRoomSession} className="btn btn-primary">
-          Create Room Session
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            onClick={handleDownloadPdf} 
+            className="btn btn-secondary"
+            disabled={downloading}
+          >
+            {downloading ? '📄 Downloading...' : '📄 Download PDF'}
+          </button>
+          <button onClick={handleCreateRoomSession} className="btn btn-primary">
+            Create Room Session
+          </button>
+        </div>
       </div>
 
       {/* Session Details Section */}
