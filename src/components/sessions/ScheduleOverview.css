@@ -163,6 +163,36 @@
   font-style: italic;
 }
 
+/* Warning for cells missing juries */
+.cell-missing-juries {
+  border: 2px solid #f59e0b;
+  background-color: #fffbeb;
+  position: relative;
+}
+
+.missing-juries-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.688rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-top: 0.25rem;
+}
+
+.missing-juries-badge .warning-icon {
+  font-size: 0.875rem;
+  color: #f59e0b;
+}
+
+.missing-juries-badge .warning-text {
+  white-space: nowrap;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .schedule-overview-table {

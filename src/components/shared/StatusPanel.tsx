@@ -7,6 +7,12 @@ interface StatusPanelProps {
   unassignedJuries: Array<{ id: number; label: string }>;
   teamConflicts: TeamConflict[];
   juryConflicts: JuryConflict[];
+  slotsMissingJuries?: Array<{
+    roomId: number;
+    slotIndex: number;
+    startTime: string;
+    endTime: string;
+  }>;
   teams: Array<{ id: number; label: string }>;
   juries: Array<{ id: number; label: string }>;
   rooms: Array<{ id: number; label: string }>;
@@ -28,6 +34,7 @@ const StatusPanel = ({
   unassignedJuries,
   teamConflicts,
   juryConflicts,
+  slotsMissingJuries = [],
   teams,
   juries,
   rooms,
@@ -42,8 +49,9 @@ const StatusPanel = ({
 
   const hasUnassigned = unassignedTeams.length > 0 || unassignedJuries.length > 0;
   const hasConflicts = teamConflicts.length > 0 || juryConflicts.length > 0;
-  const hasIssues = hasUnassigned || hasConflicts;
-  const hasWarnings = hasUnassigned;
+  const hasMissingJuries = slotsMissingJuries.length > 0;
+  const hasIssues = hasUnassigned || hasConflicts || hasMissingJuries;
+  const hasWarnings = hasUnassigned || hasMissingJuries;
   const hasErrors = hasConflicts;
 
   // Get slot description for conflicts
@@ -154,6 +162,41 @@ const StatusPanel = ({
                     {jury.label}
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Slots Missing Juries */}
+          {slotsMissingJuries.length > 0 && (
+            <div className="status-section status-warning">
+              <div className="status-section-header">
+                <span className="status-icon">⚠</span>
+                <h4>Slots Missing Juries ({slotsMissingJuries.length})</h4>
+              </div>
+              <p className="status-description">These slots have no juries assigned:</p>
+              <div className="conflicts-list">
+                {slotsMissingJuries.map((slot) => {
+                  const room = rooms.find((r) => r.id === slot.roomId);
+                  const startTime = new Date(slot.startTime).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  const endTime = new Date(slot.endTime).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  });
+                  
+                  return (
+                    <button
+                      key={`${slot.roomId}-${slot.slotIndex}`}
+                      className="conflict-slot-link"
+                      onClick={() => handleConflictClick(slot.slotIndex)}
+                      title="Click to scroll to this slot"
+                    >
+                      {room?.label || `Room ${slot.roomId}`} - Slot {slot.slotIndex + 1} ({startTime}-{endTime})
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

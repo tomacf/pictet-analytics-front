@@ -91,8 +91,9 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                 </td>
                 {sortedRooms.map(([roomId]) => {
                   const session = slot.sessions.get(roomId);
+                  const hasMissingJuries = session && (!session.juries || session.juries.length === 0);
                   return (
-                    <td key={roomId} className="session-cell">
+                    <td key={roomId} className={`session-cell ${hasMissingJuries ? 'cell-missing-juries' : ''}`}>
                       {session ? (
                         <div className="session-content">
                           {session.teams && session.teams.length > 0 && (
@@ -120,6 +121,12 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                           {(!session.teams || session.teams.length === 0) &&
                            (!session.juries || session.juries.length === 0) && (
                             <span className="empty-session">No assignments</span>
+                          )}
+                          {hasMissingJuries && session.teams && session.teams.length > 0 && (
+                            <div className="missing-juries-badge">
+                              <span className="warning-icon">⚠</span>
+                              <span className="warning-text">No juries</span>
+                            </div>
                           )}
                         </div>
                       ) : (

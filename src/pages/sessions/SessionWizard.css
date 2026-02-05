@@ -215,6 +215,27 @@
   transition: box-shadow 0.3s ease;
 }
 
+/* Slot missing juries warning highlight */
+.slot-missing-juries {
+  border: 2px solid #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+  background-color: #fffbeb;
+}
+
+.slot-missing-juries .slot-header {
+  position: relative;
+}
+
+.slot-missing-juries .slot-header::before {
+  content: '⚠';
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.25rem;
+  color: #f59e0b;
+}
+
 .slot-time {
   font-size: 0.875rem;
   color: #64748b;

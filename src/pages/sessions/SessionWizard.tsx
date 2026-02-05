@@ -166,6 +166,13 @@ const SessionWizard = () => {
 
   const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
 
+  // Detect slots missing juries (warning, not error)
+  const slotsMissingJuries = useMemo(() => {
+    return wizardState.scheduleSlots
+      .map((slot, index) => ({ ...slot, slotIndex: index }))
+      .filter(slot => slot.juryIds.length === 0);
+  }, [wizardState.scheduleSlots]);
+
   // Reset active tab when rooms change or when leaving/entering step 3
   useEffect(() => {
     if (currentStep === 3) {
@@ -281,9 +288,13 @@ const SessionWizard = () => {
     const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
 
     const totalTeams = selectedTeamIds.length;
+    const totalJuries = selectedJuryIds.length;
+    
+    // Calculate how many slots we need (treat teamsPerRoom as max capacity, not a requirement to fill)
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
     let teamIndex = 0;
+    const usedTeams = new Set<number>();
 
     // Track jury-to-room assignments for room affinity
     // Map: roomId -> array of jury IDs currently in that room
@@ -292,8 +303,35 @@ const SessionWizard = () => {
     // Track which juries are available (not yet assigned to any room)
     const availableJuries = new Set(selectedJuryIds);
 
+    // Calculate how many juries we need per concurrent time slot
+    const roomsInParallel = selectedRoomIds.length;
+    const juriesNeededConcurrently = roomsInParallel * juriesPerRoom;
+    
+    // Determine actual juries per room and which rooms to use if insufficient juries
+    let actualJuriesPerRoom = juriesPerRoom;
+    let activeRoomIds = selectedRoomIds;
+    
+    if (juriesNeededConcurrently > totalJuries) {
+      // Try to reduce juries per room first
+      const maxPossibleJuriesPerRoom = Math.floor(totalJuries / roomsInParallel);
+      if (maxPossibleJuriesPerRoom > 0) {
+        actualJuriesPerRoom = maxPossibleJuriesPerRoom;
+      } else {
+        // Not enough juries even with 1 per room, reduce number of rooms
+        const maxPossibleRooms = Math.floor(totalJuries / juriesPerRoom);
+        if (maxPossibleRooms > 0) {
+          activeRoomIds = selectedRoomIds.slice(0, maxPossibleRooms);
+          actualJuriesPerRoom = juriesPerRoom;
+        } else {
+          // Extreme case: use what we can
+          activeRoomIds = totalJuries > 0 ? [selectedRoomIds[0]] : [];
+          actualJuriesPerRoom = totalJuries;
+        }
+      }
+    }
+
     for (let slotIdx = 0; slotIdx < slotsPerRoom; slotIdx++) {
-      for (const roomId of selectedRoomIds) {
+      for (const roomId of activeRoomIds) {
         // Calculate time for this slot: session start time + time before first slot + slot offset
         const slotStartTime = new Date(startTime);
         slotStartTime.setMinutes(slotStartTime.getMinutes() + timeBeforeFirstSlot + slotIdx * (slotDuration + timeBetweenSlots));
@@ -301,12 +339,21 @@ const SessionWizard = () => {
         const slotEndTime = new Date(slotStartTime);
         slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
 
-        // Assign teams (round-robin: cycles through teams if there are more slots than teams)
+        // Assign teams - treat teamsPerRoom as maximum capacity, never duplicate teams
         const assignedTeams: number[] = [];
         for (let i = 0; i < teamsPerRoom; i++) {
-          if (teamIndex < totalTeams * slotsPerRoom * selectedRoomIds.length) {
-            assignedTeams.push(selectedTeamIds[teamIndex % totalTeams]);
-            teamIndex++;
+          // Only assign if we have teams left that haven't been used
+          if (teamIndex < totalTeams) {
+            const teamId = selectedTeamIds[teamIndex];
+            if (!usedTeams.has(teamId)) {
+              assignedTeams.push(teamId);
+              usedTeams.add(teamId);
+              teamIndex++;
+            } else {
+              // This shouldn't happen with our logic, but skip if already used
+              teamIndex++;
+              i--; // Try next team
+            }
           }
         }
 
@@ -315,7 +362,7 @@ const SessionWizard = () => {
 
         if (slotIdx === 0) {
           // First slot: assign juries in round-robin fashion
-          for (let i = 0; i < juriesPerRoom && availableJuries.size > 0; i++) {
+          for (let i = 0; i < actualJuriesPerRoom && availableJuries.size > 0; i++) {
             const jury = Array.from(availableJuries)[0];
             assignedJuries.push(jury);
             availableJuries.delete(jury);
@@ -326,24 +373,24 @@ const SessionWizard = () => {
 
           // First, try to reuse juries from the same room
           for (const juryId of previousJuriesInRoom) {
-            if (assignedJuries.length < juriesPerRoom) {
+            if (assignedJuries.length < actualJuriesPerRoom) {
               assignedJuries.push(juryId);
             }
           }
 
           // If we need more juries, assign from available pool
           for (const juryId of availableJuries) {
-            if (assignedJuries.length >= juriesPerRoom) break;
+            if (assignedJuries.length >= actualJuriesPerRoom) break;
             assignedJuries.push(juryId);
             availableJuries.delete(juryId);
           }
 
           // If still not enough and we have juries in other rooms, take from them
-          if (assignedJuries.length < juriesPerRoom) {
+          if (assignedJuries.length < actualJuriesPerRoom) {
             for (const [otherRoomId, otherJuries] of roomToJuries.entries()) {
               if (otherRoomId === roomId) continue;
               for (const juryId of otherJuries) {
-                if (assignedJuries.length >= juriesPerRoom) break;
+                if (assignedJuries.length >= actualJuriesPerRoom) break;
                 if (!assignedJuries.includes(juryId)) {
                   assignedJuries.push(juryId);
                   // Remove from the other room
@@ -361,7 +408,9 @@ const SessionWizard = () => {
         // Update room-to-jury mapping for the next slot
         roomToJuries.set(roomId, assignedJuries);
 
-        if (assignedTeams.length > 0) {
+        // Create slot even if no teams assigned (but only if we're within active rooms)
+        // This ensures slots exist for jury assignment warnings
+        if (assignedTeams.length > 0 || assignedJuries.length > 0) {
           slots.push({
             roomId,
             slotIndex: slotIdx,
@@ -1180,10 +1229,11 @@ const SessionWizard = () => {
                   <div className="slots-list">
                     {roomSlots.map((slot, idx) => {
                       const slotGlobalIdx = wizardState.scheduleSlots.indexOf(slot);
+                      const isMissingJuries = slot.juryIds.length === 0;
                       return (
                         <div
                           key={idx}
-                          className="schedule-slot"
+                          className={`schedule-slot ${isMissingJuries ? 'slot-missing-juries' : ''}`}
                           ref={(el) => {
                             if (el) {
                               slotRefs.current.set(slotGlobalIdx, el);
@@ -1440,6 +1490,7 @@ const SessionWizard = () => {
             })}
             teamConflicts={conflicts.teamConflicts}
             juryConflicts={conflicts.juryConflicts}
+            slotsMissingJuries={slotsMissingJuries}
             teams={teams.map(t => ({ id: t.id, label: t.label }))}
             juries={juries.map(j => ({ id: j.id, label: j.label }))}
             rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
