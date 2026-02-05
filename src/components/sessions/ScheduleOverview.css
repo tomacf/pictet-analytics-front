@@ -213,3 +213,33 @@
     font-size: 0.6875rem;
   }
 }
+
+/* Room header with jury */
+.room-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.room-header-content .room-name {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.room-header-content .room-jury-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #059669;
+  background-color: #d1fae5;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.room-header-content .room-jury-missing {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #d97706;
+  background-color: #fef3c7;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}

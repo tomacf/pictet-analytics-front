@@ -2,6 +2,11 @@ import {useRef} from 'react';
 import type {JuryConflict, TeamConflict} from '../../utils/validationUtils';
 import './StatusPanel.css';
 
+interface RoomJuryAssignment {
+  roomId: number;
+  juryId: number | null;
+}
+
 interface StatusPanelProps {
   unassignedTeams: Array<{ id: number; label: string }>;
   unassignedJuries: Array<{ id: number; label: string }>;
@@ -13,6 +18,10 @@ interface StatusPanelProps {
     startTime: string;
     endTime: string;
   }>;
+  // Room-level jury assignments for display
+  roomJuryAssignments?: RoomJuryAssignment[];
+  // Rooms that are missing juries (room-level)
+  roomsMissingJuries?: number[];
   teams: Array<{ id: number; label: string }>;
   juries: Array<{ id: number; label: string }>;
   rooms: Array<{ id: number; label: string }>;
@@ -35,6 +44,8 @@ const StatusPanel = ({
   teamConflicts,
   juryConflicts,
   slotsMissingJuries = [],
+  roomJuryAssignments = [],
+  roomsMissingJuries = [],
   teams,
   juries,
   rooms,
@@ -49,7 +60,8 @@ const StatusPanel = ({
 
   const hasUnassigned = unassignedTeams.length > 0 || unassignedJuries.length > 0;
   const hasConflicts = teamConflicts.length > 0 || juryConflicts.length > 0;
-  const hasMissingJuries = slotsMissingJuries.length > 0;
+  const hasMissingJuries = slotsMissingJuries.length > 0 || roomsMissingJuries.length > 0;
+  const hasRoomAssignments = roomJuryAssignments.length > 0;
   const hasIssues = hasUnassigned || hasConflicts || hasMissingJuries;
   const hasWarnings = hasUnassigned || hasMissingJuries;
   const hasErrors = hasConflicts;
@@ -155,7 +167,7 @@ const StatusPanel = ({
                 <span className="status-icon">⚠</span>
                 <h4>Unassigned Juries ({unassignedJuries.length})</h4>
               </div>
-              <p className="status-description">These juries are not assigned to any slot:</p>
+              <p className="status-description">These juries are not assigned to any room:</p>
               <div className="status-chips">
                 {unassignedJuries.map((jury) => (
                   <span key={jury.id} className="status-chip status-chip-warning">
@@ -166,35 +178,55 @@ const StatusPanel = ({
             </div>
           )}
 
-          {/* Slots Missing Juries */}
-          {slotsMissingJuries.length > 0 && (
+          {/* Room Assignments Section */}
+          {hasRoomAssignments && (
+            <div className="status-section status-info">
+              <div className="status-section-header">
+                <span className="status-icon">🏠</span>
+                <h4>Room Assignments</h4>
+              </div>
+              <div className="room-assignments-list">
+                {roomJuryAssignments.map((assignment) => {
+                  const room = rooms.find((r) => r.id === assignment.roomId);
+                  const jury = assignment.juryId ? juries.find((j) => j.id === assignment.juryId) : null;
+                  const isMissing = !assignment.juryId;
+                  
+                  return (
+                    <div 
+                      key={assignment.roomId} 
+                      className={`room-assignment-item ${isMissing ? 'missing' : ''}`}
+                    >
+                      <span className="room-name">{room?.label || `Room ${assignment.roomId}`}</span>
+                      <span className="assignment-arrow">→</span>
+                      {jury ? (
+                        <span className="jury-name">{jury.label}</span>
+                      ) : (
+                        <span className="jury-unassigned">
+                          Unassigned <span className="warning-badge">⚠</span>
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Rooms Missing Juries */}
+          {roomsMissingJuries.length > 0 && (
             <div className="status-section status-warning">
               <div className="status-section-header">
                 <span className="status-icon">⚠</span>
-                <h4>Slots Missing Juries ({slotsMissingJuries.length})</h4>
+                <h4>Rooms Missing Juries ({roomsMissingJuries.length})</h4>
               </div>
-              <p className="status-description">These slots have no juries assigned:</p>
-              <div className="conflicts-list">
-                {slotsMissingJuries.map((slot) => {
-                  const room = rooms.find((r) => r.id === slot.roomId);
-                  const startTime = new Date(slot.startTime).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                  const endTime = new Date(slot.endTime).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  });
-                  
+              <p className="status-description">These rooms have no jury assigned:</p>
+              <div className="status-chips">
+                {roomsMissingJuries.map((roomId) => {
+                  const room = rooms.find((r) => r.id === roomId);
                   return (
-                    <button
-                      key={`${slot.roomId}-${slot.slotIndex}`}
-                      className="conflict-slot-link"
-                      onClick={() => handleConflictClick(slot.slotIndex)}
-                      title="Click to scroll to this slot"
-                    >
-                      {room?.label || `Room ${slot.roomId}`} - Slot {slot.slotIndex + 1} ({startTime}-{endTime})
-                    </button>
+                    <span key={roomId} className="status-chip status-chip-warning">
+                      {room?.label || `Room ${roomId}`}
+                    </span>
                   );
                 })}
               </div>

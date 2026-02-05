@@ -149,3 +149,20 @@
     border-left-color: #cc2d1d;
   }
 }
+
+/* Info message for room-level jury assignment */
+.info-message {
+  background-color: #eff6ff;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  padding: 0.75rem;
+  color: #1e40af;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.info-message strong {
+  flex-shrink: 0;
+}

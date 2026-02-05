@@ -32,6 +32,9 @@ import {
 } from '../../utils/validationUtils';
 import './SessionWizard.css';
 
+// Default scheduling constants
+const DEFAULT_TIME_BEFORE_FIRST_SLOT = 60; // minutes
+
 interface WizardState {
   // Step 1: Session creation
   sessionLabel: string;
@@ -48,6 +51,9 @@ interface WizardState {
   slotDuration: number;
   timeBetweenSlots: number;
 
+  // Room-level jury assignments: roomId → juryId (null means unassigned)
+  roomJuryAssignments: Record<number, number | null>;
+
   // Step 3: Draft schedule
   scheduleSlots: ScheduleSlot[];
 }
@@ -58,6 +64,7 @@ interface ScheduleSlot {
   startTime: string;
   endTime: string;
   teamIds: number[];
+  // juryIds is derived from room-level assignment, kept for display purposes
   juryIds: number[];
 }
 
@@ -84,7 +91,11 @@ const SessionWizard = () => {
   const [wizardState, setWizardState] = useState<WizardState>(() => {
     const navState = location.state as { wizardState?: WizardState; step?: number } | undefined;
     if (navState?.wizardState) {
-      return navState.wizardState;
+      // Ensure roomJuryAssignments exists even if loaded from old state
+      return {
+        ...navState.wizardState,
+        roomJuryAssignments: navState.wizardState.roomJuryAssignments || {},
+      };
     }
     return {
       sessionLabel: '',
@@ -94,9 +105,10 @@ const SessionWizard = () => {
       selectedJuryIds: [],
       teamsPerRoom: 1,
       juriesPerRoom: 1,
-      timeBeforeFirstSlot: 60, // Default to 60 minutes
+      timeBeforeFirstSlot: DEFAULT_TIME_BEFORE_FIRST_SLOT,
       slotDuration: 30,
       timeBetweenSlots: 5,
+      roomJuryAssignments: {},
       scheduleSlots: [],
     };
   });
@@ -175,12 +187,13 @@ const SessionWizard = () => {
 
   const hasConflicts = conflicts.teamConflicts.length > 0 || conflicts.juryConflicts.length > 0;
 
-  // Detect slots missing juries (warning, not error)
-  const slotsMissingJuries = useMemo(() => {
-    return wizardState.scheduleSlots
-      .map((slot, index) => ({ ...slot, slotIndex: index }))
-      .filter(slot => slot.juryIds.length === 0);
-  }, [wizardState.scheduleSlots]);
+  // Detect rooms missing juries (warning, not error) - room-level check
+  const roomsMissingJuries = useMemo(() => {
+    return wizardState.selectedRoomIds.filter(roomId => {
+      const juryId = wizardState.roomJuryAssignments[roomId];
+      return juryId === null || juryId === undefined;
+    });
+  }, [wizardState.selectedRoomIds, wizardState.roomJuryAssignments]);
 
   // Reset active tab when rooms change or when leaving/entering step 3
   useEffect(() => {
@@ -285,19 +298,25 @@ const SessionWizard = () => {
       return;
     }
 
-    // Generate schedule using round-robin
-    const slots = generateSchedule(wizardState);
-    setWizardState({ ...wizardState, scheduleSlots: slots });
+    // Generate room-jury assignments if not already set, and generate schedule
+    const { slots, roomJuryAssignments } = generateScheduleWithRoomAssignments(wizardState);
+    setWizardState({ 
+      ...wizardState, 
+      scheduleSlots: slots,
+      roomJuryAssignments,
+    });
     setCurrentStep(3);
   };
 
-  // Round-robin scheduling algorithm with jury room affinity
-  const generateSchedule = (state: WizardState): ScheduleSlot[] => {
+  // Round-robin scheduling algorithm with room-level jury assignment
+  const generateScheduleWithRoomAssignments = (state: WizardState): { 
+    slots: ScheduleSlot[]; 
+    roomJuryAssignments: Record<number, number | null>;
+  } => {
     const slots: ScheduleSlot[] = [];
-    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
+    const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
 
-    // Sort teams and juries by their labels (alphanumeric order)
-    // This ensures the first schedule suggestion maintains alphabetical then numerical order
+    // Sort teams by their labels (alphanumeric order)
     const sortedTeamIds = [...selectedTeamIds].sort((idA, idB) => {
       const teamA = teams.find(t => t.id === idA);
       const teamB = teams.find(t => t.id === idB);
@@ -305,6 +324,7 @@ const SessionWizard = () => {
       return compareLabelsAlphanumeric(teamA.label, teamB.label);
     });
 
+    // Sort juries by their labels for initial assignment
     const sortedJuryIds = [...selectedJuryIds].sort((idA, idB) => {
       const juryA = juries.find(j => j.id === idA);
       const juryB = juries.find(j => j.id === idB);
@@ -313,61 +333,43 @@ const SessionWizard = () => {
     });
 
     const totalTeams = sortedTeamIds.length;
-    const totalJuries = sortedJuryIds.length;
 
-    // Calculate how many slots we need (treat teamsPerRoom as max capacity, not a requirement to fill)
+    // Calculate how many slots we need
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
 
-    let teamIndex = 0;
-    const usedTeams = new Set<number>();
+    // Create room-level jury assignments: assign one jury per room
+    // Use existing assignments if available, otherwise create new ones
+    const roomJuryAssignments: Record<number, number | null> = { ...state.roomJuryAssignments };
+    let juryIndex = 0;
 
-    // Track jury-to-room assignments for room affinity
-    // Map: roomId -> array of jury IDs currently in that room
-    const roomToJuries = new Map<number, number[]>();
-
-    // Track which juries are available (not yet assigned to any room)
-    const availableJuries = new Set(sortedJuryIds);
-
-    // Calculate how many juries we need per concurrent time slot
-    const roomsInParallel = selectedRoomIds.length;
-    const juriesNeededConcurrently = roomsInParallel * juriesPerRoom;
-
-    // Determine actual juries per room and which rooms to use if insufficient juries
-    let actualJuriesPerRoom = juriesPerRoom;
-    let activeRoomIds = selectedRoomIds;
-
-    if (juriesNeededConcurrently > totalJuries) {
-      // Try to reduce juries per room first
-      const maxPossibleJuriesPerRoom = Math.floor(totalJuries / roomsInParallel);
-      if (maxPossibleJuriesPerRoom > 0) {
-        actualJuriesPerRoom = maxPossibleJuriesPerRoom;
-      } else {
-        // Not enough juries even with 1 per room, reduce number of rooms
-        const maxPossibleRooms = Math.floor(totalJuries / juriesPerRoom);
-        if (maxPossibleRooms > 0) {
-          activeRoomIds = selectedRoomIds.slice(0, maxPossibleRooms);
-          actualJuriesPerRoom = juriesPerRoom;
+    for (const roomId of selectedRoomIds) {
+      // Only assign if not already assigned
+      if (roomJuryAssignments[roomId] === undefined) {
+        if (juryIndex < sortedJuryIds.length) {
+          roomJuryAssignments[roomId] = sortedJuryIds[juryIndex];
+          juryIndex++;
         } else {
-          // Extreme case: use what we can
-          activeRoomIds = totalJuries > 0 ? [selectedRoomIds[0]] : [];
-          actualJuriesPerRoom = totalJuries;
+          // Not enough juries for all rooms
+          roomJuryAssignments[roomId] = null;
         }
       }
     }
 
+    let teamIndex = 0;
+    const usedTeams = new Set<number>();
+
     for (let slotIdx = 0; slotIdx < slotsPerRoom; slotIdx++) {
-      for (const roomId of activeRoomIds) {
-        // Calculate time for this slot: session start time + time before first slot + slot offset
+      for (const roomId of selectedRoomIds) {
+        // Calculate time for this slot
         const slotStartTime = new Date(startTime);
         slotStartTime.setMinutes(slotStartTime.getMinutes() + timeBeforeFirstSlot + slotIdx * (slotDuration + timeBetweenSlots));
 
         const slotEndTime = new Date(slotStartTime);
         slotEndTime.setMinutes(slotEndTime.getMinutes() + slotDuration);
 
-        // Assign teams - treat teamsPerRoom as maximum capacity, never duplicate teams
+        // Assign teams
         const assignedTeams: number[] = [];
         for (let i = 0; i < teamsPerRoom; i++) {
-          // Only assign if we have teams left that haven't been used
           if (teamIndex < totalTeams) {
             const teamId = sortedTeamIds[teamIndex];
             if (!usedTeams.has(teamId)) {
@@ -375,66 +377,17 @@ const SessionWizard = () => {
               usedTeams.add(teamId);
               teamIndex++;
             } else {
-              // This shouldn't happen with our logic, but skip if already used
               teamIndex++;
-              i--; // Try next team
+              i--;
             }
           }
         }
 
-        // Assign juries with room affinity
-        const assignedJuries: number[] = [];
+        // Get jury from room-level assignment
+        const roomJuryId = roomJuryAssignments[roomId];
+        const assignedJuries: number[] = roomJuryId ? [roomJuryId] : [];
 
-        if (slotIdx === 0) {
-          // First slot: assign juries in round-robin fashion
-          for (let i = 0; i < actualJuriesPerRoom && availableJuries.size > 0; i++) {
-            const jury = Array.from(availableJuries)[0];
-            assignedJuries.push(jury);
-            availableJuries.delete(jury);
-          }
-        } else {
-          // Subsequent slots: prefer juries that were in this room in the previous slot
-          const previousJuriesInRoom = roomToJuries.get(roomId) || [];
-
-          // First, try to reuse juries from the same room
-          for (const juryId of previousJuriesInRoom) {
-            if (assignedJuries.length < actualJuriesPerRoom) {
-              assignedJuries.push(juryId);
-            }
-          }
-
-          // If we need more juries, assign from available pool
-          for (const juryId of availableJuries) {
-            if (assignedJuries.length >= actualJuriesPerRoom) break;
-            assignedJuries.push(juryId);
-            availableJuries.delete(juryId);
-          }
-
-          // If still not enough and we have juries in other rooms, take from them
-          if (assignedJuries.length < actualJuriesPerRoom) {
-            for (const [otherRoomId, otherJuries] of roomToJuries.entries()) {
-              if (otherRoomId === roomId) continue;
-              for (const juryId of otherJuries) {
-                if (assignedJuries.length >= actualJuriesPerRoom) break;
-                if (!assignedJuries.includes(juryId)) {
-                  assignedJuries.push(juryId);
-                  // Remove from the other room
-                  roomToJuries.set(
-                    otherRoomId,
-                    otherJuries.filter(j => j !== juryId)
-                  );
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        // Update room-to-jury mapping for the next slot
-        roomToJuries.set(roomId, assignedJuries);
-
-        // Create slot even if no teams assigned (but only if we're within active rooms)
-        // This ensures slots exist for jury assignment warnings
+        // Create slot
         if (assignedTeams.length > 0 || assignedJuries.length > 0) {
           slots.push({
             roomId,
@@ -448,7 +401,7 @@ const SessionWizard = () => {
       }
     }
 
-    return slots;
+    return { slots, roomJuryAssignments };
   };
 
   // Export JSON
@@ -504,6 +457,14 @@ const SessionWizard = () => {
     try {
       setSaving(true);
 
+      // Build room_jury_assignments from wizard state
+      const roomJuryAssignments = Object.entries(wizardState.roomJuryAssignments)
+        .filter(([, juryId]) => juryId !== null && juryId !== undefined)
+        .map(([roomId, juryId]) => ({
+          room_id: parseInt(roomId),
+          jury_id: juryId as number,
+        }));
+
       // Build the session plan according to the API schema
       const sessionPlan: SessionPlan = {
         room_ids: wizardState.selectedRoomIds,
@@ -511,6 +472,7 @@ const SessionWizard = () => {
         jury_ids: wizardState.selectedJuryIds,
         teams_per_room: wizardState.teamsPerRoom,
         juries_per_room: wizardState.juriesPerRoom,
+        room_jury_assignments: roomJuryAssignments,
         slots: wizardState.scheduleSlots.map(slot => ({
           room_id: slot.roomId,
           start_time: slot.startTime,
@@ -568,12 +530,21 @@ const SessionWizard = () => {
         jury_ids: [...slot.juryIds],
       }));
 
+      // Build room_jury_assignments from wizard state
+      const roomJuryAssignments = Object.entries(wizardState.roomJuryAssignments)
+        .filter(([, juryId]) => juryId !== null && juryId !== undefined)
+        .map(([roomId, juryId]) => ({
+          room_id: parseInt(roomId),
+          jury_id: juryId as number,
+        }));
+
       const sessionPlan: SessionPlan = {
         room_ids: wizardState.selectedRoomIds,
         team_ids: wizardState.selectedTeamIds,
         jury_ids: wizardState.selectedJuryIds,
         teams_per_room: wizardState.teamsPerRoom,
         juries_per_room: wizardState.juriesPerRoom,
+        room_jury_assignments: roomJuryAssignments,
         slots: currentSlots,
       };
 
@@ -659,10 +630,30 @@ const SessionWizard = () => {
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
   };
 
-  const updateSlotJuries = (slotIdx: number, juryIds: number[]) => {
-    const updatedSlots = [...wizardState.scheduleSlots];
-    updatedSlots[slotIdx].juryIds = juryIds;
-    setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+  // Update room-level jury assignment and propagate to all slots in that room
+  const updateRoomJury = (roomId: number, juryId: number | null) => {
+    // Update the room-level assignment
+    const newRoomJuryAssignments = {
+      ...wizardState.roomJuryAssignments,
+      [roomId]: juryId,
+    };
+
+    // Propagate to all slots in this room
+    const updatedSlots = wizardState.scheduleSlots.map((slot) => {
+      if (slot.roomId === roomId) {
+        return {
+          ...slot,
+          juryIds: juryId ? [juryId] : [],
+        };
+      }
+      return slot;
+    });
+
+    setWizardState({
+      ...wizardState,
+      roomJuryAssignments: newRoomJuryAssignments,
+      scheduleSlots: updatedSlots,
+    });
   };
 
   // Remove a slot
@@ -679,13 +670,15 @@ const SessionWizard = () => {
       ? Math.max(...roomSlots.map((s) => s.slotIndex))
       : -1;
 
+    // Get jury from room-level assignment
+    const roomJuryId = wizardState.roomJuryAssignments[roomId];
     const newSlot: ScheduleSlot = {
       roomId,
       slotIndex: maxSlotIndex + 1,
       startTime,
       endTime,
       teamIds: [],
-      juryIds: [],
+      juryIds: roomJuryId ? [roomJuryId] : [],
     };
 
     setWizardState({ ...wizardState, scheduleSlots: [...wizardState.scheduleSlots, newSlot] });
@@ -701,16 +694,6 @@ const SessionWizard = () => {
     return Array.from(teamIds);
   };
 
-  // Helper function to get all unique jury IDs assigned to a room's slots
-  const getRoomJuryIds = (roomId: number): number[] => {
-    const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
-    const juryIds = new Set<number>();
-    roomSlots.forEach((slot) => {
-      slot.juryIds.forEach((id) => juryIds.add(id));
-    });
-    return Array.from(juryIds);
-  };
-
   // Helper function to get all assigned team IDs across all slots
   const getAllAssignedTeamIds = (): Set<number> => {
     const assignedIds = new Set<number>();
@@ -720,11 +703,13 @@ const SessionWizard = () => {
     return assignedIds;
   };
 
-  // Helper function to get all assigned jury IDs across all slots
+  // Helper function to get all assigned jury IDs from room-level assignments
   const getAllAssignedJuryIds = (): Set<number> => {
     const assignedIds = new Set<number>();
-    wizardState.scheduleSlots.forEach((slot) => {
-      slot.juryIds.forEach((id) => assignedIds.add(id));
+    Object.values(wizardState.roomJuryAssignments).forEach((juryId) => {
+      if (juryId !== null && juryId !== undefined) {
+        assignedIds.add(juryId);
+      }
     });
     return assignedIds;
   };
@@ -735,7 +720,7 @@ const SessionWizard = () => {
     return wizardState.selectedTeamIds.filter((id) => !assignedIds.has(id));
   };
 
-  // Helper function to get unassigned jury IDs
+  // Helper function to get unassigned jury IDs (juries not assigned to any room)
   const getUnassignedJuryIds = (): number[] => {
     const assignedIds = getAllAssignedJuryIds();
     return wizardState.selectedJuryIds.filter((id) => !assignedIds.has(id));
@@ -837,11 +822,22 @@ const SessionWizard = () => {
       }),
     }));
 
+    // Build room jury info for header display
+    const roomJuryInfo = wizardState.selectedRoomIds.map(roomId => {
+      const juryId = wizardState.roomJuryAssignments[roomId];
+      const jury = juryId ? juriesMap.get(juryId) : null;
+      return {
+        roomId,
+        juryLabel: jury?.label || null,
+      };
+    });
+
     return (
       <div className="schedule-overview">
         <ScheduleOverview
           roomSessions={roomSessions}
           rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
+          roomJuryInfo={roomJuryInfo}
         />
       </div>
     );
@@ -1230,10 +1226,45 @@ const SessionWizard = () => {
                   if (activeTab !== roomId) return null;
 
                   const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
+                  const roomJuryId = wizardState.roomJuryAssignments[roomId];
+                  const room = rooms.find((r) => r.id === roomId);
 
                   return (
                     <div key={roomId} className="tab-panel">
                       <div className="room-schedule">
+
+                  {/* Room-level jury assignment panel */}
+                  <div className="room-jury-assignment-panel">
+                    <h4>Room Jury Assignment</h4>
+                    <p className="room-jury-info">
+                      Changing the jury here will update all slots in {room?.label || `Room ${roomId}`}
+                    </p>
+                    <div className="form-group">
+                      <label htmlFor={`room-jury-${roomId}`}>Assigned Jury</label>
+                      <select
+                        id={`room-jury-${roomId}`}
+                        value={roomJuryId ?? ''}
+                        onChange={(e) => {
+                          const selectedJuryId = e.target.value ? parseInt(e.target.value) : null;
+                          updateRoomJury(roomId, selectedJuryId);
+                        }}
+                        className="form-input"
+                        disabled={saving}
+                      >
+                        <option value="">-- Unassigned --</option>
+                        {juries
+                          .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
+                          .map((jury) => (
+                            <option key={jury.id} value={jury.id}>
+                              {jury.label}
+                            </option>
+                          ))}
+                      </select>
+                      {!roomJuryId && (
+                        <span className="warning-badge">⚠ No jury assigned</span>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Room-level summary */}
                   <div className="room-summary">
@@ -1241,12 +1272,6 @@ const SessionWizard = () => {
                       <strong>All Teams in Room:</strong>
                       <div className="selection-preview">
                         {renderPreviewSummary(getRoomTeamIds(roomId), teams)}
-                      </div>
-                    </div>
-                    <div className="room-summary-section">
-                      <strong>All Juries in Room:</strong>
-                      <div className="selection-preview">
-                        {renderPreviewSummary(getRoomJuryIds(roomId), juries)}
                       </div>
                     </div>
                   </div>
@@ -1311,28 +1336,10 @@ const SessionWizard = () => {
                               </select>
                             </div>
                             <div className="form-group">
-                              <label>Juries</label>
+                              <label>Jury (inherited from room)</label>
                               <div className="selection-preview">
                                 {renderJuriesPreview(slot.juryIds)}
                               </div>
-                              <select
-                                multiple
-                                value={slot.juryIds.map(String)}
-                                onChange={(e) => {
-                                  const selected = Array.from(e.target.selectedOptions).map((opt) => parseInt(opt.value));
-                                  updateSlotJuries(slotGlobalIdx, selected);
-                                }}
-                                className="form-input multi-select"
-                                disabled={saving}
-                              >
-                                {juries
-                                  .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
-                                  .map((jury) => (
-                                    <option key={jury.id} value={jury.id}>
-                                      {jury.label}
-                                    </option>
-                                  ))}
-                              </select>
                             </div>
                           </div>
                         </div>
@@ -1515,7 +1522,11 @@ const SessionWizard = () => {
             })}
             teamConflicts={conflicts.teamConflicts}
             juryConflicts={conflicts.juryConflicts}
-            slotsMissingJuries={slotsMissingJuries}
+            roomJuryAssignments={wizardState.selectedRoomIds.map(roomId => ({
+              roomId,
+              juryId: wizardState.roomJuryAssignments[roomId] ?? null,
+            }))}
+            roomsMissingJuries={roomsMissingJuries}
             teams={teams.map(t => ({ id: t.id, label: t.label }))}
             juries={juries.map(j => ({ id: j.id, label: j.label }))}
             rooms={rooms.map(r => ({ id: r.id, label: r.label }))}

@@ -367,3 +367,62 @@
     padding: 1rem;
   }
 }
+
+/* Room Assignments Section */
+.status-section.status-info {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.status-section.status-info .status-icon {
+  color: #3b82f6;
+}
+
+.status-section.status-info h4 {
+  color: #1e40af;
+}
+
+.room-assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.room-assignment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.room-assignment-item.missing {
+  background-color: #fff3cd;
+  border-color: #ffc107;
+}
+
+.room-assignment-item .room-name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.room-assignment-item .assignment-arrow {
+  color: #9ca3af;
+}
+
+.room-assignment-item .jury-name {
+  color: #059669;
+  font-weight: 500;
+}
+
+.room-assignment-item .jury-unassigned {
+  color: #d97706;
+  font-style: italic;
+}
+
+.room-assignment-item .warning-badge {
+  font-size: 0.75rem;
+}

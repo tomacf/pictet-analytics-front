@@ -296,17 +296,15 @@ const SessionDetail = () => {
     },
     {
       key: 'juries',
-      label: 'Juries',
+      label: 'Room Jury',
       render: (rs: RoomSessionExpanded) => (
         <div className="chips-container">
           {rs.juries && rs.juries.length > 0 ? (
-            rs.juries.map((jury) => (
-              <span key={jury.id} className="chip chip-jury">
-                {jury.label}
-              </span>
-            ))
+            <span className="chip chip-jury">
+              {rs.juries[0].label}
+            </span>
           ) : (
-            <span className="no-data-text">No juries</span>
+            <span className="no-data-text">Not assigned</span>
           )}
         </div>
       ),
@@ -507,9 +505,10 @@ const SessionDetail = () => {
       >
         <form onSubmit={handleSubmit} className="form">
           <div className="warning-message">
-            <strong>⚠️ Note:</strong> Room sessions can only use teams and juries that are already associated with this session.
-            {(session.teams && session.teams.length === 0) || (session.juries && session.juries.length === 0) ? (
-              <span> Please use the "Edit Session Scope" button to add teams and juries to this session first.</span>
+            <strong>⚠️ Note:</strong> Room sessions can only use teams that are already associated with this session.
+            Juries are assigned at the room level for the entire session.
+            {session.teams && session.teams.length === 0 ? (
+              <span> Please use the "Edit Session Scope" button to add teams to this session first.</span>
             ) : null}
           </div>
 
@@ -611,54 +610,10 @@ const SessionDetail = () => {
           </div>
 
           <div className="form-group">
-            <div className="form-group-header">
-              <label>Select Juries</label>
-              <div className="select-controls">
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => {
-                    const allJuryIds = session.juries?.map((jury) => jury.id) || [];
-                    setFormData({ ...formData, jury_ids: allJuryIds });
-                  }}
-                  disabled={saving}
-                >
-                  Select All
-                </button>
-                <span className="control-separator">|</span>
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => {
-                    setFormData({ ...formData, jury_ids: [] });
-                  }}
-                  disabled={saving}
-                >
-                  Clear
-                </button>
-              </div>
-            </div>
-            <div className="checkbox-group">
-              {session.juries && session.juries.length > 0 ? (
-                session.juries.map((jury) => (
-                  <label key={jury.id} className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={formData.jury_ids.includes(jury.id)}
-                      onChange={(e) => {
-                        const newIds = e.target.checked
-                          ? [...formData.jury_ids, jury.id]
-                          : formData.jury_ids.filter((id) => id !== jury.id);
-                        setFormData({ ...formData, jury_ids: newIds });
-                      }}
-                      disabled={saving}
-                    />
-                    {jury.label}
-                  </label>
-                ))
-              ) : (
-                <p className="no-data-text">No juries available for this session</p>
-              )}
+            <label>Jury Assignment</label>
+            <div className="info-message">
+              <strong>ℹ️</strong> Jury is assigned at the room level for all slots. 
+              The jury for this room session is automatically inherited from the room's jury assignment.
             </div>
           </div>
 

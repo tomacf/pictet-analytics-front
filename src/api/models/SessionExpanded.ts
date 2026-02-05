@@ -3,6 +3,7 @@
 /* tslint:disable */
 /* eslint-disable */
 import type { IDLabel } from './IDLabel';
+import type { RoomAssignment } from './RoomAssignment';
 export type SessionExpanded = {
     /**
      * Session ID
@@ -56,5 +57,9 @@ export type SessionExpanded = {
      * End time of the last room session (present when expand=summary is used)
      */
     last_room_session_end_time?: string;
+    /**
+     * Room assignments with jury per room (present when expand=room_assignments is used)
+     */
+    room_assignments?: Array<RoomAssignment>;
 };
 

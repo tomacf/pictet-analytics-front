@@ -800,3 +800,49 @@
   font-size: 1rem;
   font-weight: 500;
 }
+
+/* Room Jury Assignment Panel */
+.room-jury-assignment-panel {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.room-jury-assignment-panel h4 {
+  margin: 0 0 0.5rem 0;
+  color: #495057;
+  font-size: 1rem;
+}
+
+.room-jury-assignment-panel .room-jury-info {
+  color: #6c757d;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.room-jury-assignment-panel .form-group {
+  margin-bottom: 0;
+}
+
+.room-jury-assignment-panel .form-group label {
+  color: #495057;
+  font-weight: 600;
+}
+
+.room-jury-assignment-panel select {
+  max-width: 300px;
+}
+
+.warning-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #fff3cd;
+  color: #856404;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+}
