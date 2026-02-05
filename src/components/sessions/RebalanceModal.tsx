@@ -41,8 +41,6 @@ const RebalanceModal = ({
   const formatNumber = (num: number) => num.toFixed(METRIC_DECIMAL_PLACES);
 
   // Helper function to get or create IDLabel
-
-  // Helper function to get or create IDLabel
   const getOrCreateIDLabel = (
     map: Map<number, { id: number; label: string }>,
     id: number,
@@ -228,6 +226,6 @@ const RebalanceModal = ({
         </div>
       </Modal>
     );
-  };
+};
 
-  export default RebalanceModal;
+export default RebalanceModal;
