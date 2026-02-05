@@ -14,6 +14,7 @@ import {
 } from '../../apiConfig';
 import Modal from '../shared/Modal';
 import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
+import { generateDuplicateLabel } from '../../utils/labelUtils';
 import './DuplicateSessionModal.css';
 
 // Schedule slot structure matching the wizard's format
@@ -126,7 +127,7 @@ const DuplicateSessionModal = ({
 
       // Prefill form from source session
       setFormData({
-        label: `${sourceSession.label} (Copy)`,
+        label: generateDuplicateLabel(sourceSession.label),
         start_time: sourceSession.start_time,
         slot_duration: sourceSession.slot_duration,
         time_between_slots: sourceSession.time_between_slots,

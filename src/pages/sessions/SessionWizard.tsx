@@ -558,6 +558,7 @@ const SessionWizard = () => {
     }));
 
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+    setRebalanceModalOpen(false); // Close the modal after applying
     toast.success('Rebalanced schedule applied');
   };
 
@@ -569,7 +570,6 @@ const SessionWizard = () => {
     setPreRebalanceSlots(null);
     setRebalanceResponse(null);
     setBeforeSlots(null);
-    setRebalanceModalOpen(false);
     toast.success('Rebalance undone');
   };
 
@@ -1353,18 +1353,39 @@ const SessionWizard = () => {
             >
               Back
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-              e.preventDefault();
-              handleMagicRebalance();
-              }}
-              className="btn btn-magic"
-              disabled={saving || isRebalancing || wizardState.scheduleSlots.length === 0}
-              title="Automatically optimize team and jury assignments"
-            >
-              {isRebalancing ? '⏳ Rebalancing...' : '✨ Magic Rebalance'}
-            </button>
+            {(() => {
+              // Compute button state for Magic Rebalance/Undo
+              const hasSnapshot = preRebalanceSlots !== null;
+              const hasSchedule = wizardState.scheduleSlots.length > 0;
+              // Undo mode: only disabled if saving/rebalancing
+              // Magic Rebalance mode: disabled if saving/rebalancing OR no schedule
+              const isMagicRebalanceDisabled = saving || isRebalancing || (!hasSnapshot && !hasSchedule);
+              const buttonLabel = isRebalancing 
+                ? '⏳ Rebalancing...' 
+                : (hasSnapshot ? '↶ Undo Rebalance' : '✨ Magic Rebalance');
+              const buttonTitle = hasSnapshot 
+                ? "Restore the previous schedule before rebalancing" 
+                : "Automatically optimize team and jury assignments";
+
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (hasSnapshot) {
+                      handleUndoRebalance();
+                    } else {
+                      handleMagicRebalance();
+                    }
+                  }}
+                  className="btn btn-magic"
+                  disabled={isMagicRebalanceDisabled}
+                  title={buttonTitle}
+                >
+                  {buttonLabel}
+                </button>
+              );
+            })()}
             <button
               type="button"
               onClick={handleExportJSON}
