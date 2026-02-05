@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 
 interface User {
   id: number;
@@ -35,11 +36,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
-  // Check if user is authenticated on mount
-  useEffect(() => {
-    refreshUser();
-  }, []);
-
   const refreshUser = async () => {
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
@@ -59,6 +55,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     }
   };
+
+  // Check if user is authenticated on mount
+  useEffect(() => {
+    refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const signin = async (email: string, password: string) => {
     const response = await fetch(`${API_URL}/api/auth/signin`, {
