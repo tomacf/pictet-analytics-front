@@ -2,9 +2,16 @@ import React from 'react';
 import type {RoomSessionExpanded} from '../../apiConfig';
 import './ScheduleOverview.css';
 
+interface RoomJuryInfo {
+  roomId: number;
+  juryLabel: string | null;
+}
+
 interface ScheduleOverviewProps {
   roomSessions: RoomSessionExpanded[];
   rooms?: Array<{ id: number; label: string }>;
+  // Optional room-level jury info for display in header
+  roomJuryInfo?: RoomJuryInfo[];
 }
 
 interface TimeSlot {
@@ -13,7 +20,7 @@ interface TimeSlot {
   sessions: Map<number, RoomSessionExpanded>; // roomId -> session
 }
 
-const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms }) => {
+const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms, roomJuryInfo = [] }) => {
   if (!roomSessions || roomSessions.length === 0) {
     return (
       <div className="schedule-overview-empty">
@@ -67,6 +74,19 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
     return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Helper to get room jury label
+  const getRoomJuryLabel = (roomId: number): string | null => {
+    const info = roomJuryInfo.find(r => r.roomId === roomId);
+    if (info) return info.juryLabel;
+    
+    // Fallback: try to get from first session in this room
+    const roomSession = roomSessions.find(s => s.room_id === roomId);
+    if (roomSession?.juries && roomSession.juries.length > 0) {
+      return roomSession.juries[0].label;
+    }
+    return null;
+  };
+
   return (
     <div className="schedule-overview-matrix">
       <div className="schedule-overview-table-wrapper">
@@ -74,11 +94,21 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
           <thead>
             <tr>
               <th className="time-header">Time</th>
-              {sortedRooms.map(([roomId, roomLabel]) => (
-                <th key={roomId} className="room-header">
-                  {roomLabel}
-                </th>
-              ))}
+              {sortedRooms.map(([roomId, roomLabel]) => {
+                const juryLabel = getRoomJuryLabel(roomId);
+                return (
+                  <th key={roomId} className="room-header">
+                    <div className="room-header-content">
+                      <span className="room-name">{roomLabel}</span>
+                      {juryLabel ? (
+                        <span className="room-jury-label">{juryLabel}</span>
+                      ) : (
+                        <span className="room-jury-missing">No jury assigned</span>
+                      )}
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -91,9 +121,8 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                 </td>
                 {sortedRooms.map(([roomId]) => {
                   const session = slot.sessions.get(roomId);
-                  const hasMissingJuries = session && (!session.juries || session.juries.length === 0);
                   return (
-                    <td key={roomId} className={`session-cell ${hasMissingJuries ? 'cell-missing-juries' : ''}`}>
+                    <td key={roomId} className="session-cell">
                       {session ? (
                         <div className="session-content">
                           {session.teams && session.teams.length > 0 && (
@@ -107,26 +136,8 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
                               </div>
                             </div>
                           )}
-                          {session.juries && session.juries.length > 0 && (
-                            <div className="cell-group">
-                              <div className="cell-chips">
-                                {session.juries.map(jury => (
-                                  <span key={jury.id} className="cell-chip chip-jury">
-                                    {jury.label}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          {(!session.teams || session.teams.length === 0) &&
-                           (!session.juries || session.juries.length === 0) && (
-                            <span className="empty-session">No assignments</span>
-                          )}
-                          {hasMissingJuries && session.teams && session.teams.length > 0 && (
-                            <div className="missing-juries-badge">
-                              <span className="warning-icon">⚠</span>
-                              <span className="warning-text">No juries</span>
-                            </div>
+                          {(!session.teams || session.teams.length === 0) && (
+                            <span className="empty-session">No teams</span>
                           )}
                         </div>
                       ) : (

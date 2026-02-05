@@ -252,6 +252,18 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       ? draftPlan.slots[0].team_ids.length
       : 1;
 
+    // Build room-level jury assignments from the first slot of each room
+    // (Since backend assigns juries per room, all slots in a room should have the same jury)
+    const roomJuryAssignments: Record<number, number | null> = {};
+    for (const roomId of selectedRoomIds) {
+      const roomSlot = draftPlan.slots.find(slot => slot.room_id === roomId);
+      if (roomSlot && roomSlot.jury_ids && roomSlot.jury_ids.length > 0) {
+        roomJuryAssignments[roomId] = roomSlot.jury_ids[0];
+      } else {
+        roomJuryAssignments[roomId] = null;
+      }
+    }
+
     // Convert slots to the wizard format
     const scheduleSlots = draftPlan.slots.map((slot, index) => {
       return {
@@ -275,6 +287,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       startTime: formData.sessionDate,
       slotDuration: draftPlan.slot_duration ?? 30,
       timeBetweenSlots: draftPlan.time_between_slots ?? 5,
+      timeBeforeFirstSlot: 60, // Default
+      roomJuryAssignments,
       scheduleSlots,
     };
   };
