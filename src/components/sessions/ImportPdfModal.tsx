@@ -297,8 +297,25 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     setFormData({ ...formData, juryPoolIds: newJuryPoolIds });
   };
 
+  const modalFooter = parseState.status === 'parsed' && (
+    <>
+      <button type="button" className="btn btn-secondary" onClick={onClose}>
+        Cancel
+      </button>
+      <button type="button" className="btn btn-primary" onClick={handleImport}>
+        Import and Review
+      </button>
+    </>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Import from PDF">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="Import from PDF"
+      subtitle="Upload and parse a PDF schedule document"
+      footer={modalFooter}
+    >
       <form className="import-pdf-form" onSubmit={(e) => e.preventDefault()}>
         {/* Step 1: Choose PDF File */}
         <div className="form-section">
@@ -525,22 +542,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
         {/* Review Section - only shown after successful parse */}
         {parseState.status === 'parsed' && (
-          <>
-            <div className="form-section" ref={reviewSectionRef}>
-              <h3>3. Review and Import</h3>
-              <p>PDF has been successfully parsed. Click "Import and Review" to continue to the session wizard.</p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Cancel
-              </button>
-              <button type="button" className="btn btn-primary" onClick={handleImport}>
-                Import and Review
-              </button>
-            </div>
-          </>
+          <div className="form-section" ref={reviewSectionRef}>
+            <h3>3. Review and Import</h3>
+            <p>PDF has been successfully parsed. Click "Import and Review" to continue to the session wizard.</p>
+          </div>
         )}
       </form>
     </Modal>

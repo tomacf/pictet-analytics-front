@@ -280,9 +280,30 @@ const DuplicateSessionModal = ({
 
   if (!sourceSession) return null;
 
+  const modalFooter = !loadingResources && (
+    <>
+      <button
+        type="button"
+        onClick={handleClose}
+        className="btn btn-secondary"
+        disabled={loading}
+      >
+        Cancel
+      </button>
+      <button type="submit" form="duplicate-session-form" className="btn btn-primary" disabled={loading}>
+        {loading ? 'Duplicating...' : 'Duplicate & Configure'}
+      </button>
+    </>
+  );
+
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Duplicate Session">
-      <form onSubmit={handleSubmit} className="form duplicate-session-form">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose} 
+      title="Duplicate Session"
+      footer={modalFooter}
+    >
+      <form id="duplicate-session-form" onSubmit={handleSubmit} className="form duplicate-session-form">
         {loadingResources ? (
           <div className="loading-container">
             <span>Loading resources...</span>
@@ -580,20 +601,6 @@ const DuplicateSessionModal = ({
                   </div>
                 </div>
               )}
-            </div>
-
-            <div className="form-actions">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="btn btn-secondary"
-                disabled={loading}
-              >
-                Cancel
-              </button>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Duplicating...' : 'Duplicate & Configure'}
-              </button>
             </div>
           </>
         )}
