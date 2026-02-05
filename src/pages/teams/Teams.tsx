@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { Plus, ListPlus } from 'lucide-react';
 import { TeamsService, type Team, type TeamInput } from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import IconButton from '../../components/shared/IconButton';
 import './Teams.css';
 
 const Teams = () => {
@@ -148,12 +150,17 @@ const Teams = () => {
     <div className="page-container">
       <div className="page-header">
         <h1>Teams</h1>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button onClick={handleCreate} className="btn btn-primary">
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+          <IconButton
+            icon={ListPlus}
+            label="Bulk Create"
+            onClick={handleBulkCreate}
+            variant="secondary"
+            size="md"
+          />
+          <button onClick={handleCreate} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Plus size={16} />
             Create Team
-          </button>
-          <button onClick={handleBulkCreate} className="btn btn-primary">
-            Bulk Create
           </button>
         </div>
       </div>

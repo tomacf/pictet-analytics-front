@@ -1,3 +1,5 @@
+import { Pencil, Trash2, Copy } from 'lucide-react';
+import IconButton from './IconButton';
 import './DataTable.css';
 
 interface Column<T> {
@@ -52,28 +54,28 @@ function DataTable<T extends Record<string, unknown>>({
                 {(onEdit || onDelete || onDuplicate) && (
                   <td className="actions">
                     {onEdit && (
-                      <button
+                      <IconButton
+                        icon={Pencil}
+                        label="Edit"
                         onClick={() => onEdit(item)}
-                        className="btn btn-edit"
-                      >
-                        Edit
-                      </button>
+                        variant="edit"
+                      />
                     )}
                     {onDuplicate && (
-                      <button
+                      <IconButton
+                        icon={Copy}
+                        label="Duplicate"
                         onClick={() => onDuplicate(item)}
-                        className="btn btn-duplicate"
-                      >
-                        Duplicate
-                      </button>
+                        variant="duplicate"
+                      />
                     )}
                     {onDelete && (
-                      <button
+                      <IconButton
+                        icon={Trash2}
+                        label="Delete"
                         onClick={() => onDelete(item)}
-                        className="btn btn-delete"
-                      >
-                        Delete
-                      </button>
+                        variant="danger"
+                      />
                     )}
                   </td>
                 )}

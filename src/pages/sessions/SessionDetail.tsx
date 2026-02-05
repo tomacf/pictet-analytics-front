@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { ArrowLeft, FileDown, Copy, Plus, Settings } from 'lucide-react';
 import { 
   SessionsService, 
   TeamsService, 
@@ -16,6 +17,7 @@ import DataTable from '../../components/shared/DataTable';
 import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import IconButton from '../../components/shared/IconButton';
 import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
 import '../teams/Teams.css';
@@ -344,27 +346,34 @@ const SessionDetail = () => {
   return (
     <div className="page-container">
       <div className="page-header">
-        <div>
-          <button onClick={() => navigate('/sessions')} className="btn btn-secondary" style={{ marginBottom: '0.5rem' }}>
-            ← Back to Sessions
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <IconButton
+            icon={ArrowLeft}
+            label="Back to Sessions"
+            onClick={() => navigate('/sessions')}
+            variant="secondary"
+            size="md"
+          />
           <h1>{session.label}</h1>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button 
-            onClick={handleDownloadPdf} 
-            className="btn btn-secondary"
+        <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
+          <IconButton
+            icon={FileDown}
+            label="Export PDF"
+            onClick={handleDownloadPdf}
+            variant="secondary"
+            size="md"
             disabled={downloading}
-          >
-            {downloading ? '📄 Downloading...' : '📄 Download PDF'}
-          </button>
-          <button 
-            onClick={() => setIsDuplicateModalOpen(true)} 
-            className="btn btn-secondary"
-          >
-            📋 Duplicate Session
-          </button>
-          <button onClick={handleCreateRoomSession} className="btn btn-primary">
+          />
+          <IconButton
+            icon={Copy}
+            label="Duplicate Session"
+            onClick={() => setIsDuplicateModalOpen(true)}
+            variant="secondary"
+            size="md"
+          />
+          <button onClick={handleCreateRoomSession} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <Plus size={16} />
             Create Room Session
           </button>
         </div>
@@ -395,11 +404,15 @@ const SessionDetail = () => {
 
       {/* Teams and Juries Section */}
       <div className="session-details-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h2>Associated Teams & Juries</h2>
-          <button onClick={handleEditSessionScope} className="btn btn-secondary">
-            Edit Session Scope
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+          <h2 style={{ margin: 0, border: 'none', paddingBottom: 0 }}>Associated Teams & Juries</h2>
+          <IconButton
+            icon={Settings}
+            label="Edit Session Scope"
+            onClick={handleEditSessionScope}
+            variant="secondary"
+            size="md"
+          />
         </div>
         <div className="associations-grid">
           <div className="association-group">
