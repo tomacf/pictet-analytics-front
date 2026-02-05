@@ -346,7 +346,7 @@ const SessionWizard = () => {
       // Use existing assignment if it's valid for current settings, otherwise create new one
       const existingAssignment = state.roomJuryAssignments[roomId];
       // Check if existing assignment is valid:
-      // 1. Has the expected number of juries (juriesPerRoom), or fewer if not enough juries available
+      // 1. Has at least the expected number of juries (juriesPerRoom)
       // 2. All assigned juries are still in the selected jury list
       const isValidExistingAssignment = existingAssignment && 
         existingAssignment.length > 0 &&
