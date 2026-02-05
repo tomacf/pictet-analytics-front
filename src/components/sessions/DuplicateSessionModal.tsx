@@ -110,16 +110,18 @@ const DuplicateSessionModal = ({
             JuriesService.getAllJuries(),
             RoomsService.getAllRooms(),
             // Fetch the source session with room_sessions expansion if not already included
+            // room_sessions expansion includes nested teams and juries per the API docs
             sourceSession.room_sessions
               ? Promise.resolve(sourceSession)
-              : SessionsService.getSessionById(sourceSession.id, 'room_sessions'),
+              : SessionsService.getSessionById(sourceSession.id, 'teams,juries,rooms,room_sessions'),
           ]);
           setAllTeams(teamsData);
           setAllJuries(juriesData);
           setAllRooms(roomsData);
 
-          // Extract room_sessions from the fetched session
-          const roomSessions = (sourceSessionWithRoomSessions as SessionExpandedWithRoomSessions).room_sessions || [];
+          // Extract room_sessions from the fetched session with safe type checking
+          const sessionData = sourceSessionWithRoomSessions as SessionExpandedWithRoomSessions;
+          const roomSessions = Array.isArray(sessionData.room_sessions) ? sessionData.room_sessions : [];
           setSourceRoomSessions(roomSessions);
         } catch (err) {
           console.warn('Failed to load resources:', err);
