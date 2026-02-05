@@ -1142,6 +1142,81 @@ paths:
               schema:
                 type: string
 
+  /api/sessions/{id}/rebalance:
+    post:
+      tags:
+        - Sessions
+      summary: Rebalance a session plan
+      description: |
+        Accepts a draft session plan and returns a rebalanced plan without persisting.
+        Uses historical analytics data (team meetings, waiting times, room usage, jury interactions)
+        to optimize the assignment of teams and juries to slots.
+
+        The algorithm is deterministic (seeded with session_id) and respects constraints:
+        - Each team appears at most once in the plan
+        - No jury is assigned to overlapping time intervals
+        - Only teams/juries/rooms in the session scope are used
+
+        Optimization priorities:
+        1. Reduce waiting-time disparity (teams with high wait get earlier slots)
+        2. Increase rare meetings (group teams that historically met least)
+        3. Jury stability + fairness (room-anchored juries, minimize repeat interactions)
+        4. Room diversity (penalize frequent room usage by teams)
+      operationId: rebalanceSessionPlan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID (used as seed for deterministic algorithm)
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionPlan'
+            examples:
+              sessionPlan:
+                summary: Example session plan to rebalance
+                value:
+                  room_ids: [1, 2]
+                  team_ids: [1, 2, 3, 4]
+                  jury_ids: [1, 2]
+                  teams_per_room: 2
+                  juries_per_room: 1
+                  slots:
+                    - room_id: 1
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
+                      team_ids: [1, 2]
+                      jury_ids: [1]
+                    - room_id: 2
+                      start_time: "2024-03-01T09:00:00Z"
+                      end_time: "2024-03-01T10:00:00Z"
+                      team_ids: [3, 4]
+                      jury_ids: [2]
+      responses:
+        '200':
+          description: Successfully rebalanced plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RebalancePlanResponse'
+        '400':
+          description: Invalid request body, ID parameter, or plan scope violation
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /api/sessions/{id}/room-sessions:
     post:
       tags:
@@ -2715,6 +2790,21 @@ components:
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
 
+    IDLabel:
+      type: object
+      required:
+        - id
+        - label
+      properties:
+        id:
+          type: integer
+          description: Entity ID
+          example: 1
+        label:
+          type: string
+          description: Entity label
+          example: "Team Alpha"
+
     SessionPlan:
       type: object
       required:
@@ -2792,6 +2882,70 @@ components:
             type: integer
           description: IDs of juries assigned to this slot (must be subset of session jury_ids)
           example: [1]
+
+    RebalanceScores:
+      type: object
+      required:
+        - wait_disparity
+        - meeting_repeats
+        - team_jury_repeats
+        - room_diversity
+        - total_penalty
+      properties:
+        wait_disparity:
+          type: number
+          format: double
+          description: Variance in waiting times across teams
+          example: 125.5
+        meeting_repeats:
+          type: integer
+          description: Sum of historical team_vs_team counts for teams grouped in same slots
+          example: 3
+        team_jury_repeats:
+          type: integer
+          description: Sum of historical team_jury counts for teams meeting juries
+          example: 5
+        room_diversity:
+          type: number
+          format: double
+          description: Penalty for teams using frequently-used rooms
+          example: 12.0
+        total_penalty:
+          type: number
+          format: double
+          description: Weighted sum of all penalty scores
+          example: 250.75
+
+    RebalanceReport:
+      type: object
+      required:
+        - before_scores
+        - after_scores
+        - improved
+        - iterations
+      properties:
+        before_scores:
+          $ref: '#/components/schemas/RebalanceScores'
+        after_scores:
+          $ref: '#/components/schemas/RebalanceScores'
+        improved:
+          type: boolean
+          description: Whether the rebalancing improved the total penalty score
+          example: true
+        iterations:
+          type: integer
+          description: Number of local improvement iterations performed
+          example: 100
+
+    RebalancePlanResponse:
+      type: object
+      required:
+        - plan
+      properties:
+        plan:
+          $ref: '#/components/schemas/SessionPlan'
+        rebalance_report:
+          $ref: '#/components/schemas/RebalanceReport'
 
     SchedulingConflictType:
       type: string
