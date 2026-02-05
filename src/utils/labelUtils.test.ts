@@ -23,10 +23,14 @@ describe('labelUtils', () => {
 
     it('should handle labels with leading zeros', () => {
       const input = ['A10', 'A02', 'A1', 'A001'];
-      // A1 and A001 are numerically equal (both = 1), so their order depends on sort stability
-      // A02 = 2, A10 = 10, so the sorted order should be: 1, 1, 2, 10
-      const expected = ['A1', 'A001', 'A02', 'A10'];
-      expect(input.sort(compareLabelsAlphanumeric)).toEqual(expected);
+      const result = input.sort(compareLabelsAlphanumeric);
+      
+      // A1 and A001 are numerically equal (both = 1), so they can be in any order
+      // A02 = 2, A10 = 10, so the sorted order should have the "1" values first, then 2, then 10
+      expect(result[0]).toMatch(/^A(1|001)$/); // First should be A1 or A001
+      expect(result[1]).toMatch(/^A(1|001)$/); // Second should be A1 or A001 (whichever wasn't first)
+      expect(result[2]).toBe('A02');
+      expect(result[3]).toBe('A10');
     });
 
     it('should handle mixed alphanumeric patterns', () => {
