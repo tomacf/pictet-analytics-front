@@ -257,4 +257,73 @@ describe('Schedule Generation Logic', () => {
       expect(allSlotsHaveJuries).toBe(true);
     });
   });
+
+  describe('Room jury assignments with juriesPerRoom setting', () => {
+    // Helper function to simulate room jury assignment logic matching the SessionWizard
+    const generateRoomJuryAssignments = (
+      selectedRoomIds: number[],
+      selectedJuryIds: number[],
+      juriesPerRoom: number,
+      existingAssignments: Record<number, number[]>
+    ): Record<number, number[]> => {
+      const roomJuryAssignments: Record<number, number[]> = {};
+      let juryIndex = 0;
+      const sortedJuryIds = [...selectedJuryIds].sort((a, b) => a - b);
+
+      for (const roomId of selectedRoomIds) {
+        const existingAssignment = existingAssignments[roomId];
+        const isValidExistingAssignment = existingAssignment && 
+          existingAssignment.length > 0 &&
+          existingAssignment.length >= juriesPerRoom &&
+          existingAssignment.every(juryId => selectedJuryIds.includes(juryId));
+        
+        if (isValidExistingAssignment) {
+          roomJuryAssignments[roomId] = [...existingAssignment];
+        } else {
+          const assignedJuries: number[] = [];
+          for (let i = 0; i < juriesPerRoom && juryIndex < sortedJuryIds.length; i++) {
+            assignedJuries.push(sortedJuryIds[juryIndex]);
+            juryIndex++;
+          }
+          roomJuryAssignments[roomId] = assignedJuries;
+        }
+      }
+      return roomJuryAssignments;
+    };
+
+    it('should assign juriesPerRoom juries on first generation', () => {
+      const result = generateRoomJuryAssignments([1], [1, 2, 3, 4], 4, {});
+      expect(result[1]).toEqual([1, 2, 3, 4]);
+    });
+
+    it('should regenerate when existing assignment has fewer juries than juriesPerRoom', () => {
+      // This is the key bug scenario: user changed juriesPerRoom from 1 to 4
+      const result = generateRoomJuryAssignments([1], [1, 2, 3, 4], 4, { 1: [1] });
+      expect(result[1]).toEqual([1, 2, 3, 4]);
+    });
+
+    it('should regenerate when existing assignment references removed juries', () => {
+      // Jury 4 was in the assignment but was later removed from selection
+      const result = generateRoomJuryAssignments([1], [1, 2, 3], 2, { 1: [1, 4] });
+      expect(result[1]).toEqual([1, 2]);
+    });
+
+    it('should preserve valid existing assignment', () => {
+      // Assignment has correct number of juries and all are still selected
+      const result = generateRoomJuryAssignments([1], [1, 2, 3, 4], 2, { 1: [3, 4] });
+      expect(result[1]).toEqual([3, 4]);
+    });
+
+    it('should preserve existing assignment with more juries than juriesPerRoom', () => {
+      // User may have manually assigned extra juries
+      const result = generateRoomJuryAssignments([1], [1, 2, 3, 4, 5], 2, { 1: [1, 2, 3] });
+      expect(result[1]).toEqual([1, 2, 3]);
+    });
+
+    it('should distribute juries across multiple rooms', () => {
+      const result = generateRoomJuryAssignments([1, 2], [1, 2, 3, 4], 2, {});
+      expect(result[1]).toEqual([1, 2]);
+      expect(result[2]).toEqual([3, 4]);
+    });
+  });
 });
