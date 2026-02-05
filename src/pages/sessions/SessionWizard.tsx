@@ -557,6 +557,7 @@ const SessionWizard = () => {
     }));
 
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
+    setRebalanceModalOpen(false); // Close the modal after applying
     toast.success('Rebalanced schedule applied');
   };
 
@@ -568,7 +569,6 @@ const SessionWizard = () => {
     setPreRebalanceSlots(null);
     setRebalanceResponse(null);
     setBeforeSlots(null);
-    setRebalanceModalOpen(false);
     toast.success('Rebalance undone');
   };
 
@@ -1358,13 +1358,17 @@ const SessionWizard = () => {
               type="button"
               onClick={(e) => {
               e.preventDefault();
-              handleMagicRebalance();
+              if (preRebalanceSlots !== null) {
+                handleUndoRebalance();
+              } else {
+                handleMagicRebalance();
+              }
               }}
               className="btn btn-magic"
-              disabled={saving || isRebalancing || wizardState.scheduleSlots.length === 0}
-              title="Automatically optimize team and jury assignments"
+              disabled={saving || isRebalancing || (preRebalanceSlots === null && wizardState.scheduleSlots.length === 0)}
+              title={preRebalanceSlots !== null ? "Restore the previous schedule before rebalancing" : "Automatically optimize team and jury assignments"}
             >
-              {isRebalancing ? '⏳ Rebalancing...' : '✨ Magic Rebalance'}
+              {isRebalancing ? '⏳ Rebalancing...' : (preRebalanceSlots !== null ? '↶ Undo Rebalance' : '✨ Magic Rebalance')}
             </button>
             <button
               type="button"
