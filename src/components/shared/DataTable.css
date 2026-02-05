@@ -83,6 +83,15 @@
   background-color: var(--color-primary-dark);
 }
 
+.btn-duplicate {
+  background-color: #8b5cf6;
+  color: white;
+}
+
+.btn-duplicate:hover {
+  background-color: #7c3aed;
+}
+
 .btn-delete {
   background-color: #ef4444;
   color: white;

@@ -7,6 +7,7 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
 import ImportPdfModal from '../../components/sessions/ImportPdfModal';
+import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
 import {formatEuropeanDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
 import '../teams/Teams.css';
@@ -19,6 +20,8 @@ const Sessions = () => {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
+  const [duplicatingSession, setDuplicatingSession] = useState<SessionExpanded | null>(null);
   const [editingSession, setEditingSession] = useState<SessionExpanded | null>(null);
   const [formData, setFormData] = useState<SessionInput>({
     label: '',
@@ -109,6 +112,11 @@ const Sessions = () => {
       const message = err instanceof Error ? err.message : 'Failed to delete session';
       toast.error(message);
     }
+  };
+
+  const handleDuplicate = (session: SessionExpanded) => {
+    setDuplicatingSession(session);
+    setIsDuplicateModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -244,6 +252,7 @@ const Sessions = () => {
         columns={columns}
         data={sessions}
         onEdit={handleEdit}
+        onDuplicate={handleDuplicate}
         onDelete={handleDelete}
       />
 
@@ -318,6 +327,15 @@ const Sessions = () => {
           </div>
         </form>
       </Modal>
+
+      <DuplicateSessionModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => {
+          setIsDuplicateModalOpen(false);
+          setDuplicatingSession(null);
+        }}
+        sourceSession={duplicatingSession}
+      />
     </div>
   );
 };
