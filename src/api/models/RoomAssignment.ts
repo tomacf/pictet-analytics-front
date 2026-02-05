@@ -12,15 +12,16 @@ export type RoomAssignment = {
      */
     room_label?: string;
     /**
-     * ID of the jury assigned to this room for the session (null if no jury assigned)
+     * IDs of the juries assigned to this room for the session (empty array if no juries assigned)
      */
-    jury_id?: number | null;
+    jury_ids?: Array<number>;
     /**
-     * Label of the assigned jury (empty string if no jury assigned)
+     * Labels of the assigned juries (empty array if no juries assigned)
      */
-    jury_label?: string;
+    jury_labels?: Array<string>;
     /**
      * Timestamp when this room assignment was created
      */
     created_at?: string;
 };
+

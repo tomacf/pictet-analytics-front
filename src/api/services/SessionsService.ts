@@ -72,13 +72,14 @@ export class SessionsService {
      * - `teams` - Include associated teams (id, label)
      * - `juries` - Include associated juries (id, label)
      * - `rooms` - Include associated rooms (id, label)
+     * - `room_assignments` - Include room assignments with jury per room (room_id, room_label, jury_id, jury_label)
      * - `room_sessions` - Include all room sessions for this session with expanded room, teams, and juries
      * - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
      *
-     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
+     * Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_assignments`)
      *
      * @param id Session ID
-     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
+     * @param expand Comma-separated list of fields to expand (teams, juries, rooms, room_assignments, room_sessions, summary)
      * @returns any Session found
      * @throws ApiError
      */
@@ -231,6 +232,41 @@ export class SessionsService {
             mediaType: 'application/json',
             errors: {
                 400: `Invalid request body, ID parameter, or plan scope violation`,
+                500: `Internal server error`,
+            },
+        });
+    }
+    /**
+     * Export session plan as PDF
+     * Generates a PDF document summarizing the session plan.
+     *
+     * The PDF includes:
+     * - Session label
+     * - Date/time (EU format: DD/MM/YYYY HH:MM)
+     * - Slot duration and gap between slots
+     * - Table grouped by room with each slot showing:
+     * - Start-end time
+     * - Assigned teams
+     * - Assigned juries
+     *
+     * The document is formatted for A4 paper with header and page numbers.
+     *
+     * @param id Session ID
+     * @returns binary PDF document generated successfully
+     * @throws ApiError
+     */
+    public static exportSessionPdf(
+        id: number,
+    ): CancelablePromise<Blob> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sessions/{id}/export.pdf',
+            path: {
+                'id': id,
+            },
+            errors: {
+                400: `Invalid ID parameter`,
+                404: `Session not found`,
                 500: `Internal server error`,
             },
         });

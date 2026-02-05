@@ -58,7 +58,7 @@ export type SessionExpanded = {
      */
     last_room_session_end_time?: string;
     /**
-     * Room assignments with jury per room (present when expand=room_assignments is used)
+     * Room assignments with juries per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned juries.
      */
     room_assignments?: Array<RoomAssignment>;
 };

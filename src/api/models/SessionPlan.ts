@@ -2,17 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { RoomJuryAssignment } from './RoomJuryAssignment';
 import type { SessionPlanSlot } from './SessionPlanSlot';
-
-/**
- * Mapping of room ID to jury IDs for room-level jury assignment
- * Supports multiple juries per room based on juries_per_room configuration
- */
-export type RoomJuryAssignment = {
-    room_id: number;
-    jury_ids: Array<number>;
-};
-
 export type SessionPlan = {
     /**
      * IDs of rooms associated with the session
@@ -35,9 +26,7 @@ export type SessionPlan = {
      */
     juries_per_room: number;
     /**
-     * Room-level jury assignments. Each entry maps a room to its assigned juries.
-     * Supports multiple juries per room based on juries_per_room configuration.
-     * When provided, this takes precedence over slot-level jury_ids.
+     * Room-jury assignments for the session. Each room can have multiple juries assigned.
      */
     room_jury_assignments?: Array<RoomJuryAssignment>;
     /**

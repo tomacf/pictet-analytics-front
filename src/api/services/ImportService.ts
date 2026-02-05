@@ -91,4 +91,140 @@ export class ImportService {
             },
         });
     }
+    /**
+     * Inspect and validate PDF schedule document
+     * **Document Inspector** validates a PDF schedule against expected teams and rules.
+     * This is event-critical: correctness, determinism, and clear errors matter more than features.
+     *
+     * **Features:**
+     * - Parses PDF schedule (rooms, slots, distribution times)
+     * - Validates team presence, uniqueness, and distribution ordering
+     * - Returns deterministic, explainable validation report
+     * - Provides normalized preview for diffing/trust UI
+     *
+     * **Validation Rules:**
+     * - **A) Team presence & uniqueness:** All expected teams must appear exactly once
+     * - **B) Slot structure:** Slots must have consistent room counts
+     * - **C) Distribution matching:** Distribution groups must match start time groups
+     * - **D) Distribution ordering:** Earlier distribution → earlier or equal start time
+     * - **E) Slot duration:** Gaps between slots must match declared duration
+     *
+     * **Request Format:**
+     * - `pdf`: PDF file (multipart/form-data)
+     * - `request`: JSON with expectedTeams, optional strictMode, knownRooms, expectedRoomCount
+     *
+     * **Response includes:**
+     * - `extracted`: Raw data from PDF (rooms, slots, distributions, declared duration)
+     * - `report`: Errors, warnings, and statistics
+     * - `normalizedPreview`: Stable canonical representation for diffing
+     *
+     * **Error Codes:**
+     * - `TEAM_MISSING`: Expected team not found in schedule
+     * - `TEAM_DUPLICATE`: Team appears more than once
+     * - `TEAM_UNEXPECTED`: Team in PDF but not in expectedTeams
+     * - `SLOT_ROW_MALFORMED`: Slot has inconsistent room count or no teams
+     * - `DISTRIBUTION_ORDER_MISMATCH`: Distribution/start time ordering violated
+     * - `DISTRIBUTION_GROUP_MISMATCH`: Distribution groups don't match start groups
+     * - `TEAM_DISTRIBUTION_START_INVERSION`: Team received later but starts earlier
+     * - `SLOT_DURATION_MISMATCH`: Slot gaps don't match declared duration
+     * - `PARSE_FAILED`: Could not parse PDF structure
+     *
+     * @param formData
+     * @returns any Document inspection completed
+     * @throws ApiError
+     */
+    public static inspectDocument(
+        formData: {
+            /**
+             * PDF file containing the schedule to validate
+             */
+            pdf: Blob;
+            /**
+             * JSON string with validation parameters
+             */
+            request: string;
+        },
+    ): CancelablePromise<{
+        /**
+         * Raw data extracted from PDF
+         */
+        extracted: {
+            rooms?: Array<string>;
+            slots?: Array<{
+                startTime?: string;
+                roomLabel?: string;
+                teams?: Array<string>;
+            }>;
+            distributions?: Array<{
+                distributionTime?: string;
+                teams?: Array<string>;
+            }>;
+            declaredSlotDurationMinutes?: number;
+            declaredEndTime?: string;
+        };
+        /**
+         * Validation report with errors and warnings
+         */
+        report: {
+            errors?: Array<{
+                code?: string;
+                severity?: string;
+                message?: string;
+                path?: string | null;
+                evidence?: Record<string, any>;
+            }>;
+            warnings?: Array<{
+                code?: string;
+                severity?: string;
+                message?: string;
+            }>;
+            stats?: {
+                expectedTeamsCount?: number;
+                foundTeamsCount?: number;
+                missingCount?: number;
+                duplicateCount?: number;
+                unexpectedCount?: number;
+                slotCount?: number;
+                roomsCount?: number;
+            };
+        };
+        /**
+         * Stable canonical representation for diffing
+         */
+        normalizedPreview: {
+            slots?: Array<{
+                startTime?: string;
+                roomLabel?: string;
+                /**
+                 * Sorted team list
+                 */
+                teams?: Array<string>;
+            }>;
+            distributions?: Array<{
+                distributionTime?: string;
+                /**
+                 * Sorted team list
+                 */
+                teams?: Array<string>;
+            }>;
+            metadata?: {
+                slotDurationMinutes?: number;
+                parsedAt?: string;
+                totalTeams?: number;
+                totalRooms?: number;
+                totalSlots?: number;
+            };
+        };
+    }> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/document-inspector',
+            formData: formData,
+            mediaType: 'multipart/form-data',
+            errors: {
+                400: `Invalid request (missing PDF, invalid JSON, empty expectedTeams)`,
+                500: `Internal server error`,
+            },
+        });
+    }
 }
