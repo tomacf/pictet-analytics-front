@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { Plus, ListPlus } from 'lucide-react';
-import { TeamsService, type Team, type TeamInput } from '../../apiConfig';
+import {ListPlus, Plus} from 'lucide-react';
+import {useEffect, useState} from 'react';
+import {toast} from 'react-toastify';
+import {TeamsService, type Team, type TeamInput} from '../../apiConfig';
 import DataTable from '../../components/shared/DataTable';
-import Modal from '../../components/shared/Modal';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import IconButton from '../../components/shared/IconButton';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import Modal from '../../components/shared/Modal';
 import './Teams.css';
 
 const Teams = () => {
@@ -158,10 +158,13 @@ const Teams = () => {
             variant="secondary"
             size="md"
           />
-          <button onClick={handleCreate} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-            <Plus size={16} />
-            Create Team
-          </button>
+            <IconButton
+            icon={Plus}
+            label="Create Team"
+            onClick={handleCreate}
+            variant="primary"
+            size="md"
+            />
         </div>
       </div>
 
