@@ -1,6 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {toast} from 'react-toastify';
+import { useAuth } from '../../contexts/AuthContext';
 import {
   ApiError,
   JuriesService,
@@ -68,6 +69,7 @@ interface SelectableItem {
 const SessionWizard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUser } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -106,6 +108,11 @@ const SessionWizard = () => {
       setCurrentStep(navState.step);
     }
   }, [location.state]);
+
+  // Refresh user data when component mounts
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   // State for adding new slots
   const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
