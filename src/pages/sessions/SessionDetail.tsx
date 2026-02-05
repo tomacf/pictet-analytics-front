@@ -259,21 +259,24 @@ const SessionDetail = () => {
   };
 
   // Download PDF Handler
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = () => {
     if (!id) return;
 
+    setDownloading(true);
+    
     try {
-      setDownloading(true);
       const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
       const pdfUrl = `${apiUrl}/api/sessions/${id}/export.pdf`;
       
       // Open PDF in new tab (this will trigger download or display based on browser settings)
-      window.open(pdfUrl, '_blank');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to download PDF';
-      toast.error(message);
+      const newWindow = window.open(pdfUrl, '_blank');
+      
+      if (!newWindow) {
+        toast.error('Failed to open PDF. Please check your popup blocker settings.');
+      }
     } finally {
-      setDownloading(false);
+      // Reset loading state after a brief delay to show user feedback
+      setTimeout(() => setDownloading(false), 500);
     }
   };
 
