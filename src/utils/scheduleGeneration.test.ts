@@ -251,10 +251,10 @@ describe('Schedule Generation Logic', () => {
       expect(slots.length).toBeGreaterThan(0);
       expect(slots.filter(s => s.teamIds.length > 0).length).toBeGreaterThan(0);
       
-      // All slots should have juries due to jury reuse
-      // But in a real scenario where juries can't be reused, some would be empty
+      // With jury reuse across slots (room affinity), all slots should have juries
+      // This is the actual behavior of the implementation which reuses juries
       const allSlotsHaveJuries = slots.every(s => s.juryIds.length > 0);
-      expect(typeof allSlotsHaveJuries).toBe('boolean');
+      expect(allSlotsHaveJuries).toBe(true);
     });
   });
 });

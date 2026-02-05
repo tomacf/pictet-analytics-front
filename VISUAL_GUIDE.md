@@ -70,9 +70,9 @@ if (juriesNeededConcurrently > totalJuries) {
 | Scenario | Rooms | Juries | Requested Per Room | Result |
 |----------|-------|--------|-------------------|--------|
 | Happy path | 3 | 9 | 3 | 3 rooms, 3 juries each |
-| Strategy 1 | 3 | 6 | 3 | 3 rooms, 2 juries each |
-| Strategy 2 | 3 | 2 | 2 | 1 room, 2 juries |
-| Strategy 3 | 3 | 1 | 2 | 1 room, 1 jury |
+| Strategy 1 | 3 | 6 | 3 | 3 rooms, 2 juries each (reduced from 3) |
+| Strategy 2 | 4 | 2 | 2 | 1 room, 2 juries (4 rooms → 1 room) |
+| Strategy 3 | 3 | 1 | 2 | 1 room, 1 jury (extreme case) |
 
 ---
 
