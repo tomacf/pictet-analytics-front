@@ -1216,6 +1216,60 @@ paths:
               schema:
                 type: string
 
+  /api/sessions/{id}/export.pdf:
+    get:
+      tags:
+        - Sessions
+      summary: Export session plan as PDF
+      description: |
+        Generates a PDF document summarizing the session plan.
+
+        The PDF includes:
+        - Session label
+        - Date/time (EU format: DD/MM/YYYY HH:MM)
+        - Slot duration and gap between slots
+        - Table grouped by room with each slot showing:
+          - Start-end time
+          - Assigned teams
+          - Assigned juries
+
+        The document is formatted for A4 paper with header and page numbers.
+      operationId: exportSessionPDF
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Session ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: PDF document generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: Invalid ID parameter
+          content:
+            text/plain:
+              schema:
+                type: string
+        '404':
+          description: Session not found
+          content:
+            text/plain:
+              schema:
+                type: string
+        '500':
+          description: Internal server error
+          content:
+            text/plain:
+              schema:
+                type: string
+
   /api/sessions/{id}/room-sessions:
     post:
       tags:
