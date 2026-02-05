@@ -32,6 +32,9 @@ import {
 } from '../../utils/validationUtils';
 import './SessionWizard.css';
 
+// Default scheduling constants
+const DEFAULT_TIME_BEFORE_FIRST_SLOT = 60; // minutes
+
 interface WizardState {
   // Step 1: Session creation
   sessionLabel: string;
@@ -102,7 +105,7 @@ const SessionWizard = () => {
       selectedJuryIds: [],
       teamsPerRoom: 1,
       juriesPerRoom: 1,
-      timeBeforeFirstSlot: 60, // Default to 60 minutes
+      timeBeforeFirstSlot: DEFAULT_TIME_BEFORE_FIRST_SLOT,
       slotDuration: 30,
       timeBetweenSlots: 5,
       roomJuryAssignments: {},

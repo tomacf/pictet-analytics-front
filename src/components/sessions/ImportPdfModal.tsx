@@ -14,6 +14,9 @@ import Modal from '../shared/Modal';
 import { localDateTimeToISO } from '../../utils/dateUtils';
 import './ImportPdfModal.css';
 
+// Default scheduling constants (should match SessionWizard)
+const DEFAULT_TIME_BEFORE_FIRST_SLOT = 60; // minutes
+
 interface ImportPdfModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -287,7 +290,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       startTime: formData.sessionDate,
       slotDuration: draftPlan.slot_duration ?? 30,
       timeBetweenSlots: draftPlan.time_between_slots ?? 5,
-      timeBeforeFirstSlot: 60, // Default
+      timeBeforeFirstSlot: DEFAULT_TIME_BEFORE_FIRST_SLOT,
       roomJuryAssignments,
       scheduleSlots,
     };
