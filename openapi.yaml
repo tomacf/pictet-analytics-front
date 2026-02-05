@@ -10,7 +10,7 @@ info:
     - **Service Layer**: Business logic (with placeholder scheduling and analytics services)
     - **HTTP Layer**: REST API handlers and routing
 
-    **Note**: No authentication/authorization is implemented. Scheduling and analytics are placeholder services.
+    **Note**: Authentication is implemented using email+password with session-based cookies. Scheduling and analytics are placeholder services.
   version: 1.0.0
   contact:
     name: Pictet Analytics Team
@@ -26,6 +26,8 @@ servers:
 tags:
   - name: Health
     description: Health check endpoints
+  - name: Authentication
+    description: User authentication and session management
   - name: Teams
     description: Operations for managing teams
   - name: Rooms
@@ -59,6 +61,178 @@ paths:
               schema:
                 type: string
                 example: OK
+
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Sign up a new user
+      description: Creates a new user account and returns a session cookie
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpRequest'
+            examples:
+              signup:
+                summary: Example signup
+                value:
+                  email: user@example.com
+                  password: securepassword123
+      responses:
+        '201':
+          description: User created successfully
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+                example: pictet_session=token123; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request body
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Email and password are required
+        '409':
+          description: Email already exists
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Email already exists
+        '500':
+          description: Internal server error
+
+  /api/auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Sign in an existing user
+      description: Authenticates a user and returns a session cookie
+      operationId: signIn
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInRequest'
+            examples:
+              signin:
+                summary: Example signin
+                value:
+                  email: user@example.com
+                  password: securepassword123
+      responses:
+        '200':
+          description: User authenticated successfully
+          headers:
+            Set-Cookie:
+              description: Session cookie
+              schema:
+                type: string
+                example: pictet_session=token123; Path=/; HttpOnly; SameSite=Lax; Max-Age=604800
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid request body
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Email and password are required
+        '401':
+          description: Invalid credentials
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Invalid email or password
+        '500':
+          description: Internal server error
+
+  /api/auth/signout:
+    post:
+      tags:
+        - Authentication
+      summary: Sign out the current user
+      description: Invalidates the session and clears the session cookie
+      operationId: signOut
+      responses:
+        '204':
+          description: User signed out successfully
+          headers:
+            Set-Cookie:
+              description: Cleared session cookie
+              schema:
+                type: string
+                example: pictet_session=; Path=/; HttpOnly; Max-Age=-1
+        '401':
+          description: No session found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: No session found
+        '500':
+          description: Internal server error
+
+  /api/auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user
+      description: Returns the currently authenticated user's information
+      operationId: getCurrentUser
+      responses:
+        '200':
+          description: Current user information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unauthorized
+        '500':
+          description: Internal server error
+
+  /api/profile:
+    get:
+      tags:
+        - Authentication
+      summary: Get user profile
+      description: Returns the current user's profile (alias for /api/auth/me)
+      operationId: getUserProfile
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Unauthorized
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Unauthorized
+        '500':
+          description: Internal server error
 
   /api/teams:
     post:
@@ -834,10 +1008,11 @@ paths:
         - `teams` - Include associated teams (id, label)
         - `juries` - Include associated juries (id, label)
         - `rooms` - Include associated rooms (id, label)
+        - `room_assignments` - Include room assignments with jury per room (room_id, room_label, jury_id, jury_label)
         - `room_sessions` - Include all room sessions for this session with expanded room, teams, and juries
         - `summary` - Include summary statistics (room_sessions_count, first_room_session_start_time, last_room_session_end_time)
 
-        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_sessions`)
+        Multiple options can be combined using comma-separated values (e.g., `?expand=teams,juries,rooms,room_assignments`)
       operationId: getSessionById
       parameters:
         - name: id
@@ -850,10 +1025,10 @@ paths:
         - name: expand
           in: query
           required: false
-          description: Comma-separated list of fields to expand (teams, juries, rooms, room_sessions, summary)
+          description: Comma-separated list of fields to expand (teams, juries, rooms, room_assignments, room_sessions, summary)
           schema:
             type: string
-            example: "teams,juries,rooms,room_sessions"
+            example: "teams,juries,rooms,room_assignments"
       responses:
         '200':
           description: Session found
@@ -2362,6 +2537,117 @@ components:
           description: Team label
           example: Team Alpha
 
+    SignUpRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User password (min 8 characters recommended)
+          example: securepassword123
+
+    SignInRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User password
+          example: securepassword123
+
+    AuthResponse:
+      type: object
+      required:
+        - user
+        - session
+      properties:
+        user:
+          type: object
+          required:
+            - id
+            - email
+            - created_at
+            - updated_at
+          properties:
+            id:
+              type: integer
+              description: User ID
+              example: 1
+            email:
+              type: string
+              format: email
+              description: User email
+              example: user@example.com
+            created_at:
+              type: string
+              format: date-time
+              description: User creation timestamp
+              example: "2024-03-01T10:00:00Z"
+            updated_at:
+              type: string
+              format: date-time
+              description: User last update timestamp
+              example: "2024-03-01T10:00:00Z"
+        session:
+          type: object
+          required:
+            - token
+            - expires_at
+          properties:
+            token:
+              type: string
+              description: Session token
+              example: abc123def456
+            expires_at:
+              type: string
+              format: date-time
+              description: Session expiration timestamp
+              example: "2024-03-08T10:00:00Z"
+
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: User ID
+          example: 1
+        email:
+          type: string
+          format: email
+          description: User email
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+          description: User creation timestamp
+          example: "2024-03-01T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: User last update timestamp
+          example: "2024-03-01T10:00:00Z"
+
     Room:
       type: object
       required:
@@ -2647,6 +2933,48 @@ components:
           format: date-time
           description: End time of the last room session (present when expand=summary is used)
           example: "2024-03-01T12:00:00Z"
+        room_assignments:
+          type: array
+          description: Room assignments with jury per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned jury.
+          items:
+            $ref: '#/components/schemas/RoomAssignment'
+          example:
+            - room_id: 1
+              room_label: Room 101
+              jury_id: 1
+              jury_label: Dr. John Smith
+            - room_id: 2
+              room_label: Room 102
+              jury_id: 2
+              jury_label: Prof. Jane Doe
+
+    RoomAssignment:
+      type: object
+      required:
+        - room_id
+      properties:
+        room_id:
+          type: integer
+          description: Room ID
+          example: 1
+        room_label:
+          type: string
+          description: Room label
+          example: Room 101
+        jury_id:
+          type: integer
+          nullable: true
+          description: ID of the jury assigned to this room for the session (null if no jury assigned)
+          example: 1
+        jury_label:
+          type: string
+          description: Label of the assigned jury (empty string if no jury assigned)
+          example: Dr. John Smith
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when this room assignment was created
+          example: "2024-03-01T08:00:00Z"
 
     IDLabel:
       type: object
