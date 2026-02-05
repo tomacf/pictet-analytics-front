@@ -114,6 +114,12 @@ const Layout = () => {
                 <span className="menu-text">Analytics</span>
               </Link>
             </li>
+            <li className={isActive('/document-inspector') ? 'active' : ''}>
+              <Link to="/document-inspector" title="Document Inspector">
+                <span className="icon">📄</span>
+                <span className="menu-text">Document Inspector</span>
+              </Link>
+            </li>
           </ul>
         </nav>
         <main className="content">
