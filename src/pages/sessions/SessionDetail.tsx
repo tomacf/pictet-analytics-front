@@ -20,6 +20,7 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import IconButton from '../../components/shared/IconButton';
 import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
+import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 import './SessionDetail.css';
@@ -42,23 +43,6 @@ interface SessionScopeFormData {
 interface SessionExpandedWithRoomSessions extends SessionExpanded {
   room_sessions?: RoomSessionExpanded[];
 }
-
-// Helper function to convert ISO string to local datetime-local format
-const isoToLocalDatetimeInput = (isoString: string): string => {
-  if (!isoString) return '';
-  // Create date from ISO string and format for datetime-local input
-  const date = new Date(isoString);
-  const offset = date.getTimezoneOffset();
-  const localDate = new Date(date.getTime() - offset * 60 * 1000);
-  return localDate.toISOString().slice(0, 16);
-};
-
-// Helper function to convert datetime-local input to ISO string
-const localDatetimeInputToISO = (localDatetime: string): string => {
-  if (!localDatetime) return '';
-  // The datetime-local input value is in local time, so we need to convert to UTC
-  return new Date(localDatetime).toISOString();
-};
 
 const SessionDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -553,8 +537,8 @@ const SessionDetail = () => {
             <input
               type="datetime-local"
               id="start_time"
-              value={isoToLocalDatetimeInput(formData.start_time)}
-              onChange={(e) => setFormData({ ...formData, start_time: localDatetimeInputToISO(e.target.value) })}
+              value={isoToLocalDateTime(formData.start_time)}
+              onChange={(e) => setFormData({ ...formData, start_time: localDateTimeToISO(e.target.value) })}
               required
               className="form-input"
               disabled={saving}
@@ -566,8 +550,8 @@ const SessionDetail = () => {
             <input
               type="datetime-local"
               id="end_time"
-              value={isoToLocalDatetimeInput(formData.end_time)}
-              onChange={(e) => setFormData({ ...formData, end_time: localDatetimeInputToISO(e.target.value) })}
+              value={isoToLocalDateTime(formData.end_time)}
+              onChange={(e) => setFormData({ ...formData, end_time: localDateTimeToISO(e.target.value) })}
               required
               className="form-input"
               disabled={saving}

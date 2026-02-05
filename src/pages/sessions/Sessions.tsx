@@ -9,7 +9,7 @@ import DataTable from '../../components/shared/DataTable';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
-import {formatEuropeanDateTime} from '../../utils/dateUtils';
+import {formatEuropeanDateTime, localDateTimeToISO, isoToLocalDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
 import '../teams/Teams.css';
 import './Sessions.css';
@@ -287,8 +287,13 @@ const Sessions = () => {
             <input
               type="datetime-local"
               id="start_time"
-              value={formData.start_time ? new Date(formData.start_time).toISOString().slice(0, 16) : ''}
-              onChange={(e) => setFormData({ ...formData, start_time: new Date(e.target.value).toISOString() })}
+              value={isoToLocalDateTime(formData.start_time)}
+              onChange={(e) => {
+                const isoString = localDateTimeToISO(e.target.value);
+                if (isoString) {
+                  setFormData({ ...formData, start_time: isoString });
+                }
+              }}
               required
               className="form-input"
             />

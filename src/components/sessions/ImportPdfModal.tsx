@@ -11,6 +11,7 @@ import {
 } from '../../apiConfig';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Modal from '../shared/Modal';
+import { localDateTimeToISO } from '../../utils/dateUtils';
 import './ImportPdfModal.css';
 
 interface ImportPdfModalProps {
@@ -198,11 +199,12 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
     try {
       // Create the session first (we need a session ID for the preview)
-      // Convert date-only string (YYYY-MM-DD) to ISO string with time component
-      const sessionDate = new Date(formData.sessionDate + 'T00:00:00');
+      // Convert date-only string (YYYY-MM-DD) to ISO string with time component at midnight local time
+      const localDateTimeString = formData.sessionDate + 'T00:00';
+      const isoString = localDateTimeToISO(localDateTimeString);
       const session = await SessionsService.createSession({
         label: formData.sessionLabel,
-        start_time: sessionDate.toISOString(),
+        start_time: isoString,
         slot_duration: parseState.draftPlan?.slot_duration ?? 30,
         time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
       });
