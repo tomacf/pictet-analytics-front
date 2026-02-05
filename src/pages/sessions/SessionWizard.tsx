@@ -844,7 +844,12 @@ const SessionWizard = () => {
                 type="datetime-local"
                 id="startTimeStep1"
                 value={wizardState.startTime ? new Date(wizardState.startTime).toISOString().slice(0, 16) : ''}
-                onChange={(e) => setWizardState({ ...wizardState, startTime: new Date(e.target.value).toISOString() })}
+                onChange={(e) => {
+                  const date = new Date(e.target.value);
+                  if (!isNaN(date.getTime())) {
+                    setWizardState({ ...wizardState, startTime: date.toISOString() });
+                  }
+                }}
                 required
                 className="form-input"
               />
@@ -1046,7 +1051,12 @@ const SessionWizard = () => {
                 type="number"
                 id="timeBeforeFirstSlot"
                 value={wizardState.timeBeforeFirstSlot}
-                onChange={(e) => setWizardState({ ...wizardState, timeBeforeFirstSlot: parseInt(e.target.value) })}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value, 10);
+                  if (!isNaN(value)) {
+                    setWizardState({ ...wizardState, timeBeforeFirstSlot: value });
+                  }
+                }}
                 required
                 min="0"
                 className="form-input"
