@@ -167,7 +167,7 @@ paths:
                   summary: Team details
                   value:
                     id: 1
-                    name: Team Alpha
+                    label: Team Alpha
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -586,8 +586,7 @@ paths:
                   summary: Jury details
                   value:
                     id: 1
-                    name: Dr. John Smith
-                    email: john.smith@example.com
+                    label: Dr. John Smith
                     created_at: "2024-03-01T10:00:00Z"
                     updated_at: "2024-03-01T10:00:00Z"
         '400':
@@ -2789,21 +2788,6 @@ components:
             type: integer
           description: Array of jury IDs to associate with this room session (replaces existing)
           example: [1]
-
-    IDLabel:
-      type: object
-      required:
-        - id
-        - label
-      properties:
-        id:
-          type: integer
-          description: Entity ID
-          example: 1
-        label:
-          type: string
-          description: Entity label
-          example: "Team Alpha"
 
     SessionPlan:
       type: object
