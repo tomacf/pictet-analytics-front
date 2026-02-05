@@ -233,6 +233,10 @@ const RebalanceModal = ({
               <li><strong>Team-Jury Repeats:</strong> Team-jury meeting history</li>
               <li><strong>Room Diversity:</strong> Penalty for frequently-used rooms</li>
             </ul>
+            <p className="room-jury-note">
+              <strong>Note:</strong> Room jury assignments remain unchanged during rebalance. 
+              Only team assignments are optimized.
+            </p>
           </div>
         </div>
       </Modal>
