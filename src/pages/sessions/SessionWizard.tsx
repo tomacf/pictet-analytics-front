@@ -1220,7 +1220,6 @@ const SessionWizard = () => {
                 {wizardState.selectedRoomIds.map((roomId) => {
                   if (activeTab !== roomId) return null;
 
-                  const room = rooms.find((r) => r.id === roomId);
                   const roomSlots = wizardState.scheduleSlots.filter((s) => s.roomId === roomId);
 
                   return (
