@@ -4,13 +4,13 @@ import './ScheduleOverview.css';
 
 interface RoomJuryInfo {
   roomId: number;
-  juryLabel: string | null;
+  juryLabels: string[];
 }
 
 interface ScheduleOverviewProps {
   roomSessions: RoomSessionExpanded[];
   rooms?: Array<{ id: number; label: string }>;
-  // Optional room-level jury info for display in header
+  // Optional room-level jury info for display in header (supports multiple juries per room)
   roomJuryInfo?: RoomJuryInfo[];
 }
 
@@ -74,17 +74,17 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
     return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Helper to get room jury label
-  const getRoomJuryLabel = (roomId: number): string | null => {
+  // Helper to get room jury labels (supports multiple juries per room)
+  const getRoomJuryLabels = (roomId: number): string[] => {
     const info = roomJuryInfo.find(r => r.roomId === roomId);
-    if (info) return info.juryLabel;
+    if (info && info.juryLabels.length > 0) return info.juryLabels;
     
     // Fallback: try to get from first session in this room
     const roomSession = roomSessions.find(s => s.room_id === roomId);
     if (roomSession?.juries && roomSession.juries.length > 0) {
-      return roomSession.juries[0].label;
+      return roomSession.juries.map(j => j.label);
     }
-    return null;
+    return [];
   };
 
   return (
@@ -95,13 +95,13 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
             <tr>
               <th className="time-header">Time</th>
               {sortedRooms.map(([roomId, roomLabel]) => {
-                const juryLabel = getRoomJuryLabel(roomId);
+                const juryLabels = getRoomJuryLabels(roomId);
                 return (
                   <th key={roomId} className="room-header">
                     <div className="room-header-content">
                       <span className="room-name">{roomLabel}</span>
-                      {juryLabel ? (
-                        <span className="room-jury-label">{juryLabel}</span>
+                      {juryLabels.length > 0 ? (
+                        <span className="room-jury-label">{juryLabels.join(', ')}</span>
                       ) : (
                         <span className="room-jury-missing">No jury assigned</span>
                       )}

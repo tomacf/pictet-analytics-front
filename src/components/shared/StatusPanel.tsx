@@ -4,7 +4,7 @@ import './StatusPanel.css';
 
 interface RoomJuryAssignment {
   roomId: number;
-  juryId: number | null;
+  juryIds: number[];
 }
 
 interface StatusPanelProps {
@@ -188,8 +188,10 @@ const StatusPanel = ({
               <div className="room-assignments-list">
                 {roomJuryAssignments.map((assignment) => {
                   const room = rooms.find((r) => r.id === assignment.roomId);
-                  const jury = assignment.juryId ? juries.find((j) => j.id === assignment.juryId) : null;
-                  const isMissing = !assignment.juryId;
+                  const assignedJuries = assignment.juryIds
+                    .map(juryId => juries.find((j) => j.id === juryId))
+                    .filter((jury): jury is { id: number; label: string } => jury !== undefined);
+                  const isMissing = assignment.juryIds.length === 0;
                   
                   return (
                     <div 
@@ -198,8 +200,8 @@ const StatusPanel = ({
                     >
                       <span className="room-name">{room?.label || `Room ${assignment.roomId}`}</span>
                       <span className="assignment-arrow">→</span>
-                      {jury ? (
-                        <span className="jury-name">{jury.label}</span>
+                      {assignedJuries.length > 0 ? (
+                        <span className="jury-name">{assignedJuries.map(j => j.label).join(', ')}</span>
                       ) : (
                         <span className="jury-unassigned">
                           Unassigned <span className="warning-badge">⚠</span>

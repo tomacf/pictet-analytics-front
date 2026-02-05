@@ -3211,12 +3211,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoomJuryAssignment'
-          description: Room-jury assignments for the session. Each room has at most one jury assigned.
+          description: Room-jury assignments for the session. Each room can have multiple juries assigned based on juries_per_room configuration.
           example:
             - room_id: 1
-              jury_id: 1
+              jury_ids: [1, 2]
             - room_id: 2
-              jury_id: 2
+              jury_ids: [3, 4]
         slots:
           type: array
           items:
@@ -3227,16 +3227,18 @@ components:
       type: object
       required:
         - room_id
-        - jury_id
+        - jury_ids
       properties:
         room_id:
           type: integer
           description: Room ID
           example: 1
-        jury_id:
-          type: integer
-          description: ID of the jury assigned to this room for the session
-          example: 1
+        jury_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of juries assigned to this room for the session. Supports multiple juries per room.
+          example: [1, 2]
 
     SessionPlanSlot:
       type: object

@@ -5,11 +5,12 @@
 import type { SessionPlanSlot } from './SessionPlanSlot';
 
 /**
- * Mapping of room ID to jury ID for room-level jury assignment
+ * Mapping of room ID to jury IDs for room-level jury assignment
+ * Supports multiple juries per room based on juries_per_room configuration
  */
 export type RoomJuryAssignment = {
     room_id: number;
-    jury_id: number | null;
+    jury_ids: Array<number>;
 };
 
 export type SessionPlan = {
@@ -34,7 +35,8 @@ export type SessionPlan = {
      */
     juries_per_room: number;
     /**
-     * Room-level jury assignments. Each entry maps a room to its assigned jury.
+     * Room-level jury assignments. Each entry maps a room to its assigned juries.
+     * Supports multiple juries per room based on juries_per_room configuration.
      * When provided, this takes precedence over slot-level jury_ids.
      */
     room_jury_assignments?: Array<RoomJuryAssignment>;
