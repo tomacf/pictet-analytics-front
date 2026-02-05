@@ -21,6 +21,7 @@ import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import StatusPanel from '../../components/shared/StatusPanel';
 import {isoToLocalDateTime, localDateTimeToISO} from '../../utils/dateUtils';
 import {format409Error, is409Error} from '../../utils/errorUtils';
+import {compareLabelsAlphanumeric} from '../../utils/labelUtils';
 import {
   detectJuryConflicts,
   detectTeamConflicts,
@@ -287,8 +288,24 @@ const SessionWizard = () => {
     const slots: ScheduleSlot[] = [];
     const { selectedRoomIds, selectedTeamIds, selectedJuryIds, teamsPerRoom, juriesPerRoom, startTime, timeBeforeFirstSlot, slotDuration, timeBetweenSlots } = state;
 
-    const totalTeams = selectedTeamIds.length;
-    const totalJuries = selectedJuryIds.length;
+    // Sort teams and juries by their labels (alphanumeric order)
+    // This ensures the first schedule suggestion maintains alphabetical then numerical order
+    const sortedTeamIds = [...selectedTeamIds].sort((idA, idB) => {
+      const teamA = teams.find(t => t.id === idA);
+      const teamB = teams.find(t => t.id === idB);
+      if (!teamA || !teamB) return 0;
+      return compareLabelsAlphanumeric(teamA.label, teamB.label);
+    });
+
+    const sortedJuryIds = [...selectedJuryIds].sort((idA, idB) => {
+      const juryA = juries.find(j => j.id === idA);
+      const juryB = juries.find(j => j.id === idB);
+      if (!juryA || !juryB) return 0;
+      return compareLabelsAlphanumeric(juryA.label, juryB.label);
+    });
+
+    const totalTeams = sortedTeamIds.length;
+    const totalJuries = sortedJuryIds.length;
     
     // Calculate how many slots we need (treat teamsPerRoom as max capacity, not a requirement to fill)
     const slotsPerRoom = Math.ceil(totalTeams / (selectedRoomIds.length * teamsPerRoom));
@@ -301,7 +318,7 @@ const SessionWizard = () => {
     const roomToJuries = new Map<number, number[]>();
 
     // Track which juries are available (not yet assigned to any room)
-    const availableJuries = new Set(selectedJuryIds);
+    const availableJuries = new Set(sortedJuryIds);
 
     // Calculate how many juries we need per concurrent time slot
     const roomsInParallel = selectedRoomIds.length;
@@ -344,7 +361,7 @@ const SessionWizard = () => {
         for (let i = 0; i < teamsPerRoom; i++) {
           // Only assign if we have teams left that haven't been used
           if (teamIndex < totalTeams) {
-            const teamId = selectedTeamIds[teamIndex];
+            const teamId = sortedTeamIds[teamIndex];
             if (!usedTeams.has(teamId)) {
               assignedTeams.push(teamId);
               usedTeams.add(teamId);
