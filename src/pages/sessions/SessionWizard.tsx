@@ -112,7 +112,8 @@ const SessionWizard = () => {
   // Refresh user data when component mounts
   useEffect(() => {
     refreshUser();
-  }, [refreshUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // State for adding new slots
   const [newSlotForms, setNewSlotForms] = useState<Record<number, { startTime: string; endTime: string }>>({});
