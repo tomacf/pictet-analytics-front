@@ -241,6 +241,18 @@ const DuplicateSessionModal = ({
         formData.time_before_first_slot
       );
 
+      // Step 3b: Build room-level jury assignments from the first slot of each room
+      // Since juries are assigned at room level, all slots in a room should have the same juries
+      const roomJuryAssignments: Record<number, number[]> = {};
+      for (const roomId of formData.room_ids) {
+        const roomSlot = scheduleSlots.find(slot => slot.roomId === roomId);
+        if (roomSlot && roomSlot.juryIds && roomSlot.juryIds.length > 0) {
+          roomJuryAssignments[roomId] = [...roomSlot.juryIds];
+        } else {
+          roomJuryAssignments[roomId] = [];
+        }
+      }
+
       toast.success('Session duplicated successfully');
       onClose();
 
@@ -260,6 +272,7 @@ const DuplicateSessionModal = ({
             timeBetweenSlots: formData.time_between_slots,
             timeBeforeFirstSlot: formData.time_before_first_slot,
             scheduleSlots: scheduleSlots, // Reconstructed draft from source session
+            roomJuryAssignments: roomJuryAssignments, // Room-level jury assignments
           },
           step: 3, // Navigate directly to step 3 (Review & Edit)
         },
