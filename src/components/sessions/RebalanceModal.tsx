@@ -1,4 +1,5 @@
 import type { RoomSessionExpanded, IDLabel, RebalanceScores, SessionPlanSlot } from '../../apiConfig';
+import Modal from '../shared/Modal';
 import ScheduleOverview from './ScheduleOverview';
 import './RebalanceModal.css';
 
@@ -101,56 +102,73 @@ const RebalanceModal = ({
     );
   };
 
+  const subtitle = improved 
+    ? `Schedule improved! Total penalty reduced from ${formatNumber(beforeScores.total_penalty)} to ${formatNumber(afterScores.total_penalty)}`
+    : 'No significant improvement detected';
+
+  const modalFooter = (
+    <>
+      <button className="btn btn-secondary" onClick={onClose}>
+        Cancel
+      </button>
+      {hasApplied ? (
+        <button className="btn btn-warning" onClick={onUndo}>
+          ↶ Undo Rebalance
+        </button>
+      ) : (
+        <button className="btn btn-primary" onClick={onApply}>
+          ✓ Apply rebalanced plan
+        </button>
+      )}
+    </>
+  );
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content rebalance-modal rebalance-modal-wide" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>✨ Magic Rebalance Results</h2>
-          <button className="modal-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title="✨ Magic Rebalance Results"
+      subtitle={subtitle}
+      footer={modalFooter}
+      className="modal-rebalance-wide"
+    >
+      <div className="rebalance-modal-content">
+        <div className="rebalance-summary">
+          <div className={`improvement-badge ${improved ? 'positive' : 'neutral'}`}>
+            {improved ? (
+              <>
+                <span className="improvement-icon">✓</span>
+                <strong>Schedule improved!</strong>
+              </>
+            ) : (
+              <>
+                <span className="improvement-icon">≈</span>
+                <strong>No significant improvement</strong>
+              </>
+            )}
+          </div>
         </div>
 
-        <div className="modal-body">
-          <div className="rebalance-summary">
-            <div className={`improvement-badge ${improved ? 'positive' : 'neutral'}`}>
-              {improved ? (
-                <>
-                  <span className="improvement-icon">✓</span>
-                  <strong>Schedule improved!</strong>
-                </>
-              ) : (
-                <>
-                  <span className="improvement-icon">≈</span>
-                  <strong>No significant improvement</strong>
-                </>
-              )}
-            </div>
-            <p className="penalty-summary">
-              Total penalty: <strong>{formatNumber(beforeScores.total_penalty)}</strong> → <strong>{formatNumber(afterScores.total_penalty)}</strong>
-            </p>
-          </div>
-
-          {/* Schedule Preview Section */}
-          <div className="schedule-preview-section">
-            <div className="schedule-preview-container">
-              <div className="schedule-preview-column">
-                <h3 className="schedule-preview-title">Before Rebalance</h3>
-                <div className="schedule-preview-content">
-                  <ScheduleOverview roomSessions={beforeRoomSessions} rooms={rooms} />
-                </div>
+        {/* Schedule Preview Section */}
+        <div className="schedule-preview-section">
+          <div className="schedule-preview-container">
+            <div className="schedule-preview-column">
+              <h3 className="schedule-preview-title">Before</h3>
+              <div className="schedule-preview-content">
+                <ScheduleOverview roomSessions={beforeRoomSessions} rooms={rooms} />
               </div>
-              <div className="schedule-preview-column">
-                <h3 className="schedule-preview-title">After Rebalance</h3>
-                <div className="schedule-preview-content">
-                  <ScheduleOverview roomSessions={afterRoomSessions} rooms={rooms} />
-                </div>
+            </div>
+            <div className="schedule-preview-column">
+              <h3 className="schedule-preview-title">After</h3>
+              <div className="schedule-preview-content">
+                <ScheduleOverview roomSessions={afterRoomSessions} rooms={rooms} />
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Metrics Table */}
-          <table className="metrics-table">
+        {/* Metrics Table */}
+        <table className="metrics-table">
             <thead>
               <tr>
                 <th>Metric</th>
@@ -199,31 +217,15 @@ const RebalanceModal = ({
               <strong>What does this mean?</strong>
             </p>
             <ul>
-              <li><strong>Waiting Time Disparity:</strong> Variance in wait times between team presentations (lower is better)</li>
-              <li><strong>Meeting Repeats:</strong> Sum of historical team-vs-team counts for teams grouped in same slots</li>
-              <li><strong>Team-Jury Repeats:</strong> Sum of historical team-jury counts for teams meeting juries</li>
-              <li><strong>Room Diversity:</strong> Penalty for teams using frequently-used rooms</li>
+              <li><strong>Waiting Time Disparity:</strong> Variance in wait times (lower is better)</li>
+              <li><strong>Meeting Repeats:</strong> Team-vs-team history for grouped slots</li>
+              <li><strong>Team-Jury Repeats:</strong> Team-jury meeting history</li>
+              <li><strong>Room Diversity:</strong> Penalty for frequently-used rooms</li>
             </ul>
           </div>
         </div>
-
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          {hasApplied ? (
-            <button className="btn btn-warning" onClick={onUndo}>
-              ↶ Undo Rebalance
-            </button>
-          ) : (
-            <button className="btn btn-primary" onClick={onApply}>
-              ✓ Apply rebalanced plan
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+      </Modal>
+    );
 };
 
 export default RebalanceModal;
