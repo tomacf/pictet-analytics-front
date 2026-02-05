@@ -44,3 +44,75 @@ export const generateDuplicateLabel = (originalLabel: string): string => {
   // No trailing digits found, fallback to appending " (copy)"
   return `${originalLabel} (copy)`;
 };
+
+/**
+ * Compares two labels for alphanumeric sorting.
+ * 
+ * This function implements a natural sort order where:
+ * - Alphabetical parts are compared case-insensitively
+ * - Numerical parts are compared numerically (e.g., "Team 2" < "Team 10")
+ * - Leading zeros are handled correctly
+ * 
+ * @param a First label to compare
+ * @param b Second label to compare
+ * @returns -1 if a < b, 1 if a > b, 0 if equal
+ * 
+ * @example
+ * ["Team 10", "Team 2", "Team 1"].sort(compareLabelsAlphanumeric)
+ * // Result: ["Team 1", "Team 2", "Team 10"]
+ * 
+ * ["A10", "A2", "A1"].sort(compareLabelsAlphanumeric)
+ * // Result: ["A1", "A2", "A10"]
+ */
+export const compareLabelsAlphanumeric = (a: string, b: string): number => {
+  // Split strings into parts of text and numbers
+  const splitIntoChunks = (str: string): (string | number)[] => {
+    const chunks: (string | number)[] = [];
+    const regex = /(\d+|\D+)/g;
+    let match;
+    
+    while ((match = regex.exec(str)) !== null) {
+      const chunk = match[0];
+      // If it's all digits, convert to number for numeric comparison
+      if (/^\d+$/.test(chunk)) {
+        chunks.push(parseInt(chunk, 10));
+      } else {
+        // Otherwise, keep as lowercase string for case-insensitive comparison
+        chunks.push(chunk.toLowerCase());
+      }
+    }
+    
+    return chunks;
+  };
+  
+  const aParts = splitIntoChunks(a);
+  const bParts = splitIntoChunks(b);
+  
+  // Compare chunk by chunk
+  const maxLength = Math.max(aParts.length, bParts.length);
+  
+  for (let i = 0; i < maxLength; i++) {
+    const aPart = aParts[i];
+    const bPart = bParts[i];
+    
+    // If one string ran out of parts, it's "less than"
+    if (aPart === undefined) return -1;
+    if (bPart === undefined) return 1;
+    
+    // If types are different (number vs string), compare as strings
+    if (typeof aPart !== typeof bPart) {
+      const aStr = String(aPart);
+      const bStr = String(bPart);
+      if (aStr < bStr) return -1;
+      if (aStr > bStr) return 1;
+      continue;
+    }
+    
+    // Both are same type, compare directly
+    if (aPart < bPart) return -1;
+    if (aPart > bPart) return 1;
+  }
+  
+  // All parts are equal
+  return 0;
+};
