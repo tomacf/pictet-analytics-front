@@ -84,31 +84,33 @@ const StatusPanel = ({
         {hasIssues && !isOpen && <span className="badge">{(unassignedTeams.length + unassignedJuries.length + teamConflicts.length + juryConflicts.length)}</span>}
       </button>
 
-      {/* Desktop Collapse Toggle Button */}
-      {onCollapse && (
-        <button
-          className={`status-panel-collapse-toggle ${isCollapsed ? 'collapsed' : ''}`}
-          onClick={onCollapse}
-          aria-label={isCollapsed ? "Expand status panel" : "Collapse status panel"}
-          title={isCollapsed ? "Expand status panel" : "Collapse status panel"}
-        >
-          {isCollapsed ? (
-            <>
+      {/* Right Sidebar Container - for sticky positioning */}
+      <div className="status-panel-wrapper">
+        {/* Desktop Collapse Toggle Button */}
+        {onCollapse && (
+          <button
+            className={`status-panel-collapse-toggle ${isCollapsed ? 'collapsed' : ''}`}
+            onClick={onCollapse}
+            aria-label={isCollapsed ? "Expand status panel" : "Collapse status panel"}
+            title={isCollapsed ? "Expand status panel" : "Collapse status panel"}
+          >
+            {isCollapsed ? (
+              <>
+                <span className="collapse-arrow">›</span>
+                {hasWarnings && <span className="collapse-icon warning-icon">⚠</span>}
+                {hasErrors && <span className="collapse-icon error-icon">🚫</span>}
+              </>
+            ) : (
               <span className="collapse-arrow">›</span>
-              {hasWarnings && <span className="collapse-icon warning-icon">⚠</span>}
-              {hasErrors && <span className="collapse-icon error-icon">🚫</span>}
-            </>
-          ) : (
-            <span className="collapse-arrow">›</span>
-          )}
-        </button>
-      )}
+            )}
+          </button>
+        )}
 
-      {/* Status Panel */}
-      <div 
-        ref={panelRef}
-        className={`status-panel ${isOpen ? 'status-panel-open' : 'status-panel-closed'} ${isCollapsed ? 'status-panel-collapsed' : ''}`}
-      >
+        {/* Status Panel */}
+        <div 
+          ref={panelRef}
+          className={`status-panel ${isOpen ? 'status-panel-open' : 'status-panel-closed'} ${isCollapsed ? 'status-panel-collapsed' : ''}`}
+        >
         <div className="status-panel-header">
           <h3>Status</h3>
           <button
@@ -237,6 +239,7 @@ const StatusPanel = ({
             </div>
           )}
         </div>
+      </div>
       </div>
 
       {/* Overlay for mobile */}

@@ -1,35 +1,59 @@
+/* Status Panel - Custom Properties */
+:root {
+  --status-panel-width: 350px;
+  --status-panel-z-index: 10;
+  --status-panel-mobile-z-index: 1000;
+}
+
+/* Status Panel Wrapper - Container for sticky positioning */
+.status-panel-wrapper {
+  display: flex;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: 100vh;
+}
+
 /* Status Panel - Sticky Right Sidebar */
 .status-panel {
-  --status-panel-width: 350px;
-  position: fixed;
-  top: 80px; /* Below the topbar */
-  right: 0;
+  flex-shrink: 0;
   width: var(--status-panel-width);
-  height: calc(100vh - 80px);
+  max-height: 100vh;
   background-color: white;
   border-left: 1px solid #e2e8f0;
   overflow-y: auto;
-  z-index: 100;
+  z-index: var(--status-panel-z-index);
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
-  transition: width 0.3s ease, transform 0.3s ease;
+  transition: width 0.3s ease, margin-right 0.3s ease;
 }
 
 /* Desktop - Collapsible */
 @media (min-width: 1025px) {
-  .status-panel {
-    transform: translateX(0);
-  }
-
   .status-panel.status-panel-collapsed {
     width: 0;
+    min-width: 0;
     overflow: hidden;
     border-left: none;
+    padding: 0;
   }
 }
 
 /* Mobile/Tablet - Slideable */
 @media (max-width: 1024px) {
+  .status-panel-wrapper {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: var(--status-panel-mobile-z-index);
+    max-height: 100vh;
+  }
+
   .status-panel {
+    width: 100%;
+    max-width: 400px;
+    height: 100vh;
+    max-height: 100vh;
     transition: transform 0.3s ease;
   }
 
@@ -294,10 +318,7 @@
 /* Desktop Collapse Toggle Button */
 .status-panel-collapse-toggle {
   display: none; /* Hidden on mobile/tablet */
-  position: fixed;
-  top: 50%;
-  right: var(--status-panel-width);
-  transform: translateY(-50%);
+  align-self: center;
   background-color: white;
   color: #64748b;
   border: 1px solid #e2e8f0;
@@ -307,13 +328,14 @@
   height: 4rem;
   cursor: pointer;
   box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
-  z-index: 101;
+  z-index: calc(var(--status-panel-z-index) + 1);
   transition: all 0.3s ease;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
   padding: 0.25rem;
+  flex-shrink: 0;
 }
 
 @media (min-width: 1025px) {
@@ -323,7 +345,7 @@
 }
 
 .status-panel-collapse-toggle.collapsed {
-  right: 0;
+  /* No special positioning when collapsed */
 }
 
 .status-panel-collapse-toggle:hover {
@@ -361,14 +383,6 @@
 
 /* Responsive - Tablet and Mobile */
 @media (max-width: 1024px) {
-  .status-panel {
-    width: 100%;
-    max-width: 400px;
-    top: 0;
-    height: 100vh;
-    z-index: 1000;
-  }
-
   .status-panel-toggle {
     display: flex; /* Show on tablet/mobile */
   }
