@@ -1,15 +1,14 @@
+import {Plus, Wand2} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {toast} from 'react-toastify';
-import {FileUp, Wand2, Plus} from 'lucide-react';
 import {SessionsService, type SessionExpanded, type SessionInput} from '../../apiConfig';
+import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
+import ImportPdfModal from '../../components/sessions/ImportPdfModal';
 import DataTable from '../../components/shared/DataTable';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
-import IconButton from '../../components/shared/IconButton';
-import ImportPdfModal from '../../components/sessions/ImportPdfModal';
-import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
 import {formatEuropeanDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
 import '../teams/Teams.css';
@@ -238,16 +237,12 @@ const Sessions = () => {
       <div className="page-header">
         <h1>Sessions</h1>
         <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
-          <IconButton
-            icon={FileUp}
-            label="Import from PDF"
-            onClick={() => setIsImportModalOpen(true)}
-            variant="secondary"
-            size="md"
-          />
-          <button onClick={() => navigate('/sessions/wizard')} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+          <button onClick={() => setIsImportModalOpen(true)} className="btn btn-secondary">
+            Import from PDF
+          </button>
+          <button onClick={() => navigate('/sessions/wizard')} className="btn btn-warning" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <Wand2 size={16} />
-            Wizard
+            Scheduling Wizard
           </button>
           <button onClick={handleCreate} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
             <Plus size={16} />

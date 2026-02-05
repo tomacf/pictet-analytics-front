@@ -260,61 +260,6 @@
   transform: translateX(-2px);
 }
 
-/* Mobile Toggle Button */
-.status-panel-toggle {
-  display: none; /* Hidden on desktop */
-  position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
-  background-color: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 3.5rem;
-  height: 3.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  z-index: 99;
-  transition: all 0.2s;
-}
-
-.status-panel-toggle:hover {
-  background-color: var(--color-primary-dark);
-  transform: scale(1.05);
-}
-
-.status-panel-toggle .toggle-icon {
-  font-size: 1.25rem;
-  line-height: 1;
-}
-
-.status-panel-toggle .toggle-text {
-  font-size: 0.625rem;
-  font-weight: 600;
-  margin-top: 0.125rem;
-}
-
-.status-panel-toggle .badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background-color: #dc2626;
-  color: white;
-  border: 2px solid white;
-  border-radius: 50%;
-  width: 1.5rem;
-  height: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.625rem;
-  font-weight: 700;
-}
-
 /* Desktop Collapse Toggle Button */
 .status-panel-collapse-toggle {
   display: none; /* Hidden on mobile/tablet */

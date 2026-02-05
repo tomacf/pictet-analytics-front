@@ -4,8 +4,7 @@
   justify-content: center;
   align-items: center;
   gap: 2rem;
-  margin: 2rem 0;
-  padding: 2rem 0;
+  padding: 1rem 0;
   border-bottom: 1px solid #e2e8f0;
 }
 
@@ -470,7 +469,7 @@
   .add-slot-inputs {
     grid-template-columns: 1fr;
   }
-  
+
   .slot-header-left {
     flex-direction: column;
     align-items: flex-start;
@@ -693,12 +692,12 @@
   .overview-table {
     font-size: 0.75rem;
   }
-  
+
   .overview-table th,
   .overview-table td {
     padding: 0.5rem;
   }
-  
+
   .overview-chip {
     font-size: 0.6875rem;
     padding: 0.125rem 0.25rem;

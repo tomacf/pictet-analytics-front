@@ -1,5 +1,5 @@
-import { useRef } from 'react';
-import type { TeamConflict, JuryConflict } from '../../utils/validationUtils';
+import {useRef} from 'react';
+import type {JuryConflict, TeamConflict} from '../../utils/validationUtils';
 import './StatusPanel.css';
 
 interface StatusPanelProps {
@@ -50,17 +50,17 @@ const StatusPanel = ({
   const getSlotDescription = (slotIndex: number) => {
     const slot = slots[slotIndex];
     if (!slot) return `Slot ${slotIndex + 1}`;
-    
+
     const room = rooms.find((r) => r.id === slot.roomId);
-    const startTime = new Date(slot.startTime).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const startTime = new Date(slot.startTime).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    const endTime = new Date(slot.endTime).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    const endTime = new Date(slot.endTime).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    
+
     return `${room?.label || `Room ${slot.roomId}`} - Slot ${slot.slotIndex + 1} (${startTime}-${endTime})`;
   };
 
@@ -73,17 +73,6 @@ const StatusPanel = ({
 
   return (
     <>
-      {/* Mobile Toggle Button */}
-      <button
-        className="status-panel-toggle"
-        onClick={onToggle}
-        aria-label="Toggle status panel"
-      >
-        <span className="toggle-icon">{isOpen ? '✕' : '📊'}</span>
-        <span className="toggle-text">Status</span>
-        {hasIssues && !isOpen && <span className="badge">{(unassignedTeams.length + unassignedJuries.length + teamConflicts.length + juryConflicts.length)}</span>}
-      </button>
-
       {/* Right Sidebar Container - for sticky positioning */}
       <div className="status-panel-wrapper">
         {/* Desktop Collapse Toggle Button */}
@@ -107,7 +96,7 @@ const StatusPanel = ({
         )}
 
         {/* Status Panel */}
-        <div 
+        <div
           ref={panelRef}
           className={`status-panel ${isOpen ? 'status-panel-open' : 'status-panel-closed'} ${isCollapsed ? 'status-panel-collapsed' : ''}`}
         >
@@ -244,7 +233,7 @@ const StatusPanel = ({
 
       {/* Overlay for mobile */}
       {isOpen && (
-        <div 
+        <div
           className="status-panel-overlay"
           onClick={onToggle}
         />
