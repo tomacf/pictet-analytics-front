@@ -11,6 +11,7 @@ interface DataTableProps<T> {
   data: T[];
   onEdit?: (item: T) => void;
   onDelete?: (item: T) => void;
+  onDuplicate?: (item: T) => void;
   idKey?: keyof T;
 }
 
@@ -19,6 +20,7 @@ function DataTable<T extends Record<string, unknown>>({
   data,
   onEdit,
   onDelete,
+  onDuplicate,
   idKey = 'id' as keyof T,
 }: DataTableProps<T>) {
   return (
@@ -29,13 +31,13 @@ function DataTable<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th key={col.key}>{col.label}</th>
             ))}
-            {(onEdit || onDelete) && <th className="actions-header">Actions</th>}
+            {(onEdit || onDelete || onDuplicate) && <th className="actions-header">Actions</th>}
           </tr>
         </thead>
         <tbody>
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} className="no-data">
+              <td colSpan={columns.length + (onEdit || onDelete || onDuplicate ? 1 : 0)} className="no-data">
                 No data available
               </td>
             </tr>
@@ -47,7 +49,7 @@ function DataTable<T extends Record<string, unknown>>({
                     {col.render ? col.render(item) : String(item[col.key])}
                   </td>
                 ))}
-                {(onEdit || onDelete) && (
+                {(onEdit || onDelete || onDuplicate) && (
                   <td className="actions">
                     {onEdit && (
                       <button
@@ -55,6 +57,14 @@ function DataTable<T extends Record<string, unknown>>({
                         className="btn btn-edit"
                       >
                         Edit
+                      </button>
+                    )}
+                    {onDuplicate && (
+                      <button
+                        onClick={() => onDuplicate(item)}
+                        className="btn btn-duplicate"
+                      >
+                        Duplicate
                       </button>
                     )}
                     {onDelete && (

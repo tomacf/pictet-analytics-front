@@ -17,6 +17,7 @@ import Modal from '../../components/shared/Modal';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import ScheduleOverview from '../../components/sessions/ScheduleOverview';
+import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 import './SessionDetail.css';
@@ -90,6 +91,9 @@ const SessionDetail = () => {
     jury_ids: [],
     room_ids: [],
   });
+
+  // Duplicate Session Modal State
+  const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 
   const fetchSessionDetails = useCallback(async () => {
     if (!id) return;
@@ -353,6 +357,12 @@ const SessionDetail = () => {
             disabled={downloading}
           >
             {downloading ? '📄 Downloading...' : '📄 Download PDF'}
+          </button>
+          <button 
+            onClick={() => setIsDuplicateModalOpen(true)} 
+            className="btn btn-secondary"
+          >
+            📋 Duplicate Session
           </button>
           <button onClick={handleCreateRoomSession} className="btn btn-primary">
             Create Room Session
@@ -862,6 +872,13 @@ const SessionDetail = () => {
           </div>
         </form>
       </Modal>
+
+      {/* Duplicate Session Modal */}
+      <DuplicateSessionModal
+        isOpen={isDuplicateModalOpen}
+        onClose={() => setIsDuplicateModalOpen(false)}
+        sourceSession={session}
+      />
     </div>
   );
 };
