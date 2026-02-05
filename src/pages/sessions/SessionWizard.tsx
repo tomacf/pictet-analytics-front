@@ -1246,26 +1246,30 @@ const SessionWizard = () => {
                     </p>
                     <div className="form-group">
                       <label htmlFor={`room-jury-${roomId}`}>Assigned Juries ({wizardState.juriesPerRoom} per room)</label>
-                      <select
-                        id={`room-jury-${roomId}`}
-                        multiple
-                        value={roomJuryIds.map(String)}
-                        onChange={(e) => {
-                          const selectedJuryIds = Array.from(e.target.selectedOptions).map((opt) => parseInt(opt.value));
-                          updateRoomJuries(roomId, selectedJuryIds);
-                        }}
-                        className="form-input multi-select"
-                        disabled={saving}
-                        size={Math.min(5, juries.filter((jury) => wizardState.selectedJuryIds.includes(jury.id)).length)}
-                      >
-                        {juries
-                          .filter((jury) => wizardState.selectedJuryIds.includes(jury.id))
-                          .map((jury) => (
-                            <option key={jury.id} value={jury.id}>
-                              {jury.label}
-                            </option>
-                          ))}
-                      </select>
+                      {(() => {
+                        const availableJuries = juries.filter((jury) => wizardState.selectedJuryIds.includes(jury.id));
+                        const selectSize = Math.min(5, availableJuries.length);
+                        return (
+                          <select
+                            id={`room-jury-${roomId}`}
+                            multiple
+                            value={roomJuryIds.map(String)}
+                            onChange={(e) => {
+                              const selectedJuryIds = Array.from(e.target.selectedOptions).map((opt) => parseInt(opt.value));
+                              updateRoomJuries(roomId, selectedJuryIds);
+                            }}
+                            className="form-input multi-select"
+                            disabled={saving}
+                            size={selectSize}
+                          >
+                            {availableJuries.map((jury) => (
+                              <option key={jury.id} value={jury.id}>
+                                {jury.label}
+                              </option>
+                            ))}
+                          </select>
+                        );
+                      })()}
                       {roomJuryIds.length === 0 && (
                         <span className="warning-badge">⚠ No jury assigned</span>
                       )}

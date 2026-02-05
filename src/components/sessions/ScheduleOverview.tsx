@@ -77,7 +77,7 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
   // Helper to get room jury labels (supports multiple juries per room)
   const getRoomJuryLabels = (roomId: number): string[] => {
     const info = roomJuryInfo.find(r => r.roomId === roomId);
-    if (info && info.juryLabels.length > 0) return info.juryLabels;
+    if (info) return info.juryLabels;
     
     // Fallback: try to get from first session in this room
     const roomSession = roomSessions.find(s => s.room_id === roomId);
