@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { RebalancePlanResponse } from '../models/RebalancePlanResponse';
 import type { RoomSessionExpanded } from '../models/RoomSessionExpanded';
 import type { Session } from '../models/Session';
 import type { SessionExpanded } from '../models/SessionExpanded';
@@ -191,6 +192,46 @@ export class SessionsService {
                 - A jury is assigned to overlapping time ranges within the session
                 `,
                 500: `Internal server error (e.g., validation failed, IDs not found)`,
+            },
+        });
+    }
+    /**
+     * Rebalance a session plan
+     * Accepts a draft session plan and returns a rebalanced plan without persisting.
+     * Uses historical analytics data (team meetings, waiting times, room usage, jury interactions)
+     * to optimize the assignment of teams and juries to slots.
+     *
+     * The algorithm is deterministic (seeded with session_id) and respects constraints:
+     * - Each team appears at most once in the plan
+     * - No jury is assigned to overlapping time intervals
+     * - Only teams/juries/rooms in the session scope are used
+     *
+     * Optimization priorities:
+     * 1. Reduce waiting-time disparity (teams with high wait get earlier slots)
+     * 2. Increase rare meetings (group teams that historically met least)
+     * 3. Jury stability + fairness (room-anchored juries, minimize repeat interactions)
+     * 4. Room diversity (penalize frequent room usage by teams)
+     *
+     * @param id Session ID (used as seed for deterministic algorithm)
+     * @param requestBody
+     * @returns RebalancePlanResponse Successfully rebalanced plan
+     * @throws ApiError
+     */
+    public static rebalanceSessionPlan(
+        id: number,
+        requestBody: SessionPlan,
+    ): CancelablePromise<RebalancePlanResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sessions/{id}/rebalance',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+            errors: {
+                400: `Invalid request body, ID parameter, or plan scope violation`,
+                500: `Internal server error`,
             },
         });
     }

@@ -1,19 +1,18 @@
-import type { RebalanceMetrics, RebalanceSlot } from '../../utils/rebalanceUtils';
-import type { RoomSessionExpanded, IDLabel } from '../../apiConfig';
+import type { RoomSessionExpanded, IDLabel, RebalanceScores, SessionPlanSlot } from '../../apiConfig';
 import ScheduleOverview from './ScheduleOverview';
 import './RebalanceModal.css';
 
 interface RebalanceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  beforeMetrics: RebalanceMetrics;
-  afterMetrics: RebalanceMetrics;
-  improvementPercentage: number;
+  beforeScores: RebalanceScores;
+  afterScores: RebalanceScores;
+  improved: boolean;
   onApply: () => void;
   onUndo: () => void;
   hasApplied: boolean;
-  beforeSlots: RebalanceSlot[];
-  afterSlots: RebalanceSlot[];
+  beforeSlots: SessionPlanSlot[];
+  afterSlots: SessionPlanSlot[];
   rooms: Array<{ id: number; label: string }>;
   teams: Array<{ id: number; label: string }>;
   juries: Array<{ id: number; label: string }>;
@@ -24,9 +23,9 @@ const METRIC_DECIMAL_PLACES = 2; // Number of decimal places to show for metrics
 const RebalanceModal = ({
   isOpen,
   onClose,
-  beforeMetrics,
-  afterMetrics,
-  improvementPercentage,
+  beforeScores,
+  afterScores,
+  improved,
   onApply,
   onUndo,
   hasApplied,
@@ -50,24 +49,24 @@ const RebalanceModal = ({
     return entity ? { id: entity.id, label: entity.label } : { id, label: `${prefix} ${id}` };
   };
 
-  // Convert RebalanceSlot[] to RoomSessionExpanded[] for ScheduleOverview
-  const convertSlotsToRoomSessions = (slots: RebalanceSlot[]): RoomSessionExpanded[] => {
+  // Convert SessionPlanSlot[] to RoomSessionExpanded[] for ScheduleOverview
+  const convertSlotsToRoomSessions = (slots: SessionPlanSlot[]): RoomSessionExpanded[] => {
     // Create lookup maps for O(1) access instead of O(n) find operations
     const roomsMap = new Map(rooms.map(r => [r.id, r]));
     const teamsMap = new Map(teams.map(t => [t.id, t]));
     const juriesMap = new Map(juries.map(j => [j.id, j]));
 
     return slots.map((slot, index) => {
-      const room = roomsMap.get(slot.roomId);
-      const slotTeams = slot.teamIds.map(id => getOrCreateIDLabel(teamsMap, id, 'Team'));
-      const slotJuries = slot.juryIds.map(id => getOrCreateIDLabel(juriesMap, id, 'Jury'));
+      const room = roomsMap.get(slot.room_id);
+      const slotTeams = slot.team_ids.map(id => getOrCreateIDLabel(teamsMap, id, 'Team'));
+      const slotJuries = slot.jury_ids.map(id => getOrCreateIDLabel(juriesMap, id, 'Jury'));
 
       return {
         id: index,
-        room_id: slot.roomId,
+        room_id: slot.room_id,
         session_id: 0, // Placeholder: not needed for preview display
-        start_time: slot.startTime,
-        end_time: slot.endTime,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         room: room ? { id: room.id, label: room.label } as IDLabel : undefined,
@@ -114,11 +113,11 @@ const RebalanceModal = ({
 
         <div className="modal-body">
           <div className="rebalance-summary">
-            <div className={`improvement-badge ${improvementPercentage > 0 ? 'positive' : 'neutral'}`}>
-              {improvementPercentage > 0 ? (
+            <div className={`improvement-badge ${improved ? 'positive' : 'neutral'}`}>
+              {improved ? (
                 <>
                   <span className="improvement-icon">✓</span>
-                  <strong>{formatNumber(improvementPercentage)}% improvement</strong>
+                  <strong>Schedule improved!</strong>
                 </>
               ) : (
                 <>
@@ -127,6 +126,9 @@ const RebalanceModal = ({
                 </>
               )}
             </div>
+            <p className="penalty-summary">
+              Total penalty: <strong>{formatNumber(beforeScores.total_penalty)}</strong> → <strong>{formatNumber(afterScores.total_penalty)}</strong>
+            </p>
           </div>
 
           {/* Schedule Preview Section */}
@@ -160,38 +162,32 @@ const RebalanceModal = ({
             <tbody>
               {renderMetricRow(
                 'Waiting Time Disparity',
-                beforeMetrics.waitingTimeDisparity,
-                afterMetrics.waitingTimeDisparity,
-                ' min'
+                beforeScores.wait_disparity,
+                afterScores.wait_disparity
               )}
               {renderMetricRow(
-                'Repeated Team Meetings',
-                beforeMetrics.repeatedTeamMeetings,
-                afterMetrics.repeatedTeamMeetings
+                'Meeting Repeats',
+                beforeScores.meeting_repeats,
+                afterScores.meeting_repeats
               )}
               {renderMetricRow(
-                'Repeated Team-Jury Interactions',
-                beforeMetrics.repeatedTeamJuryInteractions,
-                afterMetrics.repeatedTeamJuryInteractions
+                'Team-Jury Repeats',
+                beforeScores.team_jury_repeats,
+                afterScores.team_jury_repeats
               )}
               {renderMetricRow(
-                'Uneven Room Attendance',
-                beforeMetrics.unevenRoomAttendance,
-                afterMetrics.unevenRoomAttendance
-              )}
-              {renderMetricRow(
-                'Jury Room Changes',
-                beforeMetrics.juryRoomChanges,
-                afterMetrics.juryRoomChanges
+                'Room Diversity',
+                beforeScores.room_diversity,
+                afterScores.room_diversity
               )}
               <tr className="total-row">
                 <td className="metric-label"><strong>Total Penalty Score</strong></td>
-                <td className="metric-value"><strong>{formatNumber(beforeMetrics.totalPenalty)}</strong></td>
-                <td className="metric-value"><strong>{formatNumber(afterMetrics.totalPenalty)}</strong></td>
-                <td className={`metric-change ${afterMetrics.totalPenalty < beforeMetrics.totalPenalty ? 'improvement' : 'degradation'}`}>
+                <td className="metric-value"><strong>{formatNumber(beforeScores.total_penalty)}</strong></td>
+                <td className="metric-value"><strong>{formatNumber(afterScores.total_penalty)}</strong></td>
+                <td className={`metric-change ${afterScores.total_penalty < beforeScores.total_penalty ? 'improvement' : 'degradation'}`}>
                   <strong>
-                    {afterMetrics.totalPenalty - beforeMetrics.totalPenalty > 0 ? '+' : ''}
-                    {formatNumber(afterMetrics.totalPenalty - beforeMetrics.totalPenalty)}
+                    {afterScores.total_penalty - beforeScores.total_penalty > 0 ? '+' : ''}
+                    {formatNumber(afterScores.total_penalty - beforeScores.total_penalty)}
                   </strong>
                 </td>
               </tr>
@@ -204,17 +200,16 @@ const RebalanceModal = ({
             </p>
             <ul>
               <li><strong>Waiting Time Disparity:</strong> Variance in wait times between team presentations (lower is better)</li>
-              <li><strong>Repeated Team Meetings:</strong> Number of times the same teams meet in different slots</li>
-              <li><strong>Repeated Team-Jury Interactions:</strong> Number of times the same team meets the same jury</li>
-              <li><strong>Uneven Room Attendance:</strong> Variance in how teams/juries are distributed across rooms</li>
-              <li><strong>Jury Room Changes:</strong> Number of times juries change rooms between consecutive slots</li>
+              <li><strong>Meeting Repeats:</strong> Sum of historical team-vs-team counts for teams grouped in same slots</li>
+              <li><strong>Team-Jury Repeats:</strong> Sum of historical team-jury counts for teams meeting juries</li>
+              <li><strong>Room Diversity:</strong> Penalty for teams using frequently-used rooms</li>
             </ul>
           </div>
         </div>
 
         <div className="modal-footer">
           <button className="btn btn-secondary" onClick={onClose}>
-            Close
+            Cancel
           </button>
           {hasApplied ? (
             <button className="btn btn-warning" onClick={onUndo}>
@@ -222,7 +217,7 @@ const RebalanceModal = ({
             </button>
           ) : (
             <button className="btn btn-primary" onClick={onApply}>
-              ✓ Apply Changes
+              ✓ Apply rebalanced plan
             </button>
           )}
         </div>

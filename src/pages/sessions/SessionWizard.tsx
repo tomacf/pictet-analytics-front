@@ -2,13 +2,16 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {toast} from 'react-toastify';
 import {
+  ApiError,
   JuriesService,
   RoomsService,
   SessionsService,
   TeamsService,
   type Jury,
+  type RebalancePlanResponse,
   type Room,
   type SessionPlan,
+  type SessionPlanSlot,
   type Team,
 } from '../../apiConfig';
 import RebalanceModal from '../../components/sessions/RebalanceModal';
@@ -17,10 +20,6 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import StatusPanel from '../../components/shared/StatusPanel';
 import {format409Error, is409Error} from '../../utils/errorUtils';
-import {
-  magicRebalanceWithAnalytics,
-  type RebalanceResult,
-} from '../../utils/rebalanceUtils';
 import {
   detectJuryConflicts,
   detectTeamConflicts,
@@ -136,7 +135,8 @@ const SessionWizard = () => {
 
   // Rebalance state
   const [rebalanceModalOpen, setRebalanceModalOpen] = useState(false);
-  const [rebalanceResult, setRebalanceResult] = useState<RebalanceResult | null>(null);
+  const [rebalanceResponse, setRebalanceResponse] = useState<RebalancePlanResponse | null>(null);
+  const [beforeSlots, setBeforeSlots] = useState<SessionPlanSlot[] | null>(null);
   const [preRebalanceSlots, setPreRebalanceSlots] = useState<ScheduleSlot[] | null>(null);
   const [isRebalancing, setIsRebalancing] = useState(false);
 
@@ -474,56 +474,84 @@ const SessionWizard = () => {
       return;
     }
 
+    if (!wizardState.sessionId) {
+      toast.error('Session must be created before rebalancing');
+      return;
+    }
+
     setIsRebalancing(true);
-    toast.info('Running Magic Rebalance with global analytics...');
 
-    // Use setTimeout to allow UI to update (show loading state) before starting
-    // the CPU-intensive rebalance computation. 100ms is sufficient for React to
-    // render the button state change and toast notification.
-    setTimeout(async () => {
-      try {
-        const result = await magicRebalanceWithAnalytics({
-          slots: wizardState.scheduleSlots.map(slot => ({
-            roomId: slot.roomId,
-            slotIndex: slot.slotIndex,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            teamIds: [...slot.teamIds],
-            juryIds: [...slot.juryIds],
-          })),
-          selectedTeamIds: wizardState.selectedTeamIds,
-          selectedJuryIds: wizardState.selectedJuryIds,
-          seed: Date.now(),
-          iterations: 1000,
-          // No sessionId - fetch global analytics from all sessions
+    try {
+      // Build the SessionPlan payload from current draft state
+      const currentSlots: SessionPlanSlot[] = wizardState.scheduleSlots.map(slot => ({
+        room_id: slot.roomId,
+        start_time: slot.startTime,
+        end_time: slot.endTime,
+        team_ids: [...slot.teamIds],
+        jury_ids: [...slot.juryIds],
+      }));
+
+      const sessionPlan: SessionPlan = {
+        room_ids: wizardState.selectedRoomIds,
+        team_ids: wizardState.selectedTeamIds,
+        jury_ids: wizardState.selectedJuryIds,
+        teams_per_room: wizardState.teamsPerRoom,
+        juries_per_room: wizardState.juriesPerRoom,
+        slots: currentSlots,
+      };
+
+      // Store the before slots for display in modal
+      setBeforeSlots(currentSlots);
+
+      // Call the backend rebalance API
+      const response = await SessionsService.rebalanceSessionPlan(
+        wizardState.sessionId,
+        sessionPlan
+      );
+
+      setRebalanceResponse(response);
+      setRebalanceModalOpen(true);
+      toast.success('Rebalance complete!');
+    } catch (err) {
+      // Handle 400/500 errors with toast + details
+      if (err instanceof ApiError) {
+        const statusCode = err.status;
+        const errorBody = err.body;
+        // Extract error message from response body
+        let errorMessage = `Error ${statusCode}`;
+        if (typeof errorBody === 'string') {
+          errorMessage = errorBody;
+        } else if (errorBody && typeof errorBody === 'object') {
+          errorMessage = errorBody.message || errorBody.error || errorMessage;
+        }
+        
+        toast.error(`Rebalance failed (${statusCode}): ${errorMessage}`, {
+          autoClose: 5000,
         });
-
-        setRebalanceResult(result);
-        setRebalanceModalOpen(true);
-        toast.success('Rebalance complete!');
-      } catch (err) {
+      } else {
         const message = err instanceof Error ? err.message : 'Failed to rebalance schedule';
         toast.error(message);
-      } finally {
-        setIsRebalancing(false);
       }
-    }, 100);
+      // Keep the draft unchanged - no state changes on error
+    } finally {
+      setIsRebalancing(false);
+    }
   };
 
   const handleApplyRebalance = () => {
-    if (!rebalanceResult) return;
+    if (!rebalanceResponse) return;
 
     // Save current state for undo
     setPreRebalanceSlots([...wizardState.scheduleSlots]);
 
-    // Apply the rebalanced slots
-    const updatedSlots = rebalanceResult.slots.map(slot => ({
-      roomId: slot.roomId,
-      slotIndex: slot.slotIndex,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      teamIds: [...slot.teamIds],
-      juryIds: [...slot.juryIds],
+    // Apply the rebalanced slots from response.plan
+    const updatedSlots = rebalanceResponse.plan.slots.map((slot, index) => ({
+      roomId: slot.room_id,
+      slotIndex: index,
+      startTime: slot.start_time,
+      endTime: slot.end_time,
+      teamIds: [...slot.team_ids],
+      juryIds: [...slot.jury_ids],
     }));
 
     setWizardState({ ...wizardState, scheduleSlots: updatedSlots });
@@ -536,7 +564,8 @@ const SessionWizard = () => {
     // Restore the previous state
     setWizardState({ ...wizardState, scheduleSlots: preRebalanceSlots });
     setPreRebalanceSlots(null);
-    setRebalanceResult(null);
+    setRebalanceResponse(null);
+    setBeforeSlots(null);
     setRebalanceModalOpen(false);
     toast.success('Rebalance undone');
   };
@@ -1322,18 +1351,18 @@ const SessionWizard = () => {
           </div>
 
           {/* Rebalance Modal */}
-          {rebalanceResult && (
+          {rebalanceResponse && rebalanceResponse.rebalance_report && beforeSlots && (
             <RebalanceModal
               isOpen={rebalanceModalOpen}
               onClose={handleCloseRebalanceModal}
-              beforeMetrics={rebalanceResult.beforeMetrics}
-              afterMetrics={rebalanceResult.afterMetrics}
-              improvementPercentage={rebalanceResult.improvementPercentage}
+              beforeScores={rebalanceResponse.rebalance_report.before_scores}
+              afterScores={rebalanceResponse.rebalance_report.after_scores}
+              improved={rebalanceResponse.rebalance_report.improved}
               onApply={handleApplyRebalance}
               onUndo={handleUndoRebalance}
               hasApplied={preRebalanceSlots !== null}
-              beforeSlots={rebalanceResult.originalSlots}
-              afterSlots={rebalanceResult.slots}
+              beforeSlots={beforeSlots}
+              afterSlots={rebalanceResponse.plan.slots}
               rooms={rooms.map(r => ({ id: r.id, label: r.label }))}
               teams={teams.map(t => ({ id: t.id, label: t.label }))}
               juries={juries.map(j => ({ id: j.id, label: j.label }))}
