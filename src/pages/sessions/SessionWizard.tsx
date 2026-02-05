@@ -1354,22 +1354,38 @@ const SessionWizard = () => {
             >
               Back
             </button>
-            <button
-              type="button"
-              onClick={(e) => {
-              e.preventDefault();
-              if (preRebalanceSlots !== null) {
-                handleUndoRebalance();
-              } else {
-                handleMagicRebalance();
-              }
-              }}
-              className="btn btn-magic"
-              disabled={saving || isRebalancing || (preRebalanceSlots === null && wizardState.scheduleSlots.length === 0)}
-              title={preRebalanceSlots !== null ? "Restore the previous schedule before rebalancing" : "Automatically optimize team and jury assignments"}
-            >
-              {isRebalancing ? '⏳ Rebalancing...' : (preRebalanceSlots !== null ? '↶ Undo Rebalance' : '✨ Magic Rebalance')}
-            </button>
+            {(() => {
+              // Compute button state for Magic Rebalance/Undo
+              const hasSnapshot = preRebalanceSlots !== null;
+              const hasSchedule = wizardState.scheduleSlots.length > 0;
+              const isUndoMode = hasSnapshot;
+              const isMagicRebalanceDisabled = saving || isRebalancing || (!hasSnapshot && !hasSchedule);
+              const buttonLabel = isRebalancing 
+                ? '⏳ Rebalancing...' 
+                : (isUndoMode ? '↶ Undo Rebalance' : '✨ Magic Rebalance');
+              const buttonTitle = isUndoMode 
+                ? "Restore the previous schedule before rebalancing" 
+                : "Automatically optimize team and jury assignments";
+
+              return (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (isUndoMode) {
+                      handleUndoRebalance();
+                    } else {
+                      handleMagicRebalance();
+                    }
+                  }}
+                  className="btn btn-magic"
+                  disabled={isMagicRebalanceDisabled}
+                  title={buttonTitle}
+                >
+                  {buttonLabel}
+                </button>
+              );
+            })()}
             <button
               type="button"
               onClick={handleExportJSON}
