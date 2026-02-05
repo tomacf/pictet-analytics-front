@@ -1,70 +1,243 @@
+/* ========================================
+   Auth Styles - Competition Scheduling Platform
+   Design System: Dark, Professional, Institutional
+   ======================================== */
+
 /* Auth container - centers auth forms */
 .auth-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #f8fafc;
+  background-color: var(--color-bg);
   padding: 1rem;
 }
 
 .auth-loading {
   text-align: center;
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.938rem;
 }
 
-/* Landing page card */
-.landing-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2.5rem;
-  max-width: 500px;
-  width: 100%;
-}
+/* ========================================
+   Landing Page Styles
+   ======================================== */
 
-.landing-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.landing-header h1 {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-
-.landing-subtitle {
-  color: #64748b;
-  font-size: 1rem;
-}
-
-.landing-content {
-  margin-bottom: 2rem;
-}
-
-.landing-content p {
-  color: #475569;
-  line-height: 1.6;
-  font-size: 0.938rem;
-}
-
-.landing-actions {
+.landing-page {
+  min-height: 100vh;
+  background-color: var(--color-bg);
   display: flex;
   flex-direction: column;
+}
+
+/* Top Navigation Bar */
+.landing-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.landing-logo {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
 }
 
-/* Auth forms card */
+.landing-logo img {
+  height: 40px;
+  width: auto;
+}
+
+.landing-logo-text {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.btn-signin-outline {
+  padding: 0.5rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-signin-outline:hover {
+  background-color: var(--color-accent);
+  color: white;
+}
+
+/* Hero Section */
+.landing-hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-hero-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  width: 100%;
+  gap: 4rem;
+}
+
+.landing-hero-text {
+  flex: 1;
+  max-width: 600px;
+}
+
+.landing-hero-title {
+  font-size: 2.75rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+
+.landing-hero-subtitle {
+  font-size: 1.125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.landing-hero-cta {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.landing-hero-cta:hover {
+  background-color: var(--color-accent-hover);
+}
+
+/* Abstract Schedule Grid Visual */
+.landing-hero-visual {
+  flex: 1;
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-grid-visual {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 8px;
+  opacity: 0.15;
+}
+
+.schedule-grid-visual .grid-cell {
+  background-color: var(--color-text-primary);
+  border-radius: 2px;
+  opacity: 0;
+  animation: fadeInCell 0.3s ease forwards;
+}
+
+.schedule-grid-visual .grid-cell.active {
+  opacity: 1;
+}
+
+.schedule-grid-visual .grid-cell.highlight {
+  background-color: var(--color-accent);
+  opacity: 0.6;
+}
+
+/* Trust Section */
+.landing-trust {
+  padding: 4rem 2rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.landing-trust-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+}
+
+.trust-pillar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.trust-pillar-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.trust-pillar-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke-width: 1.5;
+}
+
+.trust-pillar-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.trust-pillar-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ========================================
+   Auth Forms Card (SignIn / SignUp)
+   ======================================== */
+
 .auth-card {
-  background: white;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  padding: 2rem;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  padding: 2.5rem;
   max-width: 400px;
   width: 100%;
+}
+
+.auth-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.auth-logo img {
+  height: 64px;
+  width: auto;
 }
 
 .auth-header {
@@ -75,41 +248,155 @@
 .auth-header h1 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-primary);
   margin-bottom: 0.5rem;
 }
 
 .auth-header p {
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
 
 .auth-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  font-size: 0.938rem;
+  color: var(--color-text-primary);
+  background-color: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: var(--color-text-secondary);
+  opacity: 0.6;
+}
+
+.form-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(201, 42, 27, 0.15);
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-error {
+  font-size: 0.813rem;
+  color: var(--color-error);
+  margin-top: 0.25rem;
+}
+
+/* Primary Button */
+.auth-card .btn-primary,
+.auth-container .btn-primary,
+.landing-page .btn-primary {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.938rem;
+  font-weight: 500;
+  color: white;
+  background-color: var(--color-accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.auth-card .btn-primary:hover:not(:disabled),
+.auth-container .btn-primary:hover:not(:disabled),
+.landing-page .btn-primary:hover:not(:disabled) {
+  background-color: var(--color-accent-hover);
+}
+
+.auth-card .btn-primary:disabled,
+.auth-container .btn-primary:disabled,
+.landing-page .btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-card .btn-primary:focus,
+.auth-container .btn-primary:focus,
+.landing-page .btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(201, 42, 27, 0.3);
+}
+
+/* Secondary Button */
+.auth-card .btn-secondary,
+.auth-container .btn-secondary,
+.landing-page .btn-secondary {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.938rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background-color: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-card .btn-secondary:hover,
+.auth-container .btn-secondary:hover,
+.landing-page .btn-secondary:hover {
+  background-color: var(--color-panel);
+  border-color: var(--color-text-secondary);
 }
 
 .auth-footer {
   text-align: center;
   margin-top: 1.5rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
 }
 
 .auth-footer p {
-  color: #64748b;
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
 }
 
 .auth-link {
-  color: var(--color-primary);
+  color: var(--color-accent);
   font-weight: 500;
   text-decoration: none;
+  transition: color 0.2s ease;
 }
 
 .auth-link:hover {
+  color: var(--color-accent-hover);
   text-decoration: underline;
+}
+
+.auth-notice {
+  text-align: center;
+  margin-top: 1.25rem;
+  padding: 0.75rem;
+  font-size: 0.813rem;
+  color: var(--color-text-secondary);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
 }
 
 /* Button styles */
@@ -118,15 +405,18 @@
 }
 
 .btn-large {
-  padding: 0.75rem 1.5rem;
-  font-size: 0.938rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
 }
 
-/* Profile page */
+/* ========================================
+   Profile Page
+   ======================================== */
+
 .profile-card {
-  background: white;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   padding: 2rem;
   max-width: 600px;
 }
@@ -138,7 +428,7 @@
 .profile-section h2 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--color-text-primary);
   margin-bottom: 1rem;
 }
 
@@ -157,17 +447,68 @@
 .profile-field label {
   font-size: 0.813rem;
   font-weight: 500;
-  color: #64748b;
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.025em;
 }
 
 .profile-field p {
   font-size: 0.938rem;
-  color: #1e293b;
+  color: var(--color-text-primary);
 }
 
 .profile-actions {
   padding-top: 1.5rem;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-border);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 900px) {
+  .landing-hero-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 3rem;
+  }
+
+  .landing-hero-text {
+    max-width: 100%;
+  }
+
+  .landing-hero-title {
+    font-size: 2rem;
+  }
+
+  .landing-hero-visual {
+    max-width: 320px;
+  }
+
+  .landing-trust-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing-topbar {
+    padding: 1rem;
+  }
+
+  .landing-hero {
+    padding: 2rem 1rem;
+  }
+
+  .landing-hero-title {
+    font-size: 1.75rem;
+  }
+
+  .landing-trust {
+    padding: 2rem 1rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem;
+  }
 }
