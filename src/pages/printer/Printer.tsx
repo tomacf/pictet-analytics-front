@@ -1,9 +1,9 @@
-import { FileText, ChevronDown, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
-import { TeamsService, PrinterService, type Team } from '../../apiConfig';
-import LoadingSpinner from '../../components/shared/LoadingSpinner';
+import {ChevronDown, ChevronRight, FileText} from 'lucide-react';
+import {useEffect, useRef, useState} from 'react';
+import {toast} from 'react-toastify';
+import {PrinterService, TeamsService, type Team} from '../../apiConfig';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
+import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import './Printer.css';
 
 interface PrinterFormData {
@@ -106,12 +106,12 @@ const Printer = () => {
       const url = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      
+
       // Generate filename with timestamp
       const now = new Date();
       const timestamp = now.toISOString().replace(/[-:]/g, '').split('.')[0].replace('T', '_');
       link.download = `printer_${timestamp}.pdf`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -228,7 +228,7 @@ const Printer = () => {
                         onChange={() => handleTeamSelection(team.id)}
                         disabled={isGenerating}
                       />
-                      <span className="team-label">{team.label}</span>
+                      <span className="team-label" style={{ color: 'black' }}>{team.label}</span>
                     </label>
                   ))
                 )}
@@ -327,7 +327,7 @@ const Printer = () => {
         <div className="printer-panel printer-panel-right">
           <div className="printer-section">
             <h2>Status</h2>
-            
+
             {isGenerating ? (
               <div className="status-message status-processing">
                 <LoadingSpinner message="Generating stamped PDF..." />
