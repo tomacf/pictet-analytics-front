@@ -120,6 +120,12 @@ const Layout = () => {
                 <span className="menu-text">Document Inspector</span>
               </Link>
             </li>
+            <li className={isActive('/printer') ? 'active' : ''}>
+              <Link to="/printer" title="Printer">
+                <span className="icon">🖨️</span>
+                <span className="menu-text">Printer</span>
+              </Link>
+            </li>
           </ul>
         </nav>
         <main className="content">

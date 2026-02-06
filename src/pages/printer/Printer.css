@@ -1,0 +1,295 @@
+.printer-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
+.printer-panel {
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.printer-panel-left {
+  height: fit-content;
+}
+
+.printer-panel-right {
+  height: fit-content;
+  position: sticky;
+  top: 1.25rem;
+}
+
+.printer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.printer-section h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.team-count {
+  font-size: 0.813rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* PDF Upload Zone */
+.pdf-upload-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.upload-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  border: 2px dashed #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 0.875rem;
+}
+
+.upload-button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: #fff;
+  color: var(--color-primary);
+}
+
+.upload-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-info {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  text-align: center;
+}
+
+/* Team Selection */
+.team-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.813rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.813rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.btn-link:hover:not(:disabled) {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.btn-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.control-separator {
+  color: #cbd5e1;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 0.625rem;
+  background: #f8fafc;
+}
+
+.team-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.813rem;
+}
+
+.team-item:hover {
+  background: white;
+}
+
+.team-item input[type="checkbox"] {
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.team-label {
+  flex: 1;
+  user-select: none;
+}
+
+.no-teams {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.813rem;
+  padding: 1rem;
+  margin: 0;
+}
+
+/* Advanced Options */
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #475569;
+  border-radius: 4px;
+  transition: background 0.2s;
+  width: fit-content;
+}
+
+.advanced-toggle:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.advanced-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.advanced-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Status Panel */
+.status-message {
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.status-idle {
+  background: #f1f5f9;
+  color: #64748b;
+  text-align: center;
+}
+
+.status-ready {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.status-processing {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.status-details {
+  margin: 0.5rem 0 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.813rem;
+}
+
+.status-details li {
+  margin: 0.25rem 0;
+}
+
+.estimated-pages {
+  margin-top: 0.5rem;
+  font-size: 0.813rem;
+  font-weight: 500;
+}
+
+/* Instructions */
+.instructions-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.813rem;
+  color: #475569;
+}
+
+.instructions-list li {
+  margin: 0.375rem 0;
+}
+
+.instructions-note {
+  margin: 0.75rem 0 0 0;
+  padding: 0.75rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #475569;
+  border-left: 3px solid var(--color-primary);
+}
+
+/* Large Button */
+.btn-large {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.938rem;
+  font-weight: 600;
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .printer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .printer-panel-right {
+    position: static;
+  }
+}
