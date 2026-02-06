@@ -16,6 +16,7 @@ import SessionDetail from './pages/sessions/SessionDetail';
 import SessionWizard from './pages/sessions/SessionWizard';
 import Analytics from './pages/analytics/Analytics';
 import DocumentInspector from './pages/documentInspector/DocumentInspector';
+import Printer from './pages/printer/Printer';
 // import RoomSessions from './pages/roomSessions/RoomSessions'; // No longer used - managed in SessionDetail
 import './App.css';
 
@@ -51,6 +52,7 @@ function App() {
             <Route path="sessions/wizard" element={<SessionWizard />} />
             <Route path="analytics" element={<Analytics />} />
             <Route path="document-inspector" element={<DocumentInspector />} />
+            <Route path="printer" element={<Printer />} />
             {/* Room Sessions are now managed inside Session Detail pages */}
             {/* <Route path="room-sessions" element={<RoomSessions />} /> */}
           </Route>
