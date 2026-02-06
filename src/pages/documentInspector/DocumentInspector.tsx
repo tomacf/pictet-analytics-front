@@ -1,7 +1,7 @@
 import { FileUp, AlertCircle, CheckCircle, Info } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { ImportService } from '../../apiConfig';
+import { ImportService, TeamsService, type Team } from '../../apiConfig';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import './DocumentInspector.css';
@@ -11,7 +11,7 @@ interface ValidationIssue {
   severity?: string;
   message?: string;
   path?: string | null;
-  evidence?: Record<string, any>;
+  evidence?: Record<string, unknown>;
 }
 
 interface InspectionResult {
@@ -64,9 +64,11 @@ interface InspectionResult {
 
 const DocumentInspector = () => {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
-  const [expectedTeams, setExpectedTeams] = useState<string>('');
+  const [selectedTeamLabels, setSelectedTeamLabels] = useState<string[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [strictMode, setStrictMode] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InspectionResult | null>(null);
   const [highlightedSlot, setHighlightedSlot] = useState<string | null>(null);
@@ -82,6 +84,31 @@ const DocumentInspector = () => {
     }
   };
 
+  // Fetch teams on mount
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        setLoadingTeams(true);
+        const teamsData = await TeamsService.getAllTeams();
+        setTeams(teamsData);
+      } catch (err) {
+        console.warn('Failed to fetch teams:', err);
+        // Use mock data for demo if API is unavailable
+        setTeams([
+          { id: 1, label: 'A1', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 2, label: 'A2', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 3, label: 'A3', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 4, label: 'B1', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 5, label: 'B2', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          { id: 6, label: 'B3', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+        ]);
+      } finally {
+        setLoadingTeams(false);
+      }
+    };
+    fetchTeams();
+  }, []);
+
   const handleInspect = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -90,19 +117,8 @@ const DocumentInspector = () => {
       return;
     }
 
-    if (!expectedTeams.trim()) {
-      setError('Please enter expected teams');
-      return;
-    }
-
-    // Parse teams from textarea (comma, space, or newline separated)
-    const teamsArray = expectedTeams
-      .split(/[,\s\n]+/)
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-
-    if (teamsArray.length === 0) {
-      setError('Please enter at least one team');
+    if (selectedTeamLabels.length === 0) {
+      setError('Please select at least one team');
       return;
     }
 
@@ -112,7 +128,7 @@ const DocumentInspector = () => {
       setResult(null);
 
       const requestData = {
-        expectedTeams: teamsArray,
+        expectedTeams: selectedTeamLabels,
         strictMode: strictMode,
       };
 
@@ -262,19 +278,54 @@ const DocumentInspector = () => {
             </div>
 
             <div className="form-section">
-              <label htmlFor="expected-teams" className="form-label">
-                Expected Teams (comma, space, or newline separated)
-              </label>
-              <textarea
-                id="expected-teams"
-                value={expectedTeams}
-                onChange={(e) => setExpectedTeams(e.target.value)}
-                placeholder="A1, A2, A3, B1, B2, B3..."
-                rows={5}
-                className="teams-input"
-              />
+              <div className="form-group-header">
+                <label className="form-label">
+                  Select Teams
+                </label>
+                <div className="select-controls">
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => setSelectedTeamLabels(teams.map(team => team.label))}
+                  >
+                    Select All
+                  </button>
+                  <span className="control-separator">|</span>
+                  <button
+                    type="button"
+                    className="btn-link"
+                    onClick={() => setSelectedTeamLabels([])}
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+              {loadingTeams ? (
+                <div className="loading-teams">
+                  <LoadingSpinner />
+                  <span>Loading teams...</span>
+                </div>
+              ) : (
+                <div className="checkbox-group">
+                  {teams.map((team) => (
+                    <label key={team.id} className="checkbox-label">
+                      <input
+                        type="checkbox"
+                        checked={selectedTeamLabels.includes(team.label)}
+                        onChange={(e) => {
+                          const newLabels = e.target.checked
+                            ? [...selectedTeamLabels, team.label]
+                            : selectedTeamLabels.filter((label) => label !== team.label);
+                          setSelectedTeamLabels(newLabels);
+                        }}
+                      />
+                      {team.label}
+                    </label>
+                  ))}
+                </div>
+              )}
               <small className="help-text">
-                Enter team codes separated by commas, spaces, or newlines
+                Select the teams you expect to find in the document
               </small>
             </div>
 
@@ -299,7 +350,7 @@ const DocumentInspector = () => {
             <button 
               type="submit" 
               className="btn-primary btn-inspect"
-              disabled={loading || !pdfFile || !expectedTeams.trim()}
+              disabled={loading || !pdfFile || selectedTeamLabels.length === 0}
             >
               {loading ? 'Inspecting...' : 'Inspect Document'}
             </button>
