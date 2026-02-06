@@ -2,9 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { CancelablePromise } from '../core/CancelablePromise';
-import { OpenAPI } from '../core/OpenAPI';
-import { request as __request } from '../core/request';
+import type {CancelablePromise} from '../core/CancelablePromise';
+import {OpenAPI} from '../core/OpenAPI';
+import {request as __request} from '../core/request';
 export class PrinterService {
     /**
      * Generate stamped PDF for multiple teams
@@ -46,6 +46,7 @@ export class PrinterService {
             url: '/api/printer',
             formData: formData,
             mediaType: 'multipart/form-data',
+            responseType: 'blob',
             errors: {
                 400: `Invalid request (missing PDF or team IDs)`,
                 500: `Internal server error`,
