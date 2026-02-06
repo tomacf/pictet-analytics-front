@@ -57,6 +57,7 @@ export { AuthenticationService } from './services/AuthenticationService';
 export { HealthService } from './services/HealthService';
 export { ImportService } from './services/ImportService';
 export { JuriesService } from './services/JuriesService';
+export { PrinterService } from './services/PrinterService';
 export { RoomsService } from './services/RoomsService';
 export { RoomSessionsService } from './services/RoomSessionsService';
 export { SchedulingService } from './services/SchedulingService';
