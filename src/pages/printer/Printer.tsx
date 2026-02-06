@@ -126,15 +126,6 @@ const Printer = () => {
     }
   };
 
-  // Calculate estimated page count
-  const getEstimatedPages = () => {
-    if (!formData.file || formData.selectedTeamIds.length === 0) {
-      return null;
-    }
-    // We don't know pages in PDF without parsing, so we'll just show team count
-    return null;
-  };
-
   const filteredTeams = getFilteredTeams();
   const isGenerateDisabled = !formData.file || formData.selectedTeamIds.length === 0 || isGenerating;
 
@@ -340,11 +331,6 @@ const Printer = () => {
             {isGenerating ? (
               <div className="status-message status-processing">
                 <LoadingSpinner message="Generating stamped PDF..." />
-                {getEstimatedPages() && (
-                  <p className="estimated-pages">
-                    Estimated output: {getEstimatedPages()} pages
-                  </p>
-                )}
               </div>
             ) : formData.file && formData.selectedTeamIds.length > 0 ? (
               <div className="status-message status-ready">
