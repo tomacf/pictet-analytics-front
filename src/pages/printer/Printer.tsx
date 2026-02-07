@@ -264,7 +264,7 @@ const Printer = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        fontSize: parseInt(e.target.value, 10) || 12,
+                        fontSize: parseInt(e.target.value, 10) || 8,
                       })
                     }
                     className="form-input"
@@ -282,7 +282,7 @@ const Printer = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        topMargin: parseInt(e.target.value, 10) || 50,
+                        topMargin: parseInt(e.target.value, 10) || 1,
                       })
                     }
                     className="form-input"
@@ -300,7 +300,7 @@ const Printer = () => {
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        rightMargin: parseInt(e.target.value, 10) || 50,
+                        rightMargin: parseInt(e.target.value, 10) || 1,
                       })
                     }
                     className="form-input"
