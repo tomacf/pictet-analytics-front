@@ -1,4 +1,6 @@
 import React from 'react';
+import { format } from 'date-fns';
+import { toDate } from 'date-fns-tz';
 import type {RoomSessionExpanded} from '../../apiConfig';
 import './ScheduleOverview.css';
 
@@ -71,7 +73,10 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
   );
 
   const formatTime = (isoString: string) => {
-    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Use date-fns for consistent timezone handling across the app
+    // This ensures times display as they were stored, without timezone conversion
+    const date = toDate(isoString);
+    return format(date, 'HH:mm');
   };
 
   // Helper to get room jury labels (supports multiple juries per room)
