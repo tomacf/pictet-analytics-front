@@ -124,7 +124,9 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       const draftPlan = await ImportService.parseSessionDocument({
         pdf: formData.file,
         session_label: formData.sessionLabel || undefined,
-        date: formData.startTime.split('T')[0], // Extract YYYY-MM-DD from ISO string
+        // Extract date (YYYY-MM-DD) from ISO datetime string
+        // Safe because validation ensures startTime is not empty at this point
+        date: formData.startTime.split('T')[0],
         jury_ids: formData.juryPoolIds,
         juries_per_room: formData.juriesPerRoom,
       });
@@ -396,9 +398,9 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
               type="datetime-local"
               value={isoToLocalDateTime(formData.startTime)}
               onChange={(e) => {
-                const isoString = localDateTimeToISO(e.target.value);
-                // Allow clearing the field or setting a valid value
-                setFormData({ ...formData, startTime: isoString || '' });
+                // Handle empty field explicitly, then convert valid datetime to ISO
+                const isoString = e.target.value ? localDateTimeToISO(e.target.value) : '';
+                setFormData({ ...formData, startTime: isoString });
               }}
               required
             />
