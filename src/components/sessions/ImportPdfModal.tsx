@@ -279,6 +279,27 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       };
     });
 
+    // Extract the session start time from the earliest slot if available
+    // The backend returns proper ISO datetime strings in slot.start_time
+    // If slots are available, use the earliest slot time; otherwise fallback to midnight of the session date
+    let sessionStartTime = localDateTimeToISO(formData.sessionDate + 'T00:00');
+    if (draftPlan.slots.length > 0) {
+      // Sort slots by start time and use the earliest one
+      // Filter out any slots with invalid dates before sorting
+      const sortedSlots = [...draftPlan.slots]
+        .filter(slot => {
+          const date = new Date(slot.start_time);
+          return !isNaN(date.getTime());
+        })
+        .sort((a, b) => 
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        );
+      
+      if (sortedSlots.length > 0) {
+        sessionStartTime = sortedSlots[0].start_time;
+      }
+    }
+
     return {
       sessionId, // Include the session ID
       sessionLabel: formData.sessionLabel,
@@ -287,7 +308,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       selectedJuryIds,
       teamsPerRoom,
       juriesPerRoom: formData.juriesPerRoom,
-      startTime: formData.sessionDate,
+      startTime: sessionStartTime,
       slotDuration: draftPlan.slot_duration ?? 30,
       timeBetweenSlots: draftPlan.time_between_slots ?? 5,
       timeBeforeFirstSlot: DEFAULT_TIME_BEFORE_FIRST_SLOT,
