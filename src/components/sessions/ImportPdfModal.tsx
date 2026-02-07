@@ -397,9 +397,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
               value={isoToLocalDateTime(formData.startTime)}
               onChange={(e) => {
                 const isoString = localDateTimeToISO(e.target.value);
-                if (isoString) {
-                  setFormData({ ...formData, startTime: isoString });
-                }
+                // Allow clearing the field or setting a valid value
+                setFormData({ ...formData, startTime: isoString || '' });
               }}
               required
             />
