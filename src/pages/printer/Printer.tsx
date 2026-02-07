@@ -1,7 +1,7 @@
 import {ChevronDown, ChevronRight, FileText} from 'lucide-react';
 import {useEffect, useRef, useState} from 'react';
 import {toast} from 'react-toastify';
-import {PrinterService, TeamsService, type Team} from '../../apiConfig';
+import {PrinterService, TeamsService, JuriesService, type Team, type Jury} from '../../apiConfig';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import './Printer.css';
@@ -9,6 +9,7 @@ import './Printer.css';
 interface PrinterFormData {
   file: File | null;
   selectedTeamIds: number[];
+  selectedJuryIds: number[];
   fontSize: number;
   topMargin: number;
   rightMargin: number;
@@ -17,22 +18,27 @@ interface PrinterFormData {
 const Printer = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [juries, setJuries] = useState<Jury[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(true);
+  const [loadingJuries, setLoadingJuries] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<PrinterFormData>({
     file: null,
     selectedTeamIds: [],
+    selectedJuryIds: [],
     fontSize: 8,
     topMargin: 1,
     rightMargin: 1,
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [jurySearchQuery, setJurySearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
-  // Fetch teams on mount
+  // Fetch teams and juries on mount
   useEffect(() => {
     fetchTeams();
+    fetchJuries();
   }, []);
 
   const fetchTeams = async () => {
@@ -50,6 +56,21 @@ const Printer = () => {
     }
   };
 
+  const fetchJuries = async () => {
+    try {
+      setLoadingJuries(true);
+      setError(null);
+      const data = await JuriesService.getAllJuries();
+      setJuries(data);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch juries';
+      setError(message);
+      toast.error('Failed to fetch juries');
+    } finally {
+      setLoadingJuries(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
     setFormData({ ...formData, file });
@@ -64,14 +85,33 @@ const Printer = () => {
     setFormData({ ...formData, selectedTeamIds: newSelectedTeamIds });
   };
 
+  const handleJurySelection = (juryId: number) => {
+    const isSelected = formData.selectedJuryIds.includes(juryId);
+    const newSelectedJuryIds = isSelected
+      ? formData.selectedJuryIds.filter((id) => id !== juryId)
+      : [...formData.selectedJuryIds, juryId];
+
+    setFormData({ ...formData, selectedJuryIds: newSelectedJuryIds });
+  };
+
   const handleSelectAll = () => {
     const filteredTeams = getFilteredTeams();
     const allIds = filteredTeams.map((team) => team.id);
     setFormData({ ...formData, selectedTeamIds: allIds });
   };
 
+  const handleSelectAllJuries = () => {
+    const filteredJuries = getFilteredJuries();
+    const allIds = filteredJuries.map((jury) => jury.id);
+    setFormData({ ...formData, selectedJuryIds: allIds });
+  };
+
   const handleClearAll = () => {
     setFormData({ ...formData, selectedTeamIds: [] });
+  };
+
+  const handleClearAllJuries = () => {
+    setFormData({ ...formData, selectedJuryIds: [] });
   };
 
   const getFilteredTeams = () => {
@@ -80,14 +120,20 @@ const Printer = () => {
     return teams.filter((team) => team.label.toLowerCase().includes(query));
   };
 
+  const getFilteredJuries = () => {
+    if (!jurySearchQuery.trim()) return juries;
+    const query = jurySearchQuery.toLowerCase();
+    return juries.filter((jury) => jury.label.toLowerCase().includes(query));
+  };
+
   const handleGenerate = async () => {
     if (!formData.file) {
       toast.error('Please select a PDF file');
       return;
     }
 
-    if (formData.selectedTeamIds.length === 0) {
-      toast.error('Please select at least one team');
+    if (formData.selectedTeamIds.length === 0 && formData.selectedJuryIds.length === 0) {
+      toast.error('Please select at least one team or jury');
       return;
     }
 
@@ -96,7 +142,8 @@ const Printer = () => {
 
       const pdfBlob = await PrinterService.generatePrinterPdf({
         pdf: formData.file,
-        team_ids: formData.selectedTeamIds,
+        team_ids: formData.selectedTeamIds.length > 0 ? formData.selectedTeamIds : undefined,
+        jury_ids: formData.selectedJuryIds.length > 0 ? formData.selectedJuryIds : undefined,
         font_size: formData.fontSize,
         top_margin: formData.topMargin,
         right_margin: formData.rightMargin,
@@ -127,12 +174,13 @@ const Printer = () => {
   };
 
   const filteredTeams = getFilteredTeams();
-  const isGenerateDisabled = !formData.file || formData.selectedTeamIds.length === 0 || isGenerating;
+  const filteredJuries = getFilteredJuries();
+  const isGenerateDisabled = !formData.file || (formData.selectedTeamIds.length === 0 && formData.selectedJuryIds.length === 0) || isGenerating;
 
-  if (error && !loadingTeams) {
+  if (error && !loadingTeams && !loadingJuries) {
     return (
       <div className="page-container">
-        <ErrorDisplay message={error} onRetry={fetchTeams} />
+        <ErrorDisplay message={error} onRetry={() => { fetchTeams(); fetchJuries(); }} />
       </div>
     );
   }
@@ -237,6 +285,67 @@ const Printer = () => {
           </div>
 
           <div className="printer-section">
+            <div className="section-header">
+              <h2>Jury Selection</h2>
+              <div className="team-count">
+                {formData.selectedJuryIds.length} selected
+              </div>
+            </div>
+
+            <div className="team-controls">
+              <input
+                type="text"
+                placeholder="Search juries..."
+                value={jurySearchQuery}
+                onChange={(e) => setJurySearchQuery(e.target.value)}
+                className="form-input"
+                disabled={isGenerating}
+              />
+              <div className="control-buttons">
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={handleSelectAllJuries}
+                  disabled={isGenerating}
+                >
+                  Select All
+                </button>
+                <span className="control-separator">|</span>
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={handleClearAllJuries}
+                  disabled={isGenerating}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            {loadingJuries ? (
+              <LoadingSpinner message="Loading juries..." />
+            ) : (
+              <div className="team-list">
+                {filteredJuries.length === 0 ? (
+                  <p className="no-teams">No juries found</p>
+                ) : (
+                  filteredJuries.map((jury) => (
+                    <label key={jury.id} className="team-item">
+                      <input
+                        type="checkbox"
+                        checked={formData.selectedJuryIds.includes(jury.id)}
+                        onChange={() => handleJurySelection(jury.id)}
+                        disabled={isGenerating}
+                      />
+                      <span className="team-label" style={{ color: 'black' }}>{jury.label}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="printer-section">
             <button
               type="button"
               className="advanced-toggle"
@@ -332,17 +441,18 @@ const Printer = () => {
               <div className="status-message status-processing">
                 <LoadingSpinner message="Generating stamped PDF..." />
               </div>
-            ) : formData.file && formData.selectedTeamIds.length > 0 ? (
+            ) : formData.file && (formData.selectedTeamIds.length > 0 || formData.selectedJuryIds.length > 0) ? (
               <div className="status-message status-ready">
                 <p>✓ Ready to generate</p>
                 <ul className="status-details">
                   <li>PDF: {formData.file.name}</li>
-                  <li>Teams: {formData.selectedTeamIds.length}</li>
+                  {formData.selectedTeamIds.length > 0 && <li>Teams: {formData.selectedTeamIds.length}</li>}
+                  {formData.selectedJuryIds.length > 0 && <li>Juries: {formData.selectedJuryIds.length}</li>}
                 </ul>
               </div>
             ) : (
               <div className="status-message status-idle">
-                <p>Select a PDF and at least one team to begin</p>
+                <p>Select a PDF and at least one team or jury to begin</p>
               </div>
             )}
           </div>
@@ -351,13 +461,13 @@ const Printer = () => {
             <h2>Instructions</h2>
             <ol className="instructions-list">
               <li>Upload a PDF document</li>
-              <li>Select the teams to print for</li>
+              <li>Select the teams and/or juries to print for</li>
               <li>(Optional) Adjust stamp options</li>
               <li>Click "Generate Print PDF"</li>
               <li>Download and print the merged PDF once</li>
             </ol>
             <p className="instructions-note">
-              Each team will receive their own stamped copy in the merged PDF.
+              Each team and jury will receive their own stamped copy in the merged PDF.
             </p>
           </div>
         </div>
