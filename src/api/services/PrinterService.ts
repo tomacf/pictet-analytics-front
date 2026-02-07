@@ -2,16 +2,16 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type {CancelablePromise} from '../core/CancelablePromise';
-import {OpenAPI} from '../core/OpenAPI';
-import {request as __request} from '../core/request';
+import type { CancelablePromise } from '../core/CancelablePromise';
+import { OpenAPI } from '../core/OpenAPI';
+import { request as __request } from '../core/request';
 export class PrinterService {
     /**
-     * Generate stamped PDF for multiple teams
-     * Uploads a PDF file, stamps it with team labels for each selected team,
-     * and returns a merged PDF containing stamped copies for all teams.
+     * Generate stamped PDF for multiple teams and/or juries
+     * Uploads a PDF file, stamps it with team and/or jury labels for each selected team/jury,
+     * and returns a merged PDF containing stamped copies for all teams and juries.
      *
-     * This is an operations tool for printing: each team gets their own stamped copy.
+     * This is an operations tool for printing: each team/jury gets their own stamped copy.
      *
      * @param formData
      * @returns binary Merged stamped PDF generated successfully
@@ -26,7 +26,11 @@ export class PrinterService {
             /**
              * Array of team IDs to stamp the PDF for
              */
-            team_ids: Array<number>;
+            team_ids?: Array<number>;
+            /**
+             * Array of jury IDs to stamp the PDF for
+             */
+            jury_ids?: Array<number>;
             /**
              * Font size for the stamp (optional, default 12)
              */
@@ -46,9 +50,8 @@ export class PrinterService {
             url: '/api/printer',
             formData: formData,
             mediaType: 'multipart/form-data',
-            responseType: 'blob',
             errors: {
-                400: `Invalid request (missing PDF or team IDs)`,
+                400: `Invalid request (missing PDF or at least one team/jury ID)`,
                 500: `Internal server error`,
             },
         });
