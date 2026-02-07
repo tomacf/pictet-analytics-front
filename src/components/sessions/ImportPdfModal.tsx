@@ -132,7 +132,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       // Pre-fill form data with parsed values if they were in the response
       setFormData({
         ...formData,
-        sessionLabel: draftPlan.session_label || formData.sessionLabel,
+        sessionLabel: draftPlan.session_label ?? formData.sessionLabel,
         sessionDate: formData.sessionDate, // Already provided
         juriesPerRoom: draftPlan.juries_per_room ?? formData.juriesPerRoom,
         juryPoolIds: draftPlan.jury_ids,
