@@ -134,7 +134,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
         ...formData,
         sessionLabel: draftPlan.session_label || formData.sessionLabel,
         sessionDate: formData.sessionDate, // Already provided
-        juriesPerRoom: draftPlan.juries_per_room,
+        juriesPerRoom: draftPlan.juries_per_room ?? formData.juriesPerRoom,
         juryPoolIds: draftPlan.jury_ids,
       });
 
