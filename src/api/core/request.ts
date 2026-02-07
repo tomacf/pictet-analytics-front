@@ -217,6 +217,7 @@ export const sendRequest = async <T>(
         withCredentials: config.WITH_CREDENTIALS,
         withXSRFToken: config.CREDENTIALS === 'include' ? config.WITH_CREDENTIALS : false,
         cancelToken: source.token,
+        ...(options.responseType && { responseType: options.responseType }),
     };
 
     onCancel(() => source.cancel('The user aborted a request.'));
