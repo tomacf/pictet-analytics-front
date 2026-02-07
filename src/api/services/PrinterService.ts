@@ -50,6 +50,7 @@ export class PrinterService {
             url: '/api/printer',
             formData: formData,
             mediaType: 'multipart/form-data',
+            responseType: 'blob',
             errors: {
                 400: `Invalid request (missing PDF or at least one team/jury ID)`,
                 500: `Internal server error`,
