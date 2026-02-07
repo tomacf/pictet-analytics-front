@@ -281,14 +281,23 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
     // Extract the session start time from the earliest slot if available
     // The backend returns proper ISO datetime strings in slot.start_time
-    // If slots are available, use the earliest slot time; otherwise convert the date to ISO
+    // If slots are available, use the earliest slot time; otherwise fallback to midnight of the session date
     let sessionStartTime = localDateTimeToISO(formData.sessionDate + 'T00:00');
     if (draftPlan.slots.length > 0) {
       // Sort slots by start time and use the earliest one
-      const sortedSlots = [...draftPlan.slots].sort((a, b) => 
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-      );
-      sessionStartTime = sortedSlots[0].start_time;
+      // Filter out any slots with invalid dates before sorting
+      const sortedSlots = [...draftPlan.slots]
+        .filter(slot => {
+          const date = new Date(slot.start_time);
+          return !isNaN(date.getTime());
+        })
+        .sort((a, b) => 
+          new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+        );
+      
+      if (sortedSlots.length > 0) {
+        sessionStartTime = sortedSlots[0].start_time;
+      }
     }
 
     return {
