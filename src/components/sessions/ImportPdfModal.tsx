@@ -11,7 +11,7 @@ import {
 } from '../../apiConfig';
 import LoadingSpinner from '../shared/LoadingSpinner';
 import Modal from '../shared/Modal';
-import { localDateTimeToISO } from '../../utils/dateUtils';
+import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
 import './ImportPdfModal.css';
 
 // Default scheduling constants (should match SessionWizard)
@@ -25,7 +25,7 @@ interface ImportPdfModalProps {
 interface FormData {
   file: File | null;
   sessionLabel: string;
-  sessionDate: string;
+  startTime: string;
   juryPoolIds: number[];
   juriesPerRoom: number;
 }
@@ -45,7 +45,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     file: null,
     sessionLabel: '',
-    sessionDate: new Date().toISOString().split('T')[0], // Default to current date
+    startTime: new Date().toISOString(), // Default to current datetime
     juryPoolIds: [],
     juriesPerRoom: 1,
   });
@@ -104,8 +104,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
     }
 
     // Validate required fields before parsing
-    if (!formData.sessionDate) {
-      toast.error('Session date is required before parsing');
+    if (!formData.startTime) {
+      toast.error('Session start time is required before parsing');
       return;
     }
     if (formData.juryPoolIds.length === 0) {
@@ -124,7 +124,9 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       const draftPlan = await ImportService.parseSessionDocument({
         pdf: formData.file,
         session_label: formData.sessionLabel || undefined,
-        date: formData.sessionDate,
+        // Extract date (YYYY-MM-DD) from ISO datetime string
+        // Safe because validation ensures startTime is not empty at this point
+        date: formData.startTime.split('T')[0],
         jury_ids: formData.juryPoolIds,
         juries_per_room: formData.juriesPerRoom,
       });
@@ -133,7 +135,7 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       setFormData({
         ...formData,
         sessionLabel: draftPlan.session_label || formData.sessionLabel,
-        sessionDate: formData.sessionDate, // Already provided
+        startTime: formData.startTime, // Keep the original datetime
         juriesPerRoom: draftPlan.juries_per_room,
         juryPoolIds: draftPlan.jury_ids,
       });
@@ -187,8 +189,8 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       toast.error('Session label is required');
       return;
     }
-    if (!formData.sessionDate) {
-      toast.error('Session date is required');
+    if (!formData.startTime) {
+      toast.error('Session start time is required');
       return;
     }
     if (formData.juryPoolIds.length === 0) {
@@ -202,12 +204,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
 
     try {
       // Create the session first (we need a session ID for the preview)
-      // Convert date-only string (YYYY-MM-DD) to ISO string with time component at midnight local time
-      const localDateTimeString = formData.sessionDate + 'T00:00';
-      const isoString = localDateTimeToISO(localDateTimeString);
+      // Use the startTime directly as it's already in ISO format
       const session = await SessionsService.createSession({
         label: formData.sessionLabel,
-        start_time: isoString,
+        start_time: formData.startTime,
         slot_duration: parseState.draftPlan?.slot_duration ?? 30,
         time_between_slots: parseState.draftPlan?.time_between_slots ?? 5,
       });
@@ -279,10 +279,10 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
       };
     });
 
-    // Extract the session start time from the earliest slot if available
-    // The backend returns proper ISO datetime strings in slot.start_time
-    // If slots are available, use the earliest slot time; otherwise fallback to midnight of the session date
-    let sessionStartTime = localDateTimeToISO(formData.sessionDate + 'T00:00');
+    // Extract the session start time from formData if provided, or from the earliest slot
+    // The formData.startTime is already in ISO format
+    // If slots are available, use the earliest slot time; otherwise fallback to formData.startTime
+    let sessionStartTime = formData.startTime;
     if (draftPlan.slots.length > 0) {
       // Sort slots by start time and use the earliest one
       // Filter out any slots with invalid dates before sorting
@@ -390,17 +390,21 @@ const ImportPdfModal = ({ isOpen, onClose }: ImportPdfModalProps) => {
             />
           </div>
 
-          {/* Session Date - REQUIRED */}
+          {/* Session Start Time - REQUIRED */}
           <div className="form-group">
-            <label htmlFor="sessionDate">Session Date *</label>
+            <label htmlFor="startTime">Session Start Time *</label>
             <input
-              id="sessionDate"
-              type="date"
-              value={formData.sessionDate}
-              onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
+              id="startTime"
+              type="datetime-local"
+              value={isoToLocalDateTime(formData.startTime)}
+              onChange={(e) => {
+                // Handle empty field explicitly, then convert valid datetime to ISO
+                const isoString = e.target.value ? localDateTimeToISO(e.target.value) : '';
+                setFormData({ ...formData, startTime: isoString });
+              }}
               required
             />
-            <small>Required for parsing the PDF schedule</small>
+            <small>Required for parsing the PDF schedule and proper analytics</small>
           </div>
 
           {/* Jury Pool Selection - REQUIRED */}
