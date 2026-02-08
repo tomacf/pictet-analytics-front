@@ -2752,12 +2752,12 @@ paths:
     post:
       tags:
         - Printer
-      summary: Generate stamped PDF for multiple teams
+      summary: Generate stamped PDF for multiple teams and/or juries
       description: |
-        Uploads a PDF file, stamps it with team labels for each selected team,
-        and returns a merged PDF containing stamped copies for all teams.
+        Uploads a PDF file, stamps it with team and/or jury labels for each selected team/jury,
+        and returns a merged PDF containing stamped copies for all teams and juries.
         
-        This is an operations tool for printing: each team gets their own stamped copy.
+        This is an operations tool for printing: each team/jury gets their own stamped copy.
       operationId: generatePrinterPdf
       requestBody:
         required: true
@@ -2767,7 +2767,6 @@ paths:
               type: object
               required:
                 - pdf
-                - team_ids
               properties:
                 pdf:
                   type: string
@@ -2779,6 +2778,12 @@ paths:
                     type: integer
                   description: Array of team IDs to stamp the PDF for
                   example: [1, 2, 3, 4, 5]
+                jury_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: Array of jury IDs to stamp the PDF for
+                  example: [1, 2, 3]
                 font_size:
                   type: integer
                   description: Font size for the stamp (optional, default 12)
@@ -2809,7 +2814,7 @@ paths:
                 type: string
                 example: 'attachment; filename="printer_2024-03-15_143022.pdf"'
         '400':
-          description: Invalid request (missing PDF or team IDs)
+          description: Invalid request (missing PDF or at least one team/jury ID)
           content:
             text/plain:
               schema:
@@ -2817,8 +2822,8 @@ paths:
               examples:
                 missing_pdf:
                   value: "pdf file is required"
-                missing_teams:
-                  value: "at least one team ID is required"
+                missing_teams_and_juries:
+                  value: "at least one team ID or jury ID is required"
         '500':
           description: Internal server error
           content:
