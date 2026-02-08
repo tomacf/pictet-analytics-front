@@ -23,8 +23,8 @@ const Printer = () => {
     file: null,
     selectedTeamIds: [],
     fontSize: 8,
-    topMargin: 1,
-    rightMargin: 1,
+    topMargin: 10,
+    rightMargin: 10,
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
