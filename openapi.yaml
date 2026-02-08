@@ -44,8 +44,6 @@ tags:
     description: Placeholder analytics operations
   - name: Import
     description: PDF import operations for session schedules
-  - name: Printer
-    description: PDF stamping and printing operations
 
 paths:
   /health:
@@ -2370,7 +2368,7 @@ paths:
 
         **Required fields:**
         - `pdf`: PDF file (multipart/form-data)
-        - `date` or `day`: Schedule date (YYYY-MM-DD)
+        - `date` or `day`: Schedule date (YYYY-MM-DD) or datetime (RFC3339 format, e.g., 2024-03-15T09:00:00Z)
         - `jury_ids[]`: Array of jury IDs to assign
         - `juries_per_room`: Number of juries per room
 
@@ -2404,13 +2402,20 @@ paths:
                   example: "Spring 2024 Presentations"
                 date:
                   type: string
-                  format: date
-                  description: Schedule date (YYYY-MM-DD)
+                  description: |
+                    Schedule date (YYYY-MM-DD) or datetime (RFC3339 format, e.g., 2024-03-15T09:00:00Z).
+
+                    The date portion and timezone are used to create slot times from the PDF.
+                    The returned DraftPlan.date will be set to the first slot's start time.
+
+                    Examples:
+                    - Date only: "2024-03-15" → uses UTC timezone
+                    - Datetime: "2024-03-15T09:00:00Z" → uses UTC timezone
+                    - Datetime with timezone: "2024-03-15T09:00:00+01:00" → uses +01:00 timezone
                   example: "2024-03-15"
                 day:
                   type: string
-                  format: date
-                  description: Alternative to 'date' field (YYYY-MM-DD)
+                  description: Alternative to 'date' field. Supports both date (YYYY-MM-DD) and datetime (RFC3339) formats.
                   example: "2024-03-15"
                 slot_duration:
                   type: integer
@@ -2538,6 +2543,7 @@ paths:
         - `DISTRIBUTION_ORDER_MISMATCH`: Distribution/start time ordering violated
         - `DISTRIBUTION_GROUP_MISMATCH`: Distribution groups don't match start groups
         - `TEAM_DISTRIBUTION_START_INVERSION`: Team received later but starts earlier
+        - `DISTRIBUTION_ROOM_ORDER_MISMATCH`: Team's distribution rank doesn't match their slot rank in the room (e.g., team receiving documents at 2nd distribution time should be in 2nd slot of their room)
         - `SLOT_DURATION_MISMATCH`: Slot gaps don't match declared duration
         - `PARSE_FAILED`: Could not parse PDF structure
       operationId: inspectDocument
@@ -2748,88 +2754,6 @@ paths:
               schema:
                 type: string
 
-  /api/printer:
-    post:
-      tags:
-        - Printer
-      summary: Generate stamped PDF for multiple teams and/or juries
-      description: |
-        Uploads a PDF file, stamps it with team and/or jury labels for each selected team/jury,
-        and returns a merged PDF containing stamped copies for all teams and juries.
-        
-        This is an operations tool for printing: each team/jury gets their own stamped copy.
-      operationId: generatePrinterPdf
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - pdf
-              properties:
-                pdf:
-                  type: string
-                  format: binary
-                  description: PDF file to be stamped
-                team_ids:
-                  type: array
-                  items:
-                    type: integer
-                  description: Array of team IDs to stamp the PDF for
-                  example: [1, 2, 3, 4, 5]
-                jury_ids:
-                  type: array
-                  items:
-                    type: integer
-                  description: Array of jury IDs to stamp the PDF for
-                  example: [1, 2, 3]
-                font_size:
-                  type: integer
-                  description: Font size for the stamp (optional, default 12)
-                  example: 12
-                  default: 12
-                top_margin:
-                  type: integer
-                  description: Top margin in points (optional, default 50)
-                  example: 50
-                  default: 50
-                right_margin:
-                  type: integer
-                  description: Right margin in points (optional, default 50)
-                  example: 50
-                  default: 50
-      responses:
-        '200':
-          description: Merged stamped PDF generated successfully
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-          headers:
-            Content-Disposition:
-              description: Filename for download
-              schema:
-                type: string
-                example: 'attachment; filename="printer_2024-03-15_143022.pdf"'
-        '400':
-          description: Invalid request (missing PDF or at least one team/jury ID)
-          content:
-            text/plain:
-              schema:
-                type: string
-              examples:
-                missing_pdf:
-                  value: "pdf file is required"
-                missing_teams_and_juries:
-                  value: "at least one team ID or jury ID is required"
-        '500':
-          description: Internal server error
-          content:
-            text/plain:
-              schema:
-                type: string
 
 components:
   schemas:
@@ -3089,6 +3013,10 @@ components:
           format: date-time
           description: Session start time
           example: "2024-03-01T09:00:00Z"
+        start_time_tz:
+          type: string
+          description: Timezone of the session start time
+          example: "UTC"
         slot_duration:
           type: integer
           description: Duration of each slot in minutes
@@ -3102,11 +3030,19 @@ components:
           format: date-time
           description: Timestamp when the session was created
           example: "2024-03-01T08:00:00Z"
+        created_at_tz:
+          type: string
+          description: Timezone of the created_at timestamp
+          example: "UTC"
         updated_at:
           type: string
           format: date-time
           description: Timestamp when the session was last updated
           example: "2024-03-01T08:00:00Z"
+        updated_at_tz:
+          type: string
+          description: Timezone of the updated_at timestamp
+          example: "UTC"
 
     SessionInput:
       type: object
@@ -3206,6 +3142,10 @@ components:
           format: date-time
           description: Session start time
           example: "2024-03-01T09:00:00Z"
+        start_time_tz:
+          type: string
+          description: Timezone of the session start time
+          example: "UTC"
         slot_duration:
           type: integer
           description: Duration of each slot in minutes
@@ -3219,11 +3159,19 @@ components:
           format: date-time
           description: Timestamp when the session was created
           example: "2024-03-01T08:00:00Z"
+        created_at_tz:
+          type: string
+          description: Timezone of the created_at timestamp
+          example: "UTC"
         updated_at:
           type: string
           format: date-time
           description: Timestamp when the session was last updated
           example: "2024-03-01T08:00:00Z"
+        updated_at_tz:
+          type: string
+          description: Timezone of the updated_at timestamp
+          example: "UTC"
         teams:
           type: array
           description: Associated teams (present when expand=teams is used)
@@ -3261,11 +3209,19 @@ components:
           format: date-time
           description: Start time of the first room session (present when expand=summary is used)
           example: "2024-03-01T09:00:00Z"
+        first_room_session_start_time_tz:
+          type: string
+          description: Timezone of the first room session start time (present when expand=summary is used)
+          example: "UTC"
         last_room_session_end_time:
           type: string
           format: date-time
           description: End time of the last room session (present when expand=summary is used)
           example: "2024-03-01T12:00:00Z"
+        last_room_session_end_time_tz:
+          type: string
+          description: Timezone of the last room session end time (present when expand=summary is used)
+          example: "UTC"
         room_assignments:
           type: array
           description: Room assignments with juries per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned juries.
@@ -3355,21 +3311,37 @@ components:
           format: date-time
           description: Room session start time
           example: "2024-03-01T09:00:00Z"
+        start_time_tz:
+          type: string
+          description: Timezone of the room session start time
+          example: "UTC"
         end_time:
           type: string
           format: date-time
           description: Room session end time
           example: "2024-03-01T10:00:00Z"
+        end_time_tz:
+          type: string
+          description: Timezone of the room session end time
+          example: "UTC"
         created_at:
           type: string
           format: date-time
           description: Timestamp when the room session was created
           example: "2024-03-01T08:00:00Z"
+        created_at_tz:
+          type: string
+          description: Timezone of the created_at timestamp
+          example: "UTC"
         updated_at:
           type: string
           format: date-time
           description: Timestamp when the room session was last updated
           example: "2024-03-01T08:00:00Z"
+        updated_at_tz:
+          type: string
+          description: Timezone of the updated_at timestamp
+          example: "UTC"
 
     RoomSessionInput:
       type: object
@@ -3438,21 +3410,37 @@ components:
           format: date-time
           description: Room session start time
           example: "2024-03-01T09:00:00Z"
+        start_time_tz:
+          type: string
+          description: Timezone of the room session start time
+          example: "UTC"
         end_time:
           type: string
           format: date-time
           description: Room session end time
           example: "2024-03-01T10:00:00Z"
+        end_time_tz:
+          type: string
+          description: Timezone of the room session end time
+          example: "UTC"
         created_at:
           type: string
           format: date-time
           description: Timestamp when the room session was created
           example: "2024-03-01T08:00:00Z"
+        created_at_tz:
+          type: string
+          description: Timezone of the created_at timestamp
+          example: "UTC"
         updated_at:
           type: string
           format: date-time
           description: Timestamp when the room session was last updated
           example: "2024-03-01T08:00:00Z"
+        updated_at_tz:
+          type: string
+          description: Timezone of the updated_at timestamp
+          example: "UTC"
         room:
           $ref: '#/components/schemas/IDLabel'
         session:
