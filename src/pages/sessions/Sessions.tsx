@@ -9,7 +9,7 @@ import DataTable from '../../components/shared/DataTable';
 import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import LoadingSpinner from '../../components/shared/LoadingSpinner';
 import Modal from '../../components/shared/Modal';
-import {formatEuropeanDateTime, localDateTimeToISO, isoToLocalDateTime} from '../../utils/dateUtils';
+import {formatDateTimeWithTimezone, localDateTimeToISO, isoToLocalDateTime} from '../../utils/dateUtils';
 import '../roomSessions/RoomSessions.css';
 import '../teams/Teams.css';
 import './Sessions.css';
@@ -157,9 +157,9 @@ const Sessions = () => {
       key: 'time_window',
       label: 'Time Window',
       render: (session: SessionExpanded) => {
-        const start = formatEuropeanDateTime(session.start_time);
+        const start = formatDateTimeWithTimezone(session.start_time, session.start_time_tz);
         const end = session.last_room_session_end_time
-          ? formatEuropeanDateTime(session.last_room_session_end_time)
+          ? formatDateTimeWithTimezone(session.last_room_session_end_time, session.last_room_session_end_time_tz)
           : null;
 
         if (start && end) {

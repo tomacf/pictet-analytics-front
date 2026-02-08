@@ -20,7 +20,7 @@ import ErrorDisplay from '../../components/shared/ErrorDisplay';
 import IconButton from '../../components/shared/IconButton';
 import ScheduleOverview from '../../components/sessions/ScheduleOverview';
 import DuplicateSessionModal from '../../components/sessions/DuplicateSessionModal';
-import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
+import { localDateTimeToISO, isoToLocalDateTime, formatDateTimeWithTimezone } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 import '../roomSessions/RoomSessions.css';
 import './SessionDetail.css';
@@ -312,12 +312,12 @@ const SessionDetail = () => {
     {
       key: 'start_time',
       label: 'Start Time',
-      render: (rs: RoomSessionExpanded) => new Date(rs.start_time).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => formatDateTimeWithTimezone(rs.start_time, rs.start_time_tz),
     },
     {
       key: 'end_time',
       label: 'End Time',
-      render: (rs: RoomSessionExpanded) => new Date(rs.end_time).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => formatDateTimeWithTimezone(rs.end_time, rs.end_time_tz),
     },
   ];
 
@@ -367,7 +367,7 @@ const SessionDetail = () => {
         <div className="info-grid">
           <div className="info-item">
             <span className="info-label">Start Time:</span>
-            <span className="info-value">{new Date(session.start_time).toLocaleString()}</span>
+            <span className="info-value">{formatDateTimeWithTimezone(session.start_time, session.start_time_tz)}</span>
           </div>
           <div className="info-item">
             <span className="info-label">Slot Duration:</span>
@@ -379,7 +379,7 @@ const SessionDetail = () => {
           </div>
           <div className="info-item">
             <span className="info-label">Created:</span>
-            <span className="info-value">{new Date(session.created_at).toLocaleString()}</span>
+            <span className="info-value">{formatDateTimeWithTimezone(session.created_at, session.created_at_tz)}</span>
           </div>
         </div>
       </div>

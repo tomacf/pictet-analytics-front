@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { localDateTimeToISO, isoToLocalDateTime, formatEuropeanDateTime } from './dateUtils';
+import { 
+  localDateTimeToISO, 
+  isoToLocalDateTime, 
+  formatEuropeanDateTime,
+  formatDateTimeInTimezone,
+  formatDateTimeWithTimezone,
+  formatTimeInTimezone
+} from './dateUtils';
 
 describe('dateUtils', () => {
   // Store original timezone
@@ -160,6 +167,99 @@ describe('dateUtils', () => {
       const backToLocal = isoToLocalDateTime(iso);
       
       expect(backToLocal).toBe(originalLocal);
+    });
+  });
+
+  describe('formatDateTimeInTimezone', () => {
+    it('should format date in specified timezone', () => {
+      // 10:00 UTC
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeInTimezone(isoString, 'UTC');
+      
+      expect(result).toBe('15/01/2024 10:00');
+    });
+
+    it('should format date in different timezone', () => {
+      // 10:00 UTC should be 11:00 in CET (Europe/Zurich in winter)
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeInTimezone(isoString, 'Europe/Zurich');
+      
+      expect(result).toBe('15/01/2024 11:00');
+    });
+
+    it('should handle empty string', () => {
+      expect(formatDateTimeInTimezone('', 'UTC')).toBe('');
+    });
+
+    it('should handle null/undefined', () => {
+      expect(formatDateTimeInTimezone(null, 'UTC')).toBe('');
+      expect(formatDateTimeInTimezone(undefined, 'UTC')).toBe('');
+    });
+
+    it('should fall back to local timezone when timezone is null', () => {
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeInTimezone(isoString, null);
+      
+      // Should return a valid formatted date
+      expect(result).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
+    });
+
+    it('should use custom format string', () => {
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeInTimezone(isoString, 'UTC', 'yyyy-MM-dd HH:mm:ss');
+      
+      expect(result).toBe('2024-01-15 10:00:00');
+    });
+  });
+
+  describe('formatDateTimeWithTimezone', () => {
+    it('should format date with timezone abbreviation', () => {
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeWithTimezone(isoString, 'UTC');
+      
+      expect(result).toBe('15/01/2024 10:00 (UTC)');
+    });
+
+    it('should format date with CET timezone abbreviation', () => {
+      // 10:00 UTC should be 11:00 CET
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeWithTimezone(isoString, 'Europe/Zurich');
+      
+      // The timezone abbreviation may vary by system (CET vs GMT+1)
+      expect(result).toMatch(/^15\/01\/2024 11:00 \((CET|GMT\+1)\)$/);
+    });
+
+    it('should handle empty string', () => {
+      expect(formatDateTimeWithTimezone('', 'UTC')).toBe('');
+    });
+
+    it('should handle null timezone', () => {
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatDateTimeWithTimezone(isoString, null);
+      
+      // Should return a valid formatted date without timezone suffix
+      expect(result).toMatch(/^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/);
+    });
+  });
+
+  describe('formatTimeInTimezone', () => {
+    it('should format only time in specified timezone', () => {
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatTimeInTimezone(isoString, 'UTC');
+      
+      expect(result).toBe('10:00');
+    });
+
+    it('should format time in different timezone', () => {
+      // 10:00 UTC should be 11:00 in CET
+      const isoString = '2024-01-15T10:00:00.000Z';
+      const result = formatTimeInTimezone(isoString, 'Europe/Zurich');
+      
+      expect(result).toBe('11:00');
+    });
+
+    it('should handle empty string', () => {
+      expect(formatTimeInTimezone('', 'UTC')).toBe('');
     });
   });
 });

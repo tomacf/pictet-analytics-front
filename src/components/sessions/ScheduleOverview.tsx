@@ -1,7 +1,6 @@
 import React from 'react';
-import { format } from 'date-fns';
-import { toDate } from 'date-fns-tz';
 import type {RoomSessionExpanded} from '../../apiConfig';
+import { formatTimeInTimezone } from '../../utils/dateUtils';
 import './ScheduleOverview.css';
 
 interface RoomJuryInfo {
@@ -18,7 +17,9 @@ interface ScheduleOverviewProps {
 
 interface TimeSlot {
   startTime: string;
+  startTimeTz?: string;
   endTime: string;
+  endTimeTz?: string;
   sessions: Map<number, RoomSessionExpanded>; // roomId -> session
 }
 
@@ -58,7 +59,9 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
     if (!timeSlotsMap.has(key)) {
       timeSlotsMap.set(key, {
         startTime: session.start_time,
+        startTimeTz: session.start_time_tz,
         endTime: session.end_time,
+        endTimeTz: session.end_time_tz,
         sessions: new Map()
       });
     }
@@ -71,13 +74,6 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
   const sortedTimeSlots = Array.from(timeSlotsMap.values()).sort((a, b) =>
     new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
   );
-
-  const formatTime = (isoString: string) => {
-    // Use date-fns for consistent timezone handling across the app
-    // This ensures times display as they were stored, without timezone conversion
-    const date = toDate(isoString);
-    return format(date, 'HH:mm');
-  };
 
   // Helper to get room jury labels (supports multiple juries per room)
   const getRoomJuryLabels = (roomId: number): string[] => {
@@ -121,7 +117,7 @@ const ScheduleOverview: React.FC<ScheduleOverviewProps> = ({ roomSessions, rooms
               <tr key={idx}>
                 <td className="time-cell">
                   <div className="time-range">
-                    {formatTime(slot.startTime)} - {formatTime(slot.endTime)}
+                    {formatTimeInTimezone(slot.startTime, slot.startTimeTz)} - {formatTimeInTimezone(slot.endTime, slot.endTimeTz)}
                   </div>
                 </td>
                 {sortedRooms.map(([roomId]) => {

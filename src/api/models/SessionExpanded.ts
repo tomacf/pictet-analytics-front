@@ -18,6 +18,10 @@ export type SessionExpanded = {
      */
     start_time: string;
     /**
+     * Timezone of the session start time
+     */
+    start_time_tz?: string;
+    /**
      * Duration of each slot in minutes
      */
     slot_duration: number;
@@ -30,9 +34,17 @@ export type SessionExpanded = {
      */
     created_at: string;
     /**
+     * Timezone of the created_at timestamp
+     */
+    created_at_tz?: string;
+    /**
      * Timestamp when the session was last updated
      */
     updated_at: string;
+    /**
+     * Timezone of the updated_at timestamp
+     */
+    updated_at_tz?: string;
     /**
      * Associated teams (present when expand=teams is used)
      */
@@ -54,9 +66,17 @@ export type SessionExpanded = {
      */
     first_room_session_start_time?: string;
     /**
+     * Timezone of the first room session start time (present when expand=summary is used)
+     */
+    first_room_session_start_time_tz?: string;
+    /**
      * End time of the last room session (present when expand=summary is used)
      */
     last_room_session_end_time?: string;
+    /**
+     * Timezone of the last room session end time (present when expand=summary is used)
+     */
+    last_room_session_end_time_tz?: string;
     /**
      * Room assignments with juries per room (present when expand=room_assignments is used). Each entry represents a room in this session with its assigned juries.
      */
