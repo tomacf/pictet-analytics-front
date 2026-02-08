@@ -1,5 +1,5 @@
 import { format, parse } from 'date-fns';
-import { toDate } from 'date-fns-tz';
+import { toDate, formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Converts a datetime-local input value (YYYY-MM-DDTHH:mm) to an ISO string
@@ -94,4 +94,101 @@ export const toISOString = (value: string): string => {
  */
 export const fromISOString = (isoString: string): string => {
   return isoToLocalDateTime(isoString);
+};
+
+/**
+ * Formats an ISO date string in a specific timezone.
+ * Uses the provided timezone to display the time as it would appear in that timezone.
+ * 
+ * @param isoString - The ISO string to format
+ * @param timezone - The IANA timezone identifier (e.g., 'UTC', 'Europe/Zurich', 'America/New_York')
+ * @param formatStr - The format string (default: 'dd/MM/yyyy HH:mm')
+ * @returns Formatted date string in the specified timezone, or empty string if invalid
+ */
+export const formatDateTimeInTimezone = (
+  isoString: string | undefined | null,
+  timezone: string | undefined | null,
+  formatStr: string = 'dd/MM/yyyy HH:mm'
+): string => {
+  if (!isoString) return '';
+  
+  try {
+    const date = toDate(isoString);
+    
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    
+    // If timezone is provided, format in that timezone
+    if (timezone) {
+      try {
+        return formatInTimeZone(date, timezone, formatStr);
+      } catch {
+        // If timezone is invalid, fall back to local timezone
+        return format(date, formatStr);
+      }
+    }
+    
+    // No timezone provided, format in local timezone
+    return format(date, formatStr);
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Formats an ISO date string with timezone suffix.
+ * Shows the formatted time followed by the timezone abbreviation if provided.
+ * 
+ * @param isoString - The ISO string to format
+ * @param timezone - The IANA timezone identifier (e.g., 'UTC', 'Europe/Zurich')
+ * @param formatStr - The format string for the datetime (default: 'dd/MM/yyyy HH:mm')
+ * @returns Formatted date string with timezone suffix (e.g., '01/03/2024 09:00 (CET)')
+ */
+export const formatDateTimeWithTimezone = (
+  isoString: string | undefined | null,
+  timezone: string | undefined | null,
+  formatStr: string = 'dd/MM/yyyy HH:mm'
+): string => {
+  if (!isoString) return '';
+  
+  try {
+    const date = toDate(isoString);
+    
+    if (isNaN(date.getTime())) {
+      return '';
+    }
+    
+    // If timezone is provided, format in that timezone and include the timezone abbreviation
+    if (timezone) {
+      try {
+        const formattedDate = formatInTimeZone(date, timezone, formatStr);
+        // Get the timezone abbreviation
+        const tzAbbrev = formatInTimeZone(date, timezone, 'zzz');
+        return `${formattedDate} (${tzAbbrev})`;
+      } catch {
+        // If timezone is invalid, fall back to local timezone
+        return format(date, formatStr);
+      }
+    }
+    
+    // No timezone provided, format in local timezone
+    return format(date, formatStr);
+  } catch {
+    return '';
+  }
+};
+
+/**
+ * Formats an ISO date string to show only time (HH:mm) in the specified timezone.
+ * 
+ * @param isoString - The ISO string to format
+ * @param timezone - The IANA timezone identifier (optional)
+ * @returns Formatted time string (HH:mm), or empty string if invalid
+ */
+export const formatTimeInTimezone = (
+  isoString: string | undefined | null,
+  timezone: string | undefined | null
+): string => {
+  return formatDateTimeInTimezone(isoString, timezone, 'HH:mm');
 };

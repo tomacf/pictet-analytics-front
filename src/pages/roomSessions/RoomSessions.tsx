@@ -13,7 +13,7 @@ import {
   type SlotAssignment,
 } from '../../utils/validationUtils';
 import { is409Error, format409Error } from '../../utils/errorUtils';
-import { localDateTimeToISO, isoToLocalDateTime } from '../../utils/dateUtils';
+import { localDateTimeToISO, isoToLocalDateTime, formatDateTimeWithTimezone } from '../../utils/dateUtils';
 import '../teams/Teams.css';
 import './RoomSessions.css';
 
@@ -291,12 +291,12 @@ const RoomSessions = () => {
     {
       key: 'start_time',
       label: 'Start Time',
-      render: (rs: RoomSessionExpanded) => new Date(rs.start_time).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => formatDateTimeWithTimezone(rs.start_time, rs.start_time_tz),
     },
     {
       key: 'end_time',
       label: 'End Time',
-      render: (rs: RoomSessionExpanded) => new Date(rs.end_time).toLocaleString(),
+      render: (rs: RoomSessionExpanded) => formatDateTimeWithTimezone(rs.end_time, rs.end_time_tz),
     },
   ];
 
